@@ -1,0 +1,18 @@
+[task-e] Task E (complete)
+Complete task at the bottom of the chain.
+
+[task-d] Task D (started)
+Started task depends on task-e.
+-> task-e
+
+[task-c] Task C (notstarted)
+Not-started task depends on task-d.
+-> task-d
+
+[task-b] Task B (planning)
+Planning task depends on task-c.
+-> task-c
+
+[task-a] Task A (blocked)
+Blocked root task depends on task-b.
+-> task-b

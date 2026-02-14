@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "DOM", "DOM.Iterable"],
+    "verbatimModuleSyntax": true,
+    "types": ["svelte"]
+  },
+  "include": ["src/**/*", "src/**/*.svelte"]
+}

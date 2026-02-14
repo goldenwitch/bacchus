@@ -1,0 +1,22 @@
+[f] Step F (complete)
+The deepest task in the chain.
+
+[e] Step E (complete)
+Depends on step F.
+-> f
+
+[d] Step D (started)
+Depends on step E.
+-> e
+
+[c] Step C (planning)
+Depends on step D.
+-> d
+
+[b] Step B (notstarted)
+Depends on step C.
+-> c
+
+[a] Step A (blocked)
+Root task depends on step B.
+-> b

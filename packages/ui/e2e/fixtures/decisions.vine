@@ -1,0 +1,9 @@
+[dep] Dependency Task (complete)
+A prerequisite task.
+
+[root] Decision Root (started)
+Root task with multiple decisions recorded.
+> Use approach A for the backend.
+> Prefer library X over library Y.
+> Deploy to staging first.
+-> dep

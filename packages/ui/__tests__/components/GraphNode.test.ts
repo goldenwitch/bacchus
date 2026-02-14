@@ -1,0 +1,212 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, fireEvent } from '@testing-library/svelte';
+import type { Task } from '@bacchus/core';
+import type { SimNode } from '../../src/lib/types.js';
+import { STATUS_MAP } from '../../src/lib/status.js';
+import GraphNode from '../../src/lib/components/GraphNode.svelte';
+
+// ---------------------------------------------------------------------------
+// Mock sound module
+// ---------------------------------------------------------------------------
+vi.mock('../../src/lib/sound.js', () => ({
+  playPop: vi.fn(),
+  playHover: vi.fn(),
+  playWhoosh: vi.fn(),
+  initAudio: vi.fn(),
+  isMuted: vi.fn(() => false),
+  setMuted: vi.fn(),
+}));
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeSimNode(
+  overrides: Partial<SimNode & { task?: Partial<Task> }> = {},
+): SimNode {
+  const task: Task = {
+    id: overrides.id ?? 'node-1',
+    shortName: overrides.task?.shortName ?? 'Test Node',
+    description: overrides.task?.description ?? 'Test description',
+    status: overrides.task?.status ?? 'started',
+    dependencies: overrides.task?.dependencies ?? [],
+    decisions: overrides.task?.decisions ?? [],
+  };
+  return {
+    id: task.id,
+    task,
+    depth: overrides.depth ?? 0,
+    x: overrides.x ?? 100,
+    y: overrides.y ?? 100,
+  };
+}
+
+function defaultProps(overrides: Record<string, unknown> = {}) {
+  return {
+    node: makeSimNode(),
+    focused: false,
+    dimmed: false,
+    visible: true,
+    onfocus: vi.fn(),
+    onhoverstart: vi.fn(),
+    onhoverend: vi.fn(),
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('GraphNode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders outer glow circle with status color', () => {
+    const node = makeSimNode({ task: { status: 'started' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const circles = container.querySelectorAll('circle');
+    // Outer glow circle is the first one
+    const outerCircle = circles[0];
+    expect(outerCircle).toBeDefined();
+    expect(outerCircle.getAttribute('stroke')).toBe(STATUS_MAP.started.color);
+  });
+
+  it('renders inner fill circle with dark status color', () => {
+    const node = makeSimNode({ task: { status: 'started' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const circles = container.querySelectorAll('circle');
+    // Inner circle is the second one
+    const innerCircle = circles[1];
+    expect(innerCircle).toBeDefined();
+    expect(innerCircle.getAttribute('fill')).toBe(STATUS_MAP.started.darkColor);
+  });
+
+  it('renders emoji badge for status', () => {
+    const node = makeSimNode({ task: { status: 'started' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const texts = container.querySelectorAll('text');
+    const emojiText = Array.from(texts).find((t) =>
+      t.textContent?.includes('🔨'),
+    );
+    expect(emojiText).toBeDefined();
+  });
+
+  it('renders floating label with shortName', () => {
+    const node = makeSimNode({ task: { shortName: 'Deploy Service' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const texts = container.querySelectorAll('text');
+    const label = Array.from(texts).find((t) =>
+      t.textContent?.includes('Deploy Service'),
+    );
+    expect(label).toBeDefined();
+  });
+
+  it('radius between 30 and 60', () => {
+    const node = makeSimNode({ task: { shortName: 'Hi' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const circles = container.querySelectorAll('circle');
+    for (const circle of circles) {
+      const r = Number(circle.getAttribute('r'));
+      // Outer circle has r = radius + 6, so max would be 66
+      // Inner circle r is between 30 and 60
+      expect(r).toBeGreaterThanOrEqual(30);
+      expect(r).toBeLessThanOrEqual(66);
+    }
+    // Specifically check the inner circle (second) is between 30 and 60
+    const innerR = Number(circles[1].getAttribute('r'));
+    expect(innerR).toBeGreaterThanOrEqual(30);
+    expect(innerR).toBeLessThanOrEqual(60);
+  });
+
+  it('click calls onfocus', async () => {
+    const onfocus = vi.fn();
+    const node = makeSimNode();
+    const { container } = render(GraphNode, {
+      props: defaultProps({ node, onfocus }),
+    });
+    const gElement = container.querySelector('g');
+    expect(gElement).not.toBeNull();
+    await fireEvent.click(gElement!);
+    expect(onfocus).toHaveBeenCalledWith(node.id);
+  });
+
+  it('hover calls onhoverstart, leave calls onhoverend', async () => {
+    const onhoverstart = vi.fn();
+    const onhoverend = vi.fn();
+    const node = makeSimNode();
+    const { container } = render(GraphNode, {
+      props: defaultProps({ node, onhoverstart, onhoverend }),
+    });
+    const gElement = container.querySelector('g');
+    expect(gElement).not.toBeNull();
+
+    await fireEvent.mouseEnter(gElement!);
+    expect(onhoverstart).toHaveBeenCalledWith(node.id, expect.any(Object));
+
+    await fireEvent.mouseLeave(gElement!);
+    expect(onhoverend).toHaveBeenCalled();
+  });
+
+  it('dimmed node has opacity 0.3', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, {
+      props: defaultProps({ node, dimmed: true }),
+    });
+    const gElement = container.querySelector('g');
+    expect(gElement).not.toBeNull();
+    expect(gElement!.getAttribute('opacity')).toBe('0.3');
+  });
+
+  it('focused node has full opacity', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, {
+      props: defaultProps({ node, focused: true, dimmed: false }),
+    });
+    const gElement = container.querySelector('g');
+    expect(gElement).not.toBeNull();
+    expect(gElement!.getAttribute('opacity')).toBe('1');
+  });
+
+  it('started nodes have glow pulse animation', () => {
+    const node = makeSimNode({ task: { status: 'started' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const circles = container.querySelectorAll('circle');
+    const outerCircle = circles[0];
+    expect(outerCircle.classList.contains('anim-glow-pulse')).toBe(true);
+  });
+
+  it('complete nodes have shimmer animation', () => {
+    const node = makeSimNode({ task: { status: 'complete' } });
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const circles = container.querySelectorAll('circle');
+    const innerCircle = circles[1];
+    expect(innerCircle.classList.contains('anim-completion-shimmer')).toBe(
+      true,
+    );
+  });
+
+  it('all labels have bob animation', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const label = container.querySelector('.anim-label-bob');
+    expect(label).not.toBeNull();
+    expect(label!.tagName.toLowerCase()).toBe('text');
+  });
+
+  it('visible=false starts at scale 0', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, {
+      props: defaultProps({ node, visible: false }),
+    });
+    // The inner g should have transform with scale(0)
+    const groups = container.querySelectorAll('g');
+    const scaleGroup = Array.from(groups).find((g) => {
+      const style = g.getAttribute('style') ?? '';
+      return style.includes('scale');
+    });
+    expect(scaleGroup).toBeDefined();
+    expect(scaleGroup!.getAttribute('style')).toContain('scale(0)');
+  });
+});

@@ -1,0 +1,150 @@
+/* ── CSS Custom Properties ─────────────────────────────── */
+:root {
+  --color-complete: #4ade80;
+  --color-started: #facc15;
+  --color-notstarted: #94a3b8;
+  --color-planning: #a78bfa;
+  --color-blocked: #f87171;
+
+  --sidebar-bg: rgba(15, 23, 42, 0.92);
+
+  color-scheme: dark;
+}
+
+/* ── Base Reset ───────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+}
+
+/* ── Status Classes ───────────────────────────────────── */
+.status-complete {
+  fill: var(--color-complete);
+  stroke: var(--color-complete);
+}
+
+.status-started {
+  fill: var(--color-started);
+  stroke: var(--color-started);
+}
+
+.status-notstarted {
+  fill: var(--color-notstarted);
+  stroke: var(--color-notstarted);
+}
+
+.status-planning {
+  fill: var(--color-planning);
+  stroke: var(--color-planning);
+}
+
+.status-blocked {
+  fill: var(--color-blocked);
+  stroke: var(--color-blocked);
+}
+
+/* ── Keyframe Animations ──────────────────────────────── */
+
+/* Gentle vertical oscillation for node labels */
+@keyframes label-bob {
+  0%,
+  100% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+/* Outer glow ring pulse for "started" nodes */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Rotating radial gradient shimmer for "complete" nodes */
+/* SVG-compatible shimmer: subtle brightness pulse for complete nodes */
+@keyframes completion-shimmer {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+}
+
+/* Flowing dots along edges — 60px dashoffset over 2s = 30px/s */
+@keyframes edge-flow {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Horizontal shake for error cards — 3 cycles in 300ms */
+@keyframes error-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  16.6% {
+    transform: translateX(-4px);
+  }
+  33.3% {
+    transform: translateX(4px);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+  66.6% {
+    transform: translateX(4px);
+  }
+  83.3% {
+    transform: translateX(-4px);
+  }
+}
+
+/* ── Animation Utility Classes ────────────────────────── */
+.anim-label-bob {
+  animation: label-bob 3s ease-in-out infinite;
+}
+
+.anim-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.anim-completion-shimmer {
+  animation: completion-shimmer 6s linear infinite;
+}
+
+.anim-edge-flow {
+  animation: edge-flow 2s linear infinite;
+}
+
+.anim-error-shake {
+  animation: error-shake 300ms ease-in-out;
+}
