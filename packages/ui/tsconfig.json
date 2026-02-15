@@ -8,5 +8,11 @@
     "verbatimModuleSyntax": true,
     "types": ["svelte"]
   },
-  "include": ["src/**/*", "src/**/*.svelte"]
+  "include": [
+    "src/**/*",
+    "src/**/*.svelte",
+    "__tests__/**/*",
+    "e2e/**/*",
+    "vite.config.ts"
+  ]
 }

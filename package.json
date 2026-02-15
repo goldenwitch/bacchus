@@ -1,7 +1,17 @@
 {
-  "name": "graph-viz",
+  "name": "bacchus",
+  "description": "Parse, validate, and visualize task graphs in the VINE format",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goldenwitch/bacchus.git"
+  },
+  "homepage": "https://github.com/goldenwitch/bacchus",
+  "bugs": {
+    "url": "https://github.com/goldenwitch/bacchus/issues"
+  },
   "packageManager": "yarn@4.6.0",
   "workspaces": [
     "packages/*"

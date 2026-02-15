@@ -93,20 +93,20 @@ export function refreshStatusColors(): void {
 
 /** Get the primary color for a status. */
 export function getStatusColor(status: Status): string {
-  return STATUS_MAP[status]!.color;
+  return STATUS_MAP[status].color;
 }
 
 /** Get the dark (fill) color for a status. */
 export function getStatusDarkColor(status: Status): string {
-  return STATUS_MAP[status]!.darkColor;
+  return STATUS_MAP[status].darkColor;
 }
 
 /** Get the emoji for a status. */
 export function getStatusEmoji(status: Status): string {
-  return STATUS_MAP[status]!.emoji;
+  return STATUS_MAP[status].emoji;
 }
 
 /** Get the CSS class name for a status. */
 export function getStatusClass(status: Status): string {
-  return STATUS_MAP[status]!.cssClass;
+  return STATUS_MAP[status].cssClass;
 }

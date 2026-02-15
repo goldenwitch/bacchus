@@ -37,3 +37,6 @@ jobs:
 
       - name: Test with coverage
         run: yarn test:coverage
+
+      - name: Build UI
+        run: yarn workspace @bacchus/ui build

@@ -32,14 +32,15 @@ export function computeDepths(graph: VineGraph): Map<string, number> {
   const queue: string[] = [rootId];
 
   while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    const currentDepth = depths.get(currentId)!;
+    const currentId = queue.shift();
+    if (!currentId) continue;
+    const currentDepth = depths.get(currentId) ?? 0;
     const task = graph.tasks.get(currentId);
     if (!task) continue;
 
     for (const depId of task.dependencies) {
       const newDepth = currentDepth + 1;
-      if (!depths.has(depId) || newDepth > depths.get(depId)!) {
+      if (!depths.has(depId) || newDepth > (depths.get(depId) ?? 0)) {
         depths.set(depId, newDepth);
         queue.push(depId);
       }
@@ -221,10 +222,9 @@ export function createSimulation(
   config?: PhysicsConfig,
 ): Simulation<SimNode, SimLink> {
   const cx = width / 2;
-  const cy = height / 2;
 
   // Resolve config: use caller-supplied values or fall back to defaults.
-  const cfg = config ?? getDefaults(nodes.length);
+  const cfg = config ?? getDefaults();
 
   // Identify the root node (last in order → depth 0).
   const rootId = nodes.find((n) => n.depth === 0)?.id;
@@ -324,7 +324,6 @@ export function applyPhysicsConfig(
   height: number,
 ): void {
   const cx = width / 2;
-  const cy = height / 2;
 
   sim.velocityDecay(config.velocityDecay);
 
@@ -359,11 +358,13 @@ export function applyPhysicsConfig(
   // Patch layer force
   const layerForce = sim.force('layer') as ReturnType<typeof forceLayer> | null;
   if (layerForce) {
+    /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
     layerForce
       .y((d: SimNode) => height * 0.1 + d.depth * config.layerSpacing)
       .strength(config.layerStrength)
       .exponent(config.layerExponent)
       .layerSpacing(config.layerSpacing);
+    /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   }
 
   // Patch cluster force
@@ -428,12 +429,15 @@ export function computeFocusBandPositions(
     const spacing = Math.min(180, (width * 0.6) / dependantIds.length);
     const startX = cx - ((dependantIds.length - 1) * spacing) / 2;
     for (let i = 0; i < dependantIds.length; i++) {
-      result.push({
-        id: dependantIds[i]!,
-        x: startX + i * spacing,
-        y: topY,
-        band: 'dependants',
-      });
+      const id = dependantIds[i];
+      if (id) {
+        result.push({
+          id,
+          x: startX + i * spacing,
+          y: topY,
+          band: 'dependants',
+        });
+      }
     }
   }
 
@@ -442,12 +446,15 @@ export function computeFocusBandPositions(
     const spacing = Math.min(180, (width * 0.6) / dependencyIds.length);
     const startX = cx - ((dependencyIds.length - 1) * spacing) / 2;
     for (let i = 0; i < dependencyIds.length; i++) {
-      result.push({
-        id: dependencyIds[i]!,
-        x: startX + i * spacing,
-        y: botY,
-        band: 'dependencies',
-      });
+      const id = dependencyIds[i];
+      if (id) {
+        result.push({
+          id,
+          x: startX + i * spacing,
+          y: botY,
+          band: 'dependencies',
+        });
+      }
     }
   }
 
@@ -458,13 +465,15 @@ export function computeFocusBandPositions(
     const vertSpacing = height / (peripheralNodes.length + 1);
     for (let i = 0; i < peripheralNodes.length; i++) {
       const side = i % 2 === 0 ? margin : width - margin;
-      const pNode = peripheralNodes[i]!;
-      result.push({
-        id: pNode.id,
-        x: side,
-        y: vertSpacing * (i + 1),
-        band: 'periphery',
-      });
+      const pNode = peripheralNodes[i];
+      if (pNode) {
+        result.push({
+          id: pNode.id,
+          x: side,
+          y: vertSpacing * (i + 1),
+          band: 'periphery',
+        });
+      }
     }
   }
 

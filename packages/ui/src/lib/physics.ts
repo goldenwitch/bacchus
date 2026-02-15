@@ -62,7 +62,7 @@ const VALID_KEYS: ReadonlySet<string> = new Set<PhysicsParamKey>(
  *
  * Tuned for a balanced layout across graph sizes.
  */
-export function getDefaults(_nodeCount?: number): PhysicsConfig {
+export function getDefaults(): PhysicsConfig {
   return {
     chargeStrength:    -1200,
     chargeDistanceMax: 1500,
@@ -157,5 +157,7 @@ export function resolveConfig(
   nodeCount: number,
   overrides: Partial<PhysicsConfig>,
 ): PhysicsConfig {
-  return { ...getDefaults(nodeCount), ...overrides };
+  // nodeCount reserved for future tuning
+  void nodeCount;
+  return { ...getDefaults(), ...overrides };
 }
