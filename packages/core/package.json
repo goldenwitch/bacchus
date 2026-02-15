@@ -1,8 +1,19 @@
 {
   "name": "@bacchus/core",
+  "description": "TypeScript parser, validator, and query API for VINE task graphs",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goldenwitch/bacchus.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/goldenwitch/bacchus",
+  "bugs": {
+    "url": "https://github.com/goldenwitch/bacchus/issues"
+  },
   "exports": {
     ".": "./src/index.ts"
   },

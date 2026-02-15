@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Idempotent setup script for the graph-viz workspace.
+    Idempotent setup script for the Bacchus workspace.
 .DESCRIPTION
     Ensures all prerequisites are installed and the workspace is ready for
     development. Safe to re-run at any time — every step checks current state

@@ -1,6 +1,9 @@
-# graph-viz
+# Bacchus
 
-A monorepo for parsing, validating, querying, and visualizing task graphs in the [VINE text format](VINE.md).
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml/badge.svg)](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml)
+
+A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE.md).
 
 ## @bacchus/core
 
@@ -53,7 +56,7 @@ Both extend `VineError`.
 - **Decision**: `> Note text`
 - **Root**: the last task in the file
 
-See [VINE.md](VINE.md) for the full specification.
+See [VINE.md](docs/VINE.md) for the full specification.
 
 ---
 
@@ -66,7 +69,7 @@ An interactive browser app for visualizing VINE task graphs. Drop a `.vine` file
 1. **Set up the repo** (if you haven't already — see [Environment Setup](#environment-setup)):
 
    ```powershell
-   git clone <repo> && cd graph-viz && ./setup.ps1
+   git clone https://github.com/goldenwitch/bacchus && cd bacchus && ./setup.ps1
    ```
 
 2. **Start the dev server:**
@@ -122,7 +125,7 @@ Start the dev server and drag any file onto the landing page to visualize it.
 ### Environment Setup
 
 ```powershell
-git clone <repo> && cd graph-viz && ./setup.ps1
+git clone https://github.com/goldenwitch/bacchus && cd bacchus && ./setup.ps1
 ```
 
 The idempotent `setup.ps1` script handles everything:

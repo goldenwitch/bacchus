@@ -1,8 +1,19 @@
 {
   "name": "@bacchus/ui",
+  "description": "Interactive browser app for visualizing VINE task graphs",
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goldenwitch/bacchus.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/goldenwitch/bacchus",
+  "bugs": {
+    "url": "https://github.com/goldenwitch/bacchus/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
