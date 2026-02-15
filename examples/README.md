@@ -10,6 +10,7 @@ Sample `.vine` files to explore in the graph-viz UI. Start the dev server, then 
 | `04-all-statuses.vine` | Every status keyword: complete, started, notstarted, planning, blocked. |
 | `05-decisions.vine` | Tasks annotated with `>` decision notes. |
 | `06-project-bacchus.vine` | A realistic project graph with 13 tasks — the graph-viz project itself. |
+| `07-browser-bridge.vine` | A richly annotated 20-task project: building multiplayer bridge in the browser. |
 
 ## Loading in the UI
 

@@ -2,10 +2,12 @@
   import { slide } from 'svelte/transition';
   import { PHYSICS_SLIDER_DEFS, type PhysicsConfig, type PhysicsParamKey } from '../physics.js';
 
-  let { config, onchange, onreset }: {
+  let { config, onchange, onreset, showStrataLines = false, ontogglestrata }: {
     config: PhysicsConfig;
     onchange: (key: PhysicsParamKey, value: number) => void;
     onreset: () => void;
+    showStrataLines?: boolean;
+    ontogglestrata?: (show: boolean) => void;
   } = $props();
 
   let expanded = $state(false);
@@ -63,6 +65,16 @@
           </div>
         {/each}
       {/each}
+
+      <label class="physics-checkbox">
+        <input
+          type="checkbox"
+          checked={showStrataLines}
+          onchange={() => ontogglestrata?.(!showStrataLines)}
+          aria-label="Show strata lines"
+        />
+        <span class="physics-checkbox-label">Strata Lines</span>
+      </label>
 
       <button type="button" class="physics-reset" onclick={onreset}>
         Reset Defaults
@@ -184,6 +196,26 @@
     accent-color: var(--focus-ring);
     height: 4px;
     cursor: pointer;
+  }
+
+  .physics-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+
+  .physics-checkbox input[type="checkbox"] {
+    accent-color: var(--focus-ring);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+
+  .physics-checkbox-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
   }
 
   .physics-reset {

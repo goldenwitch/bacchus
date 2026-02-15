@@ -12,8 +12,8 @@ import {
 // PHYSICS_SLIDER_DEFS
 // ---------------------------------------------------------------------------
 describe('PHYSICS_SLIDER_DEFS', () => {
-  it('has 10 entries', () => {
-    expect(PHYSICS_SLIDER_DEFS).toHaveLength(10);
+  it('has 12 entries', () => {
+    expect(PHYSICS_SLIDER_DEFS).toHaveLength(12);
   });
 
   it('each key is unique', () => {
@@ -21,10 +21,10 @@ describe('PHYSICS_SLIDER_DEFS', () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it('contains all five groups', () => {
+  it('contains all six groups', () => {
     const groups = new Set(PHYSICS_SLIDER_DEFS.map((d) => d.group));
     expect(groups).toEqual(
-      new Set(['Repulsion', 'Links', 'Collisions', 'Layout', 'Damping']),
+      new Set(['Repulsion', 'Links', 'Collisions', 'Layout', 'Centering', 'Damping']),
     );
   });
 });
@@ -33,23 +33,25 @@ describe('PHYSICS_SLIDER_DEFS', () => {
 // getDefaults
 // ---------------------------------------------------------------------------
 describe('getDefaults', () => {
-  it('returns correct small-graph defaults (n <= 8)', () => {
+  it('returns correct defaults', () => {
     const cfg = getDefaults(4);
-    expect(cfg.chargeStrength).toBe(-350);
-    expect(cfg.layerSpacing).toBe(180);
+    expect(cfg.chargeStrength).toBe(-1200);
+    expect(cfg.chargeDistanceMax).toBe(1500);
+    expect(cfg.linkStrength).toBe(0.05);
+    expect(cfg.minEdgeGap).toBe(200);
+    expect(cfg.collidePadding).toBe(40);
+    expect(cfg.collideStrength).toBe(1.00);
+    expect(cfg.layerSpacing).toBe(400);
+    expect(cfg.layerStrength).toBe(0.50);
+    expect(cfg.layerExponent).toBe(1.0);
+    expect(cfg.clusterStrength).toBe(0.50);
+    expect(cfg.velocityDecay).toBe(0.25);
   });
 
-  it('returns correct large-graph defaults (n > 8)', () => {
-    const cfg = getDefaults(20);
-    expect(cfg.chargeStrength).toBe(-600);
-    expect(cfg.layerSpacing).toBe(220);
-  });
-
-  it('chargeStrength and layerSpacing differ between small/large', () => {
-    const small = getDefaults(5);
-    const large = getDefaults(12);
-    expect(small.chargeStrength).not.toBe(large.chargeStrength);
-    expect(small.layerSpacing).not.toBe(large.layerSpacing);
+  it('returns same defaults regardless of node count', () => {
+    const small = getDefaults(4);
+    const large = getDefaults(20);
+    expect(small).toEqual(large);
   });
 
   it('all values are finite numbers', () => {

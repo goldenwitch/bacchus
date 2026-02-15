@@ -70,7 +70,7 @@ describe('PhysicsPanel', () => {
     await fireEvent.click(toggle);
 
     const sliders = container.querySelectorAll('input[type="range"]');
-    expect(sliders).toHaveLength(10);
+    expect(sliders).toHaveLength(12);
   });
 
   it('renders group headers', async () => {
@@ -83,6 +83,7 @@ describe('PhysicsPanel', () => {
     expect(getByText('Links')).toBeInTheDocument();
     expect(getByText('Collisions')).toBeInTheDocument();
     expect(getByText('Layout')).toBeInTheDocument();
+    expect(getByText('Centering')).toBeInTheDocument();
     expect(getByText('Damping')).toBeInTheDocument();
   });
 
@@ -127,12 +128,49 @@ describe('PhysicsPanel', () => {
 
     // Check that formatted values appear in the panel
     const valueSpans = container.querySelectorAll('.physics-slider-value');
-    expect(valueSpans.length).toBe(10);
+    expect(valueSpans.length).toBe(12);
 
     // Each value span should contain a number string
     for (const span of valueSpans) {
       const text = span.textContent!.trim();
       expect(text).toMatch(/^-?\d+(\.\d+)?$/);
     }
+  });
+
+  it('renders strata lines checkbox when expanded', async () => {
+    const { getByRole } = render(PhysicsPanel, { props: defaultProps() });
+    const toggle = getByRole('button', { name: /toggle physics controls/i });
+
+    await fireEvent.click(toggle);
+
+    const checkbox = getByRole('checkbox', { name: /show strata lines/i });
+    expect(checkbox).toBeInTheDocument();
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('strata lines checkbox fires ontogglestrata callback', async () => {
+    const ontogglestrata = vi.fn();
+    const props = { ...defaultProps(), showStrataLines: false, ontogglestrata };
+    const { getByRole } = render(PhysicsPanel, { props });
+    const toggle = getByRole('button', { name: /toggle physics controls/i });
+
+    await fireEvent.click(toggle);
+
+    const checkbox = getByRole('checkbox', { name: /show strata lines/i });
+    await fireEvent.change(checkbox);
+
+    expect(ontogglestrata).toHaveBeenCalledTimes(1);
+    expect(ontogglestrata).toHaveBeenCalledWith(true);
+  });
+
+  it('strata lines checkbox reflects showStrataLines prop', async () => {
+    const props = { ...defaultProps(), showStrataLines: true };
+    const { getByRole } = render(PhysicsPanel, { props });
+    const toggle = getByRole('button', { name: /toggle physics controls/i });
+
+    await fireEvent.click(toggle);
+
+    const checkbox = getByRole('checkbox', { name: /show strata lines/i });
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
   });
 });

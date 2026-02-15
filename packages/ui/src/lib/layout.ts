@@ -2,7 +2,6 @@ import {
   forceSimulation,
   forceLink,
   forceManyBody,
-  forceCenter,
   forceCollide,
   forceX,
   forceY,
@@ -17,8 +16,10 @@ import { getDefaults } from './physics.js';
 export { computeNodeRadius };
 
 /**
- * BFS from the root task (last in graph.order) outward.
- * Root = depth 0, root's direct dependencies = depth 1, etc.
+ * Longest-path traversal from the root task (last in graph.order) outward.
+ * Root = depth 0; each dependency is at least depth + 1.  When a node is
+ * reachable via multiple paths the **maximum** hop count wins, pushing
+ * shared dependencies to the lowest visual stratum.
  */
 export function computeDepths(graph: VineGraph): Map<string, number> {
   const depths = new Map<string, number>();
@@ -37,8 +38,9 @@ export function computeDepths(graph: VineGraph): Map<string, number> {
     if (!task) continue;
 
     for (const depId of task.dependencies) {
-      if (!depths.has(depId)) {
-        depths.set(depId, currentDepth + 1);
+      const newDepth = currentDepth + 1;
+      if (!depths.has(depId) || newDepth > depths.get(depId)!) {
+        depths.set(depId, newDepth);
         queue.push(depId);
       }
     }
@@ -119,6 +121,96 @@ export function forceCluster(dependantsMap: Map<string, string[]>, strength: num
 }
 
 /**
+ * Custom D3-compatible force that pulls each node vertically toward its
+ * target depth-layer position with a non-linear spring.
+ *
+ * The displacement `dy` is normalised by `layerSpacing` before the exponent
+ * is applied, keeping forces bounded regardless of pixel distance:
+ *
+ *   normDy  = dy / layerSpacing
+ *   force   = sign(normDy) * |normDy|^exponent * layerSpacing * strength * alpha
+ *
+ * At exponent = 1.0 this simplifies to `dy * strength * alpha`, identical to
+ * d3's built-in `forceY`.  Values < 1 give sub-linear (softened) pull at
+ * large distance; values > 1 give super-linear (aggressive snap).
+ *
+ * A per-tick velocity cap (`maxVelocity`) prevents numerical blow-up at
+ * extreme exponents or large displacements.
+ */
+export function forceLayer(
+  targetY: (d: SimNode) => number,
+  strength: number,
+  exponent: number,
+  layerSpacing: number,
+) {
+  let nodes: SimNode[] = [];
+  let _targetY = targetY;
+  let _strength = strength;
+  let _exponent = exponent;
+  let _layerSpacing = layerSpacing;
+
+  // Hard velocity cap — prevents numerical blow-up.
+  const maxVelocity = 200;
+
+  function force(alpha: number) {
+    // Reference distance for normalisation.  Falls back to 1 to avoid
+    // division by zero if the caller ever passes 0.
+    const ref = Math.max(_layerSpacing, 1);
+
+    for (const node of nodes) {
+      const ty = _targetY(node);
+      const dy = ty - (node.y ?? 0);
+
+      // Normalise into "layer-spacing units", apply exponent, scale back.
+      const normDy = dy / ref;
+      const absNorm = Math.abs(normDy);
+      const scaledDy =
+        absNorm === 0
+          ? 0
+          : Math.sign(normDy) * Math.pow(absNorm, _exponent) * ref;
+
+      let dv = scaledDy * _strength * alpha;
+
+      // Clamp to avoid simulation blow-up at high exponents.
+      if (dv > maxVelocity) dv = maxVelocity;
+      else if (dv < -maxVelocity) dv = -maxVelocity;
+
+      node.vy = (node.vy ?? 0) + dv;
+    }
+  }
+
+  force.initialize = function (n: SimNode[]) {
+    nodes = n;
+  };
+
+  force.y = function (fn?: (d: SimNode) => number) {
+    if (fn === undefined) return _targetY;
+    _targetY = fn;
+    return force;
+  };
+
+  force.strength = function (s?: number) {
+    if (s === undefined) return _strength;
+    _strength = s;
+    return force;
+  };
+
+  force.exponent = function (e?: number) {
+    if (e === undefined) return _exponent;
+    _exponent = e;
+    return force;
+  };
+
+  force.layerSpacing = function (ls?: number) {
+    if (ls === undefined) return _layerSpacing;
+    _layerSpacing = ls;
+    return force;
+  };
+
+  return force;
+}
+
+/**
  * Create and configure a D3-force simulation per the BacchusUI spec.
  */
 export function createSimulation(
@@ -172,8 +264,11 @@ export function createSimulation(
       forceManyBody<SimNode>().strength(cfg.chargeStrength).distanceMax(cfg.chargeDistanceMax),
     )
 
-    // ── Center force ──
-    .force('center', forceCenter<SimNode>(cx, cy))
+    // ── Horizontal centering force ──
+    // Gentle X-only centering so nodes don't drift sideways.
+    // Unlike forceCenter (which shifts positions directly on both axes),
+    // this only nudges velocity on X, leaving Y entirely to the layer force.
+    .force('centerX', forceX<SimNode>(cx).strength(cfg.centerStrength))
 
     // ── Collide force ──
     .force(
@@ -185,13 +280,16 @@ export function createSimulation(
     )
 
     // ── Layer force (vertical stratification) ──
-    // Spring-like attractor pulls each node toward its depth layer.
+    // Non-linear spring attractor pulls each node toward its depth layer.
     // topMargin keeps the root away from the viewport edge.
     .force(
       'layer',
-      forceY<SimNode>(
+      forceLayer(
         (d) => height * 0.1 + d.depth * cfg.layerSpacing,
-      ).strength(cfg.layerStrength),
+        cfg.layerStrength,
+        cfg.layerExponent,
+        cfg.layerSpacing,
+      ),
     )
 
     // ── Cluster force (horizontal subgraph grouping) ──
@@ -259,17 +357,25 @@ export function applyPhysicsConfig(
   }
 
   // Patch layer force
-  const layerForce = sim.force('layer') as ReturnType<typeof forceY<SimNode>> | null;
+  const layerForce = sim.force('layer') as ReturnType<typeof forceLayer> | null;
   if (layerForce) {
     layerForce
       .y((d: SimNode) => height * 0.1 + d.depth * config.layerSpacing)
-      .strength(config.layerStrength);
+      .strength(config.layerStrength)
+      .exponent(config.layerExponent)
+      .layerSpacing(config.layerSpacing);
   }
 
   // Patch cluster force
   const clusterForce = sim.force('cluster') as ReturnType<typeof forceCluster> | null;
   if (clusterForce) {
     clusterForce.strength(config.clusterStrength);
+  }
+
+  // Patch horizontal centering force
+  const centerXForce = sim.force('centerX') as ReturnType<typeof forceX<SimNode>> | null;
+  if (centerXForce) {
+    centerXForce.x(cx).strength(config.centerStrength);
   }
 
   // Reheat simulation so changes are immediately visible

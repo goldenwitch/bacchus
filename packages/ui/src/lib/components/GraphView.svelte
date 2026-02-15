@@ -81,6 +81,7 @@
   // Physics controls state
   let physicsOverrides: Partial<PhysicsConfig> = $state(loadOverrides());
   let physicsConfig: PhysicsConfig = $state(resolveConfig(0, physicsOverrides));
+  let showStrataLines = $state(false);
 
   const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -171,6 +172,14 @@
   const displayNodes = $derived.by(() => {
     void tick; // subscribe to tick updates
     return simNodes.map((n) => ({ ...n }));
+  });
+
+  // Compute strata line Y-positions from unique depth values + current config
+  const strataLinePositions = $derived.by(() => {
+    const depths = new Set(simNodes.map((n) => n.depth));
+    return [...depths]
+      .sort((a, b) => a - b)
+      .map((d) => height * 0.1 + d * physicsConfig.layerSpacing);
   });
 
   // Setup d3-zoom on the SVG element
@@ -478,6 +487,21 @@
     onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') focusedTaskId = null; }}
   >
     <g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
+      {#if showStrataLines}
+        {#each strataLinePositions as strataY}
+          <line
+            x1={-50000}
+            x2={50000}
+            y1={strataY}
+            y2={strataY}
+            stroke="var(--color-strata-line)"
+            stroke-width={2 / transform.k}
+            stroke-dasharray="{8 / transform.k},{6 / transform.k}"
+            pointer-events="none"
+          />
+        {/each}
+      {/if}
+
       {#each displayNodes as node (node.id)}
         <GraphNode
           {node}
@@ -520,7 +544,7 @@
   <Sidebar task={focusedTask} {graph} onclose={() => focusedTaskId = null} onfocus={(taskId) => focusedTaskId = taskId} />
   <Tooltip task={hoveredTask && !focusedTaskId ? hoveredTask : null} x={mouseX} y={mouseY} />
   <Toolbar {onreset} {graphTitle} onzoomin={handleZoomIn} onzoomout={handleZoomOut} onfitview={handleFitView} zoomLevel={transform.k} svgElement={svgEl} />
-  <PhysicsPanel config={physicsConfig} onchange={handlePhysicsChange} onreset={handlePhysicsReset} />
+  <PhysicsPanel config={physicsConfig} onchange={handlePhysicsChange} onreset={handlePhysicsReset} {showStrataLines} ontogglestrata={(show) => { showStrataLines = show; }} />
   <Legend />
 </div>
 

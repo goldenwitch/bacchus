@@ -85,3 +85,16 @@ Cli for pulling work, creating work, and updating work.
 ## Visualization Formats
 
 Tasklist view.
+
+## Tagging/Clustering for tasks
+- Perhaps even dependency on cluster
+- Clusters have some force that binds them more strongly
+
+## Rich content for tasks
+- Markdown links
+- Images
+- Guidelines
+- Prompts
+- Suggested tools?
+
+I'm thinking rich content needs to be an authoring/extensibility layer

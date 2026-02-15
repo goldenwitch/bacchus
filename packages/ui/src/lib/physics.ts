@@ -13,7 +13,9 @@ export interface PhysicsConfig {
   collideStrength: number;
   layerSpacing: number;
   layerStrength: number;
+  layerExponent: number;
   clusterStrength: number;
+  centerStrength: number;
   velocityDecay: number;
 }
 
@@ -24,7 +26,7 @@ export type PhysicsParamKey = keyof PhysicsConfig;
 export interface PhysicsSliderDef {
   key: PhysicsParamKey;
   label: string;
-  group: 'Repulsion' | 'Links' | 'Collisions' | 'Layout' | 'Damping';
+  group: 'Repulsion' | 'Links' | 'Collisions' | 'Layout' | 'Damping' | 'Centering';
   min: number;
   max: number;
   step: number;
@@ -32,16 +34,18 @@ export interface PhysicsSliderDef {
 
 /** Ordered slider definitions — drives the physics-panel UI. */
 export const PHYSICS_SLIDER_DEFS: readonly PhysicsSliderDef[] = [
-  { key: 'chargeStrength',    label: 'Charge Strength',    group: 'Repulsion',   min: -1200, max: -50,  step: 10   },
-  { key: 'chargeDistanceMax', label: 'Charge Range',       group: 'Repulsion',   min: 100,   max: 1500, step: 50   },
-  { key: 'linkStrength',      label: 'Link Strength',      group: 'Links',       min: 0.05,  max: 1.0,  step: 0.05 },
-  { key: 'minEdgeGap',        label: 'Edge Gap',           group: 'Links',       min: 20,    max: 200,  step: 5    },
-  { key: 'collidePadding',    label: 'Collision Padding',  group: 'Collisions',  min: 0,     max: 40,   step: 2    },
-  { key: 'collideStrength',   label: 'Collision Strength', group: 'Collisions',  min: 0.1,   max: 1.0,  step: 0.05 },
-  { key: 'layerSpacing',      label: 'Layer Spacing',      group: 'Layout',      min: 80,    max: 400,  step: 10   },
-  { key: 'layerStrength',     label: 'Layer Strength',     group: 'Layout',      min: 0.0,   max: 0.5,  step: 0.01 },
-  { key: 'clusterStrength',   label: 'Cluster Strength',   group: 'Layout',      min: 0.0,   max: 0.5,  step: 0.01 },
-  { key: 'velocityDecay',     label: 'Velocity Decay',     group: 'Damping',     min: 0.05,  max: 0.9,  step: 0.05 },
+  { key: 'chargeStrength',    label: 'Charge Strength',    group: 'Repulsion',   min: -12000, max: -5,    step: 10    },
+  { key: 'chargeDistanceMax', label: 'Charge Range',       group: 'Repulsion',   min: 10,     max: 15000, step: 50    },
+  { key: 'linkStrength',      label: 'Link Strength',      group: 'Links',       min: 0.005,  max: 1.0,   step: 0.005 },
+  { key: 'minEdgeGap',        label: 'Edge Gap',           group: 'Links',       min: 2,      max: 2000,  step: 5     },
+  { key: 'collidePadding',    label: 'Collision Padding',  group: 'Collisions',  min: 0,      max: 400,   step: 2     },
+  { key: 'collideStrength',   label: 'Collision Strength', group: 'Collisions',  min: 0.01,   max: 1.0,   step: 0.01  },
+  { key: 'layerSpacing',      label: 'Layer Spacing',      group: 'Layout',      min: 8,      max: 4000,  step: 10    },
+  { key: 'layerStrength',     label: 'Layer Strength',     group: 'Layout',      min: 0.0,    max: 5.0,   step: 0.01  },
+  { key: 'layerExponent',     label: 'Layer Exponent',     group: 'Layout',      min: 0.1,    max: 3.0,   step: 0.1   },
+  { key: 'clusterStrength',   label: 'Cluster Strength',   group: 'Layout',      min: 0.0,    max: 5.0,   step: 0.01  },
+  { key: 'centerStrength',    label: 'Centering Strength', group: 'Centering',   min: 0.0,    max: 0.5,   step: 0.005 },
+  { key: 'velocityDecay',     label: 'Velocity Decay',     group: 'Damping',     min: 0.005,  max: 0.95,  step: 0.005 },
 ] as const;
 
 // Set of valid config keys for fast membership checks.
@@ -54,24 +58,24 @@ const VALID_KEYS: ReadonlySet<string> = new Set<PhysicsParamKey>(
 // ---------------------------------------------------------------------------
 
 /**
- * Return the default physics config for a graph of the given size.
+ * Return the default physics config.
  *
- * `chargeStrength` and `layerSpacing` vary with node count (threshold: 8).
- * All other values are fixed.
+ * Tuned for a balanced layout across graph sizes.
  */
-export function getDefaults(nodeCount: number): PhysicsConfig {
-  const large = nodeCount > 8;
+export function getDefaults(_nodeCount?: number): PhysicsConfig {
   return {
-    chargeStrength:    large ? -600 : -350,
-    chargeDistanceMax: 600,
-    linkStrength:      0.7,
-    minEdgeGap:        80,
-    collidePadding:    16,
-    collideStrength:   0.9,
-    layerSpacing:      large ? 220 : 180,
-    layerStrength:     0.12,
-    clusterStrength:   0.15,
-    velocityDecay:     0.45,
+    chargeStrength:    -1200,
+    chargeDistanceMax: 1500,
+    linkStrength:      0.05,
+    minEdgeGap:        200,
+    collidePadding:    40,
+    collideStrength:   1.00,
+    layerSpacing:      400,
+    layerStrength:     0.50,
+    layerExponent:     1.0,
+    clusterStrength:   0.50,
+    centerStrength:    0.02,
+    velocityDecay:     0.25,
   };
 }
 
