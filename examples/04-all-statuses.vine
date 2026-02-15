@@ -1,0 +1,19 @@
+[done] Completed Step (complete)
+This task is fully finished.
+
+[wip] Work In Progress (started)
+Actively being worked on right now.
+-> done
+
+[planned] Planned Step (notstarted)
+Ready to start once the previous step finishes.
+-> wip
+
+[thinking] Still Planning (planning)
+Requirements are being gathered — not ready to build yet.
+-> wip
+
+[stuck] Blocked Step (blocked)
+Waiting on an external dependency to unblock.
+-> planned
+-> thinking

@@ -30,6 +30,8 @@ vi.mock('../../src/lib/sound.js', () => ({
   initAudio: vi.fn(),
   isMuted: vi.fn(() => false),
   setMuted: vi.fn(),
+  getVolume: vi.fn(() => 0.3),
+  setVolume: vi.fn(),
 }));
 
 // Mock createSimulation to avoid d3-force/d3-timer global state issues in jsdom.
@@ -110,16 +112,16 @@ describe('GraphView', () => {
   it('renders correct number of node groups', async () => {
     const { container } = render(GraphView, { props: { graph: simpleGraph() } });
     await vi.advanceTimersByTimeAsync(500);
-    // simpleGraph has 3 tasks → 3 GraphNode components → 2 circles each = 6
+    // simpleGraph has 3 tasks → 3 GraphNode components → 3 circles each + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 13
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(6);
+    expect(circles.length).toBe(13);
   });
 
   it('renders correct number of edge paths', async () => {
     const { container } = render(GraphView, { props: { graph: simpleGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     // simpleGraph: mid→leaf, root→mid = 2 edges
-    const edgePaths = container.querySelectorAll('path.anim-edge-flow');
+    const edgePaths = container.querySelectorAll('path[d*="Q"]');
     expect(edgePaths.length).toBe(2);
   });
 
@@ -140,7 +142,7 @@ describe('GraphView', () => {
     const { container } = render(GraphView, { props: { graph: singleTaskGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(2); // 1 node × 2 circles
+    expect(circles.length).toBe(7); // 1 node × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle
     const edgePaths = container.querySelectorAll('path.anim-edge-flow');
     expect(edgePaths.length).toBe(0);
   });
@@ -149,8 +151,8 @@ describe('GraphView', () => {
     const { container } = render(GraphView, { props: { graph: diamondGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(8); // 4 nodes × 2 circles
-    const edgePaths = container.querySelectorAll('path.anim-edge-flow');
+    expect(circles.length).toBe(16); // 4 nodes × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle
+    const edgePaths = container.querySelectorAll('path[d*="Q"]');
     expect(edgePaths.length).toBe(4);
   });
 });

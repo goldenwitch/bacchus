@@ -12,6 +12,9 @@ let muted = false;
 // ---------------------------------------------------------------------------
 
 const MUTE_KEY = 'bacchus-ui-muted';
+const VOLUME_KEY = 'bacchus-ui-volume';
+
+let volume = 0.3; // default volume level (0–1)
 
 function loadMuteState(): boolean {
   try {
@@ -19,6 +22,19 @@ function loadMuteState(): boolean {
   } catch {
     return false;
   }
+}
+
+function loadVolumeState(): number {
+  try {
+    const stored = localStorage.getItem(VOLUME_KEY);
+    if (stored !== null) {
+      const val = parseFloat(stored);
+      if (!Number.isNaN(val) && val >= 0 && val <= 1) return val;
+    }
+  } catch {
+    // ignore
+  }
+  return 0.3;
 }
 
 export function setMuted(value: boolean): void {
@@ -29,12 +45,33 @@ export function setMuted(value: boolean): void {
     // localStorage unavailable – ignore
   }
   if (masterGain) {
-    masterGain.gain.value = muted ? 0 : 0.3;
+    masterGain.gain.value = muted ? 0 : volume;
   }
 }
 
 export function isMuted(): boolean {
   return muted;
+}
+
+export function setVolume(level: number): void {
+  volume = Math.max(0, Math.min(1, level));
+  try {
+    localStorage.setItem(VOLUME_KEY, String(volume));
+  } catch {
+    // localStorage unavailable – ignore
+  }
+  if (volume === 0) {
+    setMuted(true);
+  } else {
+    if (muted) setMuted(false);
+    if (masterGain) {
+      masterGain.gain.value = volume;
+    }
+  }
+}
+
+export function getVolume(): number {
+  return volume;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,9 +97,10 @@ export function initAudio(): void {
     masterGain = ctx.createGain();
     masterGain.connect(ctx.destination);
 
-    // Read persisted mute state
+    // Read persisted state
     muted = loadMuteState();
-    masterGain.gain.value = muted ? 0 : 0.3;
+    volume = loadVolumeState();
+    masterGain.gain.value = muted ? 0 : volume;
 
     // Pre-generate white noise buffer
     noiseBuffer = createNoiseBuffer(ctx);

@@ -5,6 +5,8 @@ import { tick } from 'svelte';
 vi.mock('../../src/lib/sound.js', () => ({
   isMuted: vi.fn(() => false),
   setMuted: vi.fn(),
+  getVolume: vi.fn(() => 0.3),
+  setVolume: vi.fn(),
   initAudio: vi.fn(),
   playPop: vi.fn(),
   playHover: vi.fn(),

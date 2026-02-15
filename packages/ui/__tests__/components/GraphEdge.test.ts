@@ -37,7 +37,7 @@ describe('GraphEdge', () => {
 
   it('normal opacity is 0.6', () => {
     const { container } = render(GraphEdge, { props: defaultProps() });
-    const path = container.querySelector('path.anim-edge-flow');
+    const path = container.querySelector('path[d*="Q"]');
     expect(path).not.toBeNull();
     expect(path!.getAttribute('opacity')).toBe('0.6');
   });
@@ -55,7 +55,7 @@ describe('GraphEdge', () => {
     const { container } = render(GraphEdge, {
       props: defaultProps({ dimmed: true }),
     });
-    const path = container.querySelector('path.anim-edge-flow');
+    const path = container.querySelector('path[d*="Q"]');
     expect(path).not.toBeNull();
     expect(path!.getAttribute('opacity')).toBe('0.15');
   });
@@ -64,29 +64,35 @@ describe('GraphEdge', () => {
     const { container } = render(GraphEdge, {
       props: defaultProps({ visible: false }),
     });
-    const path = container.querySelector('path.anim-edge-flow');
+    const path = container.querySelector('path[d*="Q"]');
     expect(path).not.toBeNull();
     expect(path!.getAttribute('opacity')).toBe('0');
   });
 
-  it('has edge-flow animation class', () => {
-    const { container } = render(GraphEdge, { props: defaultProps() });
+  it('has edge-flow animation class when highlighted', () => {
+    const { container } = render(GraphEdge, { props: defaultProps({ highlighted: true }) });
     const path = container.querySelector('.anim-edge-flow');
     expect(path).not.toBeNull();
+  });
+
+  it('does not have edge-flow animation class when not highlighted', () => {
+    const { container } = render(GraphEdge, { props: defaultProps() });
+    const path = container.querySelector('.anim-edge-flow');
+    expect(path).toBeNull();
   });
 
   it('color prop controls stroke', () => {
     const { container } = render(GraphEdge, {
       props: defaultProps({ color: '#ff0000' }),
     });
-    const path = container.querySelector('path.anim-edge-flow');
+    const path = container.querySelector('path[d*="Q"]');
     expect(path).not.toBeNull();
     expect(path!.getAttribute('stroke')).toBe('#ff0000');
   });
 
   it('path has transition styles', () => {
     const { container } = render(GraphEdge, { props: defaultProps() });
-    const path = container.querySelector('path.anim-edge-flow') as SVGElement;
+    const path = container.querySelector('path[d*="Q"]') as SVGElement;
     expect(path).not.toBeNull();
     const style = path.getAttribute('style') ?? '';
     expect(style).toContain('transition');

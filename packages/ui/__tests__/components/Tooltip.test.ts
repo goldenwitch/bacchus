@@ -36,14 +36,14 @@ describe('Tooltip', () => {
     expect(statusLine).toHaveTextContent('🔨 Started');
   });
 
-  it('truncates description at 80 characters with "…"', async () => {
+  it('renders full description text (CSS handles truncation)', async () => {
     const longDesc = 'A'.repeat(100);
     render(Tooltip, {
       props: { task: makeTask({ description: longDesc }), x: 0, y: 0 },
     });
     await tick();
     const descLine = document.querySelector('.desc-line')!;
-    expect(descLine.textContent).toBe('A'.repeat(80) + '…');
+    expect(descLine.textContent).toBe(longDesc);
   });
 
   it('does not truncate description ≤80 characters', async () => {
@@ -68,7 +68,7 @@ describe('Tooltip', () => {
     const statusExpected: Array<{ status: Task['status']; emoji: string; label: string }> = [
       { status: 'complete', emoji: '🌿', label: 'Complete' },
       { status: 'started', emoji: '🔨', label: 'Started' },
-      { status: 'notstarted', emoji: '📋', label: 'Notstarted' },
+      { status: 'notstarted', emoji: '📋', label: 'Not Started' },
       { status: 'planning', emoji: '💭', label: 'Planning' },
       { status: 'blocked', emoji: '🚧', label: 'Blocked' },
     ];

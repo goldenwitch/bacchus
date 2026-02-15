@@ -31,3 +31,11 @@ export interface ViewportTransform {
   y: number;
   k: number;
 }
+
+/**
+ * Compute the display radius for a task bubble.
+ * Shared by GraphNode.svelte and layout.ts to keep sizing consistent.
+ */
+export function computeNodeRadius(nameLength: number): number {
+  return Math.min(60, Math.max(40, 20 + nameLength * 2.5));
+}

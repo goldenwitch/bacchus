@@ -12,43 +12,84 @@ export interface StatusInfo {
   emoji: string;
   /** CSS class name applied to the node group */
   cssClass: string;
+  /** Human-friendly display label */
+  label: string;
+  /** CSS custom property name for the primary color */
+  cssColorVar: string;
+  /** CSS custom property name for the dark variant */
+  cssDarkColorVar: string;
 }
 
 /**
  * Maps every Status value to its visual representation.
+ * Default hex values match the :root (dark theme) CSS custom properties.
+ * Call refreshStatusColors() after theme changes to sync from CSS.
  */
 export const STATUS_MAP: Record<Status, StatusInfo> = {
   complete: {
     color: '#4ade80',
-    darkColor: '#38b266',
+    darkColor: '#2d8f53',
     emoji: '🌿',
     cssClass: 'status-complete',
+    label: 'Complete',
+    cssColorVar: '--color-complete',
+    cssDarkColorVar: '--color-complete-dark',
   },
   started: {
     color: '#facc15',
-    darkColor: '#c8a311',
+    darkColor: '#b8930e',
     emoji: '🔨',
     cssClass: 'status-started',
+    label: 'Started',
+    cssColorVar: '--color-started',
+    cssDarkColorVar: '--color-started-dark',
   },
   notstarted: {
     color: '#94a3b8',
-    darkColor: '#768293',
+    darkColor: '#556270',
     emoji: '📋',
     cssClass: 'status-notstarted',
+    label: 'Not Started',
+    cssColorVar: '--color-notstarted',
+    cssDarkColorVar: '--color-notstarted-dark',
   },
   planning: {
     color: '#a78bfa',
     darkColor: '#856fc8',
     emoji: '💭',
     cssClass: 'status-planning',
+    label: 'Planning',
+    cssColorVar: '--color-planning',
+    cssDarkColorVar: '--color-planning-dark',
   },
   blocked: {
     color: '#f87171',
     darkColor: '#c65a5a',
     emoji: '🚧',
     cssClass: 'status-blocked',
+    label: 'Blocked',
+    cssColorVar: '--color-blocked',
+    cssDarkColorVar: '--color-blocked-dark',
   },
 };
+
+/** Read a CSS custom property value from the document root. */
+function getCssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/**
+ * Re-read status colors from CSS custom properties.
+ * Call after changing the data-theme attribute on <html>.
+ */
+export function refreshStatusColors(): void {
+  for (const entry of Object.values(STATUS_MAP)) {
+    const color = getCssVar(entry.cssColorVar);
+    const darkColor = getCssVar(entry.cssDarkColorVar);
+    if (color) entry.color = color;
+    if (darkColor) entry.darkColor = darkColor;
+  }
+}
 
 /** Get the primary color for a status. */
 export function getStatusColor(status: Status): string {

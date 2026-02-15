@@ -96,7 +96,7 @@ describe('Sidebar', () => {
     const { container } = render(Sidebar, {
       props: { task, graph: makeGraph([task]) },
     });
-    expect(container.querySelector('.decisions-label')).toBeNull();
+    expect(container.querySelector('.decisions')).toBeNull();
   });
 
   it('renders id watermark', () => {
@@ -106,7 +106,7 @@ describe('Sidebar', () => {
     });
     const watermark = container.querySelector('.watermark');
     expect(watermark).not.toBeNull();
-    expect(watermark!.textContent).toBe('unique-id-42');
+    expect(watermark!.textContent).toContain('unique-id-42');
   });
 
   it('click on sidebar does not propagate', async () => {

@@ -7,7 +7,9 @@
     highlighted = false,
     dimmed = false,
     visible = true,
-    color = '#475569',
+    color = 'var(--color-edge)',
+    sourceId = '',
+    targetId = '',
   }: {
     sourceX: number;
     sourceY: number;
@@ -17,23 +19,32 @@
     dimmed?: boolean;
     visible?: boolean;
     color?: string;
+    sourceId?: string;
+    targetId?: string;
   } = $props();
 
   const opacity = $derived(visible ? (highlighted ? 1.0 : dimmed ? 0.15 : 0.6) : 0);
 
-  // Unique marker id per edge instance
-  const markerId = $derived(`arrow-${sourceX}-${sourceY}-${targetX}-${targetY}`);
+  // Stable marker id per edge instance using source/target IDs
+  const markerId = $derived(`arrow-${sourceId || 'src'}-${targetId || 'tgt'}`);
 
   // Compute a perpendicular offset for the quadratic Bézier control point
+  // Vary offset based on edge source+target ID hash to spread overlapping edges
+  const offset = $derived(
+    sourceId && targetId
+      ? ((sourceId.charCodeAt(0) + targetId.charCodeAt(0)) % 3) * 10 + 25
+      : 30
+  );
+
   const path = $derived.by(() => {
     const mx = (sourceX + targetX) / 2;
     const my = (sourceY + targetY) / 2;
     const dx = targetX - sourceX;
     const dy = targetY - sourceY;
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    // Perpendicular direction, offset ~30px
-    const px = -dy / len * 30;
-    const py = dx / len * 30;
+    // Perpendicular direction
+    const px = -dy / len * offset;
+    const py = dx / len * offset;
     const cx = mx + px;
     const cy = my + py;
     return `M ${sourceX} ${sourceY} Q ${cx} ${cy} ${targetX} ${targetY}`;
@@ -43,14 +54,14 @@
 <defs>
   <marker
     id={markerId}
-    viewBox="0 0 10 6"
+    viewBox="0 0 12 8"
     refX="10"
-    refY="3"
-    markerWidth="8"
-    markerHeight="6"
+    refY="4"
+    markerWidth="10"
+    markerHeight="8"
     orient="auto-start-reverse"
   >
-    <path d="M 0 0 L 10 3 L 0 6 z" fill={color} />
+    <path d="M 0 0 L 12 4 L 0 8 z" fill={color} />
   </marker>
 </defs>
 
@@ -58,10 +69,10 @@
   d={path}
   fill="none"
   stroke={color}
-  stroke-width="1.5"
+  stroke-width="2"
   marker-end="url(#{markerId})"
   opacity={opacity}
-  stroke-dasharray="4 6"
-  class="anim-edge-flow"
+  stroke-dasharray={highlighted ? '8 4' : dimmed ? '4 6' : 'none'}
+  class={highlighted ? 'anim-edge-flow' : ''}
   style="transition: opacity 400ms, stroke 400ms;"
 />

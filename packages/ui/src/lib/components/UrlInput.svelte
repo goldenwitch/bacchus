@@ -3,6 +3,12 @@
   let url = $state('');
   let loading = $state(false);
 
+  // Responsive placeholder — shorter on narrow viewports
+  const isNarrow = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 480px)').matches
+    : false;
+  const placeholder = isNarrow ? 'Paste URL…' : 'https://example.com/project.vine';
+
   async function loadUrl() {
     if (!url.trim()) return;
     loading = true;
@@ -30,11 +36,12 @@
   <input
     type="text"
     bind:value={url}
-    placeholder="https://example.com/project.vine"
+    placeholder={placeholder}
     onkeydown={handleKeydown}
     disabled={loading}
   />
   <button onclick={loadUrl} disabled={loading || !url.trim()}>
+    {#if loading}<span class="spinner"></span>{/if}
     {loading ? 'Loading…' : 'Load'}
   </button>
 </div>
@@ -48,21 +55,21 @@
   input {
     flex: 1;
     padding: 10px 14px;
-    border: 1px solid #334155;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    background: #1e293b;
-    color: #e2e8f0;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
     font-size: 0.9rem;
     outline: none;
     transition: border-color 150ms;
   }
 
   input::placeholder {
-    color: #64748b;
+    color: var(--text-dimmed);
   }
 
   input:focus {
-    border-color: #4ade80;
+    border-color: var(--accent-green);
   }
 
   input:disabled {
@@ -73,8 +80,8 @@
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    background: #4ade80;
-    color: #0f172a;
+    background: var(--accent-green);
+    color: var(--accent-green-dark);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -87,7 +94,23 @@
   }
 
   button:disabled {
-    opacity: 0.4;
+    background: var(--disabled-bg);
+    color: var(--text-muted);
+    opacity: 0.7;
     cursor: not-allowed;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--color-spinner-border);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 </style>

@@ -17,7 +17,29 @@ dist/
 # Test coverage
 coverage/
 
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Playwright test output
+test-results/
+playwright-report/
+
+# Vite cache
+.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Logs
+*.log
+
 # Editor
 *.swp
 *.swo
 .DS_Store
+Thumbs.db
+*.njsproj
+*.sln
+*.suo
+.idea/
+.vscode/

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '@bacchus/core';
-import { computeDepths, computeNodeRadius, createSimulation } from '../src/lib/layout.js';
+import { computeDepths, computeNodeRadius, createSimulation, computeFocusBandPositions } from '../src/lib/layout.js';
 import type { SimNode, SimLink } from '../src/lib/types.js';
 
 const VINE_SOURCE = `
@@ -47,23 +47,21 @@ describe('computeDepths', () => {
 });
 
 describe('computeNodeRadius', () => {
-  it('returns a value between 30 and 60 for various shortName lengths', () => {
+  it('returns a value between 40 and 60 for various shortName lengths', () => {
     for (const id of graph.order) {
       const task = graph.tasks.get(id)!;
-      const r = computeNodeRadius(task);
-      expect(r).toBeGreaterThanOrEqual(30);
+      const r = computeNodeRadius(task.shortName.length);
+      expect(r).toBeGreaterThanOrEqual(40);
       expect(r).toBeLessThanOrEqual(60);
     }
   });
 
-  it('clamps to minimum 30 for very short names', () => {
-    const task = { shortName: 'Hi' } as any;
-    expect(computeNodeRadius(task)).toBe(30);
+  it('clamps to minimum 40 for very short names', () => {
+    expect(computeNodeRadius(2)).toBe(40);
   });
 
   it('clamps to maximum 60 for very long names', () => {
-    const task = { shortName: 'This Is A Very Long Task Name Indeed' } as any;
-    expect(computeNodeRadius(task)).toBe(60);
+    expect(computeNodeRadius(35)).toBe(60);
   });
 });
 
@@ -79,17 +77,19 @@ describe('createSimulation', () => {
     }
   });
 
-  it('root node is near center after settling', () => {
+  it('root node is near top-center after settling', () => {
     const { nodes, links } = buildSimData();
     const sim = createSimulation(nodes, links, 800, 600);
     for (let i = 0; i < 300; i++) sim.tick();
 
     const root = nodes.find((n) => n.id === 'root')!;
-    // Root should be within 100px of viewport center (400, 300)
+    // Root should be near horizontal center (x ≈ 400) and near the top
+    // (y ≈ height * 0.1 = 60) in the top-to-bottom layered layout.
     expect(root.x!).toBeGreaterThan(400 - 100);
     expect(root.x!).toBeLessThan(400 + 100);
-    expect(root.y!).toBeGreaterThan(300 - 100);
-    expect(root.y!).toBeLessThan(300 + 100);
+    const topMargin = 600 * 0.1; // 60
+    expect(root.y!).toBeGreaterThan(topMargin - 50);
+    expect(root.y!).toBeLessThan(topMargin + 100);
   });
 
   it('no overlapping nodes after settling', () => {
@@ -106,9 +106,127 @@ describe('createSimulation', () => {
         const dy = a.y! - b.y!;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const minDist =
-          computeNodeRadius(a.task) + computeNodeRadius(b.task) - epsilon;
+          computeNodeRadius(a.task.shortName.length) + computeNodeRadius(b.task.shortName.length) - epsilon;
         expect(dist).toBeGreaterThan(minDist);
       }
+    }
+  });
+
+  it('edges act as rigid rods — no link shorter than sum of endpoint radii', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    // After the link force resolves references, source/target become SimNode objects.
+    for (const link of links) {
+      const s = link.source as unknown as SimNode;
+      const t = link.target as unknown as SimNode;
+      const dx = s.x! - t.x!;
+      const dy = s.y! - t.y!;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const minDist =
+        computeNodeRadius(s.task.shortName.length) +
+        computeNodeRadius(t.task.shortName.length);
+      expect(dist).toBeGreaterThan(minDist);
+    }
+  });
+});
+
+describe('computeFocusBandPositions', () => {
+  const WIDTH = 800;
+  const HEIGHT = 600;
+
+  const nodes = [
+    { id: 'root', x: 400, y: 300 },
+    { id: 'mid', x: 350, y: 350 },
+    { id: 'leaf-a', x: 200, y: 400 },
+    { id: 'leaf-b', x: 500, y: 400 },
+  ];
+
+  it('returns a BandPosition for every node', () => {
+    const result = computeFocusBandPositions(
+      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+    );
+    expect(result).toHaveLength(4);
+    const ids = result.map((r) => r.id);
+    expect(ids).toContain('root');
+    expect(ids).toContain('mid');
+    expect(ids).toContain('leaf-a');
+    expect(ids).toContain('leaf-b');
+  });
+
+  it('places focused node in the "focused" band at vertical center', () => {
+    const result = computeFocusBandPositions(
+      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+    );
+    const focused = result.find((r) => r.id === 'mid')!;
+    expect(focused.band).toBe('focused');
+    expect(focused.y).toBe(HEIGHT * 0.5);
+    expect(focused.x).toBe(WIDTH / 2);
+  });
+
+  it('places dependants in the "dependants" band at top', () => {
+    const result = computeFocusBandPositions(
+      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+    );
+    const dep = result.find((r) => r.id === 'root')!;
+    expect(dep.band).toBe('dependants');
+    expect(dep.y).toBe(HEIGHT * 0.25);
+  });
+
+  it('places dependencies in the "dependencies" band at bottom', () => {
+    const result = computeFocusBandPositions(
+      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+    );
+    const depA = result.find((r) => r.id === 'leaf-a')!;
+    const depB = result.find((r) => r.id === 'leaf-b')!;
+    expect(depA.band).toBe('dependencies');
+    expect(depB.band).toBe('dependencies');
+    expect(depA.y).toBe(HEIGHT * 0.75);
+    expect(depB.y).toBe(HEIGHT * 0.75);
+  });
+
+  it('evenly spaces multiple dependencies in the bottom band', () => {
+    const result = computeFocusBandPositions(
+      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+    );
+    const depA = result.find((r) => r.id === 'leaf-a')!;
+    const depB = result.find((r) => r.id === 'leaf-b')!;
+    // Two items centered around WIDTH/2, so they should be symmetric
+    const centerX = WIDTH / 2;
+    const offset = Math.abs(depA.x - centerX);
+    expect(Math.abs(depB.x - centerX)).toBeCloseTo(offset, 1);
+  });
+
+  it('assigns "periphery" band to unconnected nodes', () => {
+    // Focus on 'root' — only 'mid' is a dependency; leaf-a and leaf-b are peripheral
+    const result = computeFocusBandPositions(
+      'root', nodes, [], ['mid'], WIDTH, HEIGHT,
+    );
+    const peripherals = result.filter((r) => r.band === 'periphery');
+    expect(peripherals).toHaveLength(2);
+    const peripheralIds = peripherals.map((r) => r.id).sort();
+    expect(peripheralIds).toEqual(['leaf-a', 'leaf-b']);
+  });
+
+  it('handles node with no dependants or dependencies', () => {
+    const result = computeFocusBandPositions(
+      'leaf-a', nodes, [], [], WIDTH, HEIGHT,
+    );
+    const focused = result.find((r) => r.id === 'leaf-a')!;
+    expect(focused.band).toBe('focused');
+    // All others are peripheral
+    const peripherals = result.filter((r) => r.band === 'periphery');
+    expect(peripherals).toHaveLength(3);
+  });
+
+  it('all positions have finite x and y', () => {
+    const result = computeFocusBandPositions(
+      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+    );
+    for (const pos of result) {
+      expect(Number.isFinite(pos.x)).toBe(true);
+      expect(Number.isFinite(pos.y)).toBe(true);
     }
   });
 });

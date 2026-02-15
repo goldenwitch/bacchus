@@ -98,7 +98,7 @@ describe('GraphNode', () => {
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const texts = container.querySelectorAll('text');
     const label = Array.from(texts).find((t) =>
-      t.textContent?.includes('Deploy Service'),
+      t.textContent?.includes('Deploy') && t.textContent?.includes('Service'),
     );
     expect(label).toBeDefined();
   });
@@ -107,17 +107,16 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { shortName: 'Hi' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    for (const circle of circles) {
-      const r = Number(circle.getAttribute('r'));
-      // Outer circle has r = radius + 6, so max would be 66
-      // Inner circle r is between 30 and 60
-      expect(r).toBeGreaterThanOrEqual(30);
-      expect(r).toBeLessThanOrEqual(66);
-    }
-    // Specifically check the inner circle (second) is between 30 and 60
+    // First two circles are outer glow and inner fill; third is emoji badge (r=12)
+    const outerR = Number(circles[0].getAttribute('r'));
+    expect(outerR).toBeGreaterThanOrEqual(36); // radius + 6
+    expect(outerR).toBeLessThanOrEqual(66);
     const innerR = Number(circles[1].getAttribute('r'));
     expect(innerR).toBeGreaterThanOrEqual(30);
     expect(innerR).toBeLessThanOrEqual(60);
+    // Emoji badge background circle
+    const badgeR = Number(circles[2].getAttribute('r'));
+    expect(badgeR).toBe(12);
   });
 
   it('click calls onfocus', async () => {
@@ -142,21 +141,21 @@ describe('GraphNode', () => {
     const gElement = container.querySelector('g');
     expect(gElement).not.toBeNull();
 
-    await fireEvent.mouseEnter(gElement!);
+    await fireEvent.pointerEnter(gElement!);
     expect(onhoverstart).toHaveBeenCalledWith(node.id, expect.any(Object));
 
-    await fireEvent.mouseLeave(gElement!);
+    await fireEvent.pointerLeave(gElement!);
     expect(onhoverend).toHaveBeenCalled();
   });
 
-  it('dimmed node has opacity 0.3', () => {
+  it('dimmed node has opacity 0.45', () => {
     const node = makeSimNode();
     const { container } = render(GraphNode, {
       props: defaultProps({ node, dimmed: true }),
     });
     const gElement = container.querySelector('g');
     expect(gElement).not.toBeNull();
-    expect(gElement!.getAttribute('opacity')).toBe('0.3');
+    expect(gElement!.getAttribute('opacity')).toBe('0.45');
   });
 
   it('focused node has full opacity', () => {
@@ -203,10 +202,10 @@ describe('GraphNode', () => {
     // The inner g should have transform with scale(0)
     const groups = container.querySelectorAll('g');
     const scaleGroup = Array.from(groups).find((g) => {
-      const style = g.getAttribute('style') ?? '';
-      return style.includes('scale');
+      const transform = g.getAttribute('transform') ?? '';
+      return transform.includes('scale');
     });
     expect(scaleGroup).toBeDefined();
-    expect(scaleGroup!.getAttribute('style')).toContain('scale(0)');
+    expect(scaleGroup!.getAttribute('transform')).toContain('scale(0)');
   });
 });

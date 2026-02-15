@@ -2,12 +2,16 @@
   let { onload }: { onload: (text: string) => void } = $props();
   let dragover = $state(false);
   let fileInput: HTMLInputElement | undefined = $state(undefined);
+  let success = $state(false);
 
   function handleFile(file: File) {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        onload(reader.result);
+        success = true;
+        setTimeout(() => {
+          onload(reader.result as string);
+        }, 500);
       }
     };
     reader.readAsText(file);
@@ -39,26 +43,32 @@
 <div
   class="dropzone"
   class:dragover
+  class:success
   ondrop={handleDrop}
   ondragover={handleDragOver}
   ondragleave={() => { dragover = false; }}
   role="button"
   tabindex="0"
 >
-  <p>Drop a <code>.vine</code> file here</p>
-  <span class="separator">or</span>
-  <button onclick={handleBrowse}>Browse</button>
-  <input bind:this={fileInput} type="file" accept=".vine,.txt" onchange={handleFileChange} hidden />
+  {#if success}
+    <span class="check-icon">✓</span>
+    <p class="success-text">File loaded!</p>
+  {:else}
+    <p>Drop a <code>.vine</code> file here</p>
+    <span class="separator">or</span>
+    <button onclick={handleBrowse}>Browse</button>
+    <input bind:this={fileInput} type="file" accept=".vine,.txt" onchange={handleFileChange} hidden />
+  {/if}
 </div>
 
 <style>
   .dropzone {
-    border: 2px dashed #475569;
+    border: 2px dashed var(--disabled-bg);
     border-radius: 12px;
     padding: 40px 32px;
     text-align: center;
     transition: border-color 200ms, background 200ms;
-    color: #94a3b8;
+    color: var(--text-muted);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -66,8 +76,30 @@
   }
 
   .dropzone.dragover {
-    border-color: #4ade80;
-    background: rgba(74, 222, 128, 0.05);
+    border-color: var(--accent-green);
+    background: var(--color-accent-subtle);
+  }
+
+  .dropzone.success {
+    border-color: var(--accent-green);
+    background: var(--color-accent-hover);
+  }
+
+  .check-icon {
+    font-size: 2.5rem;
+    color: var(--accent-green);
+    animation: pop-in 300ms ease-out;
+  }
+
+  .success-text {
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+
+  @keyframes pop-in {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.3); }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   p {
@@ -76,8 +108,8 @@
   }
 
   code {
-    color: #e2e8f0;
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    background: var(--color-code-bg);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.9em;
@@ -90,17 +122,17 @@
 
   button {
     padding: 8px 24px;
-    border: 1px solid #4ade80;
+    border: 1px solid var(--accent-green);
     border-radius: 8px;
     background: transparent;
-    color: #4ade80;
+    color: var(--accent-green);
     font-size: 0.9rem;
     cursor: pointer;
     transition: background 150ms, color 150ms;
   }
 
   button:hover {
-    background: #4ade80;
-    color: #0f172a;
+    background: var(--accent-green);
+    color: var(--accent-green-dark);
   }
 </style>

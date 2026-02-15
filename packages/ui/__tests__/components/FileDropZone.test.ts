@@ -8,10 +8,12 @@ describe('FileDropZone', () => {
 
   beforeEach(() => {
     onload = vi.fn();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -62,6 +64,7 @@ describe('FileDropZone', () => {
 
     await fireEvent.drop(dropzone, { dataTransfer });
     await tick();
+    await vi.advanceTimersByTimeAsync(600);
 
     expect(onload).toHaveBeenCalledWith('file content here');
   });

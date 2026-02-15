@@ -1,0 +1,18 @@
+[research] Research Options (complete)
+Gather requirements and evaluate alternatives.
+
+[design] Create Design Doc (complete)
+Write up the chosen approach with diagrams.
+-> research
+
+[implement] Implement Feature (started)
+Build the feature based on the design.
+-> design
+
+[review] Code Review (notstarted)
+Peer review of the implementation.
+-> implement
+
+[ship] Ship It (notstarted)
+Merge and deploy to production.
+-> review
