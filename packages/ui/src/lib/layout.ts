@@ -80,12 +80,9 @@ export function buildDependantsMap(links: SimLink[]): Map<string, string[]> {
 export function forceCluster(dependantsMap: Map<string, string[]>, strength: number) {
   let nodes: SimNode[] = [];
   let _strength = strength;
+  let nodeById = new Map<string, SimNode>();
 
   function force(alpha: number) {
-    const nodeById = new Map<string, SimNode>();
-    for (const n of nodes) {
-      nodeById.set(n.id, n);
-    }
 
     for (const node of nodes) {
       const depIds = dependantsMap.get(node.id);
@@ -110,6 +107,10 @@ export function forceCluster(dependantsMap: Map<string, string[]>, strength: num
 
   force.initialize = function (n: SimNode[]) {
     nodes = n;
+    nodeById = new Map<string, SimNode>();
+    for (const nd of n) {
+      nodeById.set(nd.id, nd);
+    }
   };
 
   force.strength = function (s?: number) {
@@ -377,6 +378,16 @@ export function applyPhysicsConfig(
   const centerXForce = sim.force('centerX') as ReturnType<typeof forceX<SimNode>> | null;
   if (centerXForce) {
     centerXForce.x(cx).strength(config.centerStrength);
+  }
+
+  // Patch root positioning forces
+  const rootXForce = sim.force('rootX') as ReturnType<typeof forceX<SimNode>> | null;
+  if (rootXForce) {
+    rootXForce.x(cx);
+  }
+  const rootYForce = sim.force('rootY') as ReturnType<typeof forceY<SimNode>> | null;
+  if (rootYForce) {
+    rootYForce.y(height * 0.1);
   }
 
   // Reheat simulation so changes are immediately visible

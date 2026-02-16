@@ -67,20 +67,21 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { status: 'started' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // Outer glow circle is the first one
-    const outerCircle = circles[0];
+    // circles[0] is the clipPath circle in defs, outer glow is circles[1]
+    const outerCircle = circles[1];
     expect(outerCircle).toBeDefined();
     expect(outerCircle.getAttribute('stroke')).toBe(STATUS_MAP.started.color);
   });
 
-  it('renders inner fill circle with dark status color', () => {
+  it('renders inner fill circle with glass gradient', () => {
     const node = makeSimNode({ task: { status: 'started' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // Inner circle is the second one
-    const innerCircle = circles[1];
+    // circles[0]=clipPath, circles[1]=outer glow, circles[2]=inner fill
+    const innerCircle = circles[2];
     expect(innerCircle).toBeDefined();
-    expect(innerCircle.getAttribute('fill')).toBe(STATUS_MAP.started.darkColor);
+    const fill = innerCircle.getAttribute('fill') ?? '';
+    expect(fill).toContain('url(#glassGrad');
   });
 
   it('renders emoji badge for status', () => {
@@ -107,15 +108,14 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { shortName: 'Hi' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // First two circles are outer glow and inner fill; third is emoji badge (r=12)
-    const outerR = Number(circles[0].getAttribute('r'));
-    expect(outerR).toBeGreaterThanOrEqual(36); // radius + 6
+    // circles[0]=clipPath, circles[1]=outer glow, circles[2]=inner fill, circles[3]=inner shadow, circles[4]=emoji badge
+    const outerR = Number(circles[1].getAttribute('r'));
+    expect(outerR).toBeGreaterThanOrEqual(36);
     expect(outerR).toBeLessThanOrEqual(66);
-    const innerR = Number(circles[1].getAttribute('r'));
+    const innerR = Number(circles[2].getAttribute('r'));
     expect(innerR).toBeGreaterThanOrEqual(30);
     expect(innerR).toBeLessThanOrEqual(60);
-    // Emoji badge background circle
-    const badgeR = Number(circles[2].getAttribute('r'));
+    const badgeR = Number(circles[4].getAttribute('r'));
     expect(badgeR).toBe(12);
   });
 
@@ -172,7 +172,8 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { status: 'started' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    const outerCircle = circles[0];
+    // circles[1] is the outer glow ring
+    const outerCircle = circles[1];
     expect(outerCircle.classList.contains('anim-glow-pulse')).toBe(true);
   });
 
@@ -180,10 +181,33 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { status: 'complete' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    const innerCircle = circles[1];
+    // circles[2] is the inner fill circle
+    const innerCircle = circles[2];
     expect(innerCircle.classList.contains('anim-completion-shimmer')).toBe(
       true,
     );
+  });
+
+  it('renders radial gradient defs for glass effect', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const grad = container.querySelector('radialGradient');
+    expect(grad).not.toBeNull();
+    expect(grad!.id).toContain('glassGrad');
+    expect(grad!.querySelectorAll('stop').length).toBe(3);
+  });
+
+  it('renders crescent specular highlight', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    // New crescent highlight uses <path> with clip-path instead of <ellipse>
+    const crescentPaths = container.querySelectorAll('path[clip-path]');
+    expect(crescentPaths.length).toBeGreaterThanOrEqual(1);
+    const hasCrescentFill = Array.from(crescentPaths).some((p) => {
+      const fill = p.getAttribute('fill') ?? '';
+      return fill.includes('url(#crescentGrad') || fill === 'var(--color-glass-highlight)';
+    });
+    expect(hasCrescentFill).toBe(true);
   });
 
   it('all labels have bob animation', () => {

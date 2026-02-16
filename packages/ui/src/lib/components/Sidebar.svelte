@@ -122,6 +122,9 @@
     height: calc(100vh - 56px);
     max-height: calc(100vh - 56px);
     background: var(--sidebar-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-left: 1px solid var(--border-subtle);
     color: var(--text-secondary);
     padding: 24px;
     z-index: 100;

@@ -95,7 +95,7 @@
 
   button:disabled {
     background: var(--disabled-bg);
-    color: var(--text-muted);
+    color: var(--bg-primary);
     opacity: 0.7;
     cursor: not-allowed;
   }

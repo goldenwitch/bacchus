@@ -7,7 +7,7 @@
 </script>
 
 <div class="legend-container">
-  <button class="legend-toggle" onclick={() => { expanded = !expanded; }}>
+  <button class="legend-toggle" onclick={() => { expanded = !expanded; }} aria-expanded={expanded} aria-label="Toggle legend">
     <span class="legend-icon">ℹ️</span>
     <span class="legend-title">Legend</span>
     <span class="legend-chevron" class:legend-chevron-open={expanded}>▸</span>
@@ -93,6 +93,7 @@
     height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
+    border: 1px solid var(--border-subtle);
   }
   .legend-emoji {
     font-size: 0.9rem;

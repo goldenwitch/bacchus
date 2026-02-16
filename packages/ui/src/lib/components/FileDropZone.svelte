@@ -47,6 +47,7 @@
   ondrop={handleDrop}
   ondragover={handleDragOver}
   ondragleave={() => { dragover = false; }}
+  onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBrowse(); } }}
   role="button"
   tabindex="0"
 >
@@ -83,6 +84,11 @@
   .dropzone.success {
     border-color: var(--accent-green);
     background: var(--color-accent-hover);
+  }
+
+  .dropzone:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   .check-icon {

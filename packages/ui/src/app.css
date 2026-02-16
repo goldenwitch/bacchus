@@ -30,7 +30,7 @@
   /* Status dark variants (node fills) */
   --color-complete-dark: #2d8f53;
   --color-started-dark: #b8930e;
-  --color-notstarted-dark: #556270;
+  --color-notstarted-dark: #3d4a5c;
   --color-planning-dark: #856fc8;
   --color-blocked-dark: #c65a5a;
 
@@ -58,6 +58,15 @@
   --color-spinner-track: rgba(255, 255, 255, 0.05);
   --color-strata-line: rgba(148, 163, 184, 0.45);
 
+  /* Vine edge colors */
+  --color-vine: #6b4f6b;
+  --color-vine-leaf: #5a7a5a;
+
+  /* Glass node effects */
+  --color-glass-highlight: rgba(255, 255, 255, 0.28);
+  --color-glass-highlight-soft: rgba(255, 255, 255, 0.08);
+  --color-glass-inner-shadow: rgba(0, 0, 0, 0.35);
+
   color-scheme: dark;
 }
 
@@ -71,7 +80,7 @@
   --text-muted: #64748b;
   --text-dimmed: #94a3b8;
   --border-color: #cbd5e1;
-  --border-subtle: rgba(100, 116, 139, 0.2);
+  --border-subtle: rgba(100, 116, 139, 0.35);
   --accent-green: #16a34a;
   --accent-green-dark: #ffffff;
   --toolbar-bg: rgba(248, 250, 252, 0.85);
@@ -86,7 +95,7 @@
   /* Status dark variants (node fills) - lighter for light theme */
   --color-complete-dark: #4ade80;
   --color-started-dark: #eab308;
-  --color-notstarted-dark: #94a3b8;
+  --color-notstarted-dark: #b0bec5;
   --color-planning-dark: #a78bfa;
   --color-blocked-dark: #f87171;
 
@@ -99,6 +108,15 @@
   --color-text-shadow: rgba(0, 0, 0, 0.3);
   --color-tooltip-shadow: rgba(0, 0, 0, 0.2);
   --color-strata-line: rgba(71, 85, 105, 0.45);
+
+  /* Vine edge colors */
+  --color-vine: #2e8b57;
+  --color-vine-leaf: #3a7a3a;
+
+  /* Glass node effects */
+  --color-glass-highlight: rgba(255, 255, 255, 0.40);
+  --color-glass-highlight-soft: rgba(255, 255, 255, 0.12);
+  --color-glass-inner-shadow: rgba(0, 0, 0, 0.15);
 
   /* Error colors */
   --color-error: #ef4444;
@@ -138,6 +156,18 @@ body {
   color: var(--text-secondary);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* ── Status Classes ───────────────────────────────────── */
@@ -234,6 +264,16 @@ body {
   }
 }
 
+/* Gentle sway for vine leaf decorations */
+@keyframes vine-leaf-sway {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
 /* ── Animation Utility Classes ────────────────────────── */
 .anim-label-bob {
   /* animation removed — continuous translateY + will-change caused GPU-layer
@@ -252,6 +292,21 @@ body {
   animation: edge-flow 2s linear infinite;
 }
 
+.anim-vine-leaf-sway {
+  animation: vine-leaf-sway 4s ease-in-out infinite;
+  transform-origin: 0% 50%;
+}
+
+.anim-vine-tendril-sway {
+  animation: vine-tendril-sway 5s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+@keyframes vine-tendril-sway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
 .anim-error-shake {
   animation: error-shake 300ms ease-in-out;
 }
@@ -262,6 +317,8 @@ body {
   .anim-glow-pulse,
   .anim-completion-shimmer,
   .anim-edge-flow,
+  .anim-vine-leaf-sway,
+  .anim-vine-tendril-sway,
   .anim-error-shake {
     animation: none !important;
   }
