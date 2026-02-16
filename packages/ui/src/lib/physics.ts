@@ -64,16 +64,16 @@ const VALID_KEYS: ReadonlySet<string> = new Set<PhysicsParamKey>(
  */
 export function getDefaults(): PhysicsConfig {
   return {
-    chargeStrength:    -1200,
-    chargeDistanceMax: 1500,
-    linkStrength:      0.05,
-    minEdgeGap:        200,
+    chargeStrength:    -10,
+    chargeDistanceMax: 10,
+    linkStrength:      0.01,
+    minEdgeGap:        2,
     collidePadding:    40,
     collideStrength:   1.00,
-    layerSpacing:      400,
-    layerStrength:     0.50,
-    layerExponent:     1.0,
-    clusterStrength:   0.50,
+    layerSpacing:      118,
+    layerStrength:     5.00,
+    layerExponent:     0.9,
+    clusterStrength:   0.00,
     centerStrength:    0.02,
     velocityDecay:     0.25,
   };
@@ -85,6 +85,26 @@ export function getDefaults(): PhysicsConfig {
 
 const STORAGE_KEY = 'bacchus-physics';
 
+/** Default value for the strata-lines toggle. */
+export const DEFAULT_STRATA_LINES = true;
+
+/**
+ * Read the raw stored object from `localStorage`.
+ *
+ * Returns an empty object when nothing is stored or parsing fails.
+ */
+function readStoredObject(): Record<string, unknown> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw == null) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    return parsed as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Load user overrides previously saved to `localStorage`.
  *
@@ -92,21 +112,44 @@ const STORAGE_KEY = 'bacchus-physics';
  * values. Returns an empty object when nothing is stored or parsing fails.
  */
 export function loadOverrides(): Partial<PhysicsConfig> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw == null) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
-
-    const result: Partial<PhysicsConfig> = {};
-    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-      if (VALID_KEYS.has(k) && typeof v === 'number' && Number.isFinite(v)) {
-        (result as Record<string, number>)[k] = v;
-      }
+  const stored = readStoredObject();
+  const result: Partial<PhysicsConfig> = {};
+  for (const [k, v] of Object.entries(stored)) {
+    if (VALID_KEYS.has(k) && typeof v === 'number' && Number.isFinite(v)) {
+      (result as Record<string, number>)[k] = v;
     }
-    return result;
-  } catch {
-    return {};
+  }
+  return result;
+}
+
+/**
+ * Load the strata-lines preference from the same storage key.
+ *
+ * Returns `DEFAULT_STRATA_LINES` when nothing is stored.
+ */
+export function loadStrataOverride(): boolean {
+  const stored = readStoredObject();
+  if (typeof stored.showStrataLines === 'boolean') return stored.showStrataLines;
+  return DEFAULT_STRATA_LINES;
+}
+
+/**
+ * Persist the strata-lines preference alongside physics overrides.
+ *
+ * Only stores a non-default value; removes the key when it matches the default
+ * and no other data is present.
+ */
+export function saveStrataOverride(show: boolean): void {
+  const stored = readStoredObject();
+  if (show === DEFAULT_STRATA_LINES) {
+    delete stored.showStrataLines;
+  } else {
+    stored.showStrataLines = show;
+  }
+  if (Object.keys(stored).length === 0) {
+    localStorage.removeItem(STORAGE_KEY);
+  } else {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   }
 }
 
@@ -116,7 +159,8 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 /**
  * Persist user overrides to `localStorage` (debounced — 200 ms).
  *
- * If `overrides` is an empty object the stored key is removed instead.
+ * Preserves non-physics keys (e.g. `showStrataLines`) already stored under
+ * the same key.  If all data has been cleared the key is removed entirely.
  */
 export function saveOverrides(overrides: Partial<PhysicsConfig>): void {
   if (debounceTimer !== null) {
@@ -124,10 +168,17 @@ export function saveOverrides(overrides: Partial<PhysicsConfig>): void {
   }
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
-    if (Object.keys(overrides).length === 0) {
+    // Read existing stored data so non-physics keys are preserved.
+    const stored = readStoredObject();
+    const cleaned: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(stored)) {
+      if (!VALID_KEYS.has(k)) cleaned[k] = v;
+    }
+    Object.assign(cleaned, overrides);
+    if (Object.keys(cleaned).length === 0) {
       localStorage.removeItem(STORAGE_KEY);
     } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
     }
   }, 200);
 }

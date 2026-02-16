@@ -11,12 +11,12 @@ The following features are currently available:
 - **Force-Directed Layout with Physics Controls**: Adjustable physics simulation for graph positioning
 - **Focus Mode with Camera Framing**: Click a task to focus it, framing the parent, selected task, and dependencies on screen
 - **Sound Effects & Animations**: Tasks "pop" into existence with visual and audio feedback for a polished experience
+- **CLI Tool** (`@bacchus/cli`): Command-line interface for validating, viewing, listing, adding, and updating tasks in `.vine` files
 
 ## Planned
 
 High-priority features in active development:
 
-- **CLI Tool**: Command-line interface for pulling, creating, and updating tasks directly from `.vine` files
 - **Chat Planner**: Ability to edit and create task graphs through natural conversation
 
 ## Exploring

@@ -18,3 +18,23 @@ export {
   getDependants,
   getAncestors,
 } from './graph.js';
+
+// Mutations
+export {
+  addTask,
+  removeTask,
+  setStatus,
+  updateTask,
+  addDependency,
+  removeDependency,
+} from './mutations.js';
+
+// Search & Filter
+export type { GraphSummary } from './search.js';
+export {
+  filterByStatus,
+  searchTasks,
+  getLeaves,
+  getDescendants,
+  getSummary,
+} from './search.js';

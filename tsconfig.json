@@ -19,6 +19,6 @@
     "esModuleInterop": false,
     "isolatedModules": true
   },
-  "references": [{ "path": "packages/core" }, { "path": "packages/ui" }],
+  "references": [{ "path": "packages/core" }, { "path": "packages/ui" }, { "path": "packages/cli" }],
   "include": []
 }
