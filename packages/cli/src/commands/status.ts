@@ -15,7 +15,10 @@ export const statusCommand = new Command('status')
   .description('Update the status of a task')
   .argument('<file>', 'path to .vine file')
   .argument('<id>', 'task id')
-  .argument('<status>', `new status (${['complete', 'started', 'planning', 'notstarted', 'blocked'].join(', ')})`)
+  .argument(
+    '<status>',
+    `new status (${['complete', 'started', 'planning', 'notstarted', 'blocked'].join(', ')})`,
+  )
   .action((file: string, id: string, statusArg: string) => {
     const status = statusArg as Status;
     if (!VALID_STATUSES.includes(status)) {

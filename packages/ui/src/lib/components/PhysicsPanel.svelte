@@ -1,8 +1,19 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
-  import { PHYSICS_SLIDER_DEFS, type PhysicsConfig, type PhysicsParamKey } from '../physics.js';
+  import { SvelteSet } from 'svelte/reactivity';
+  import {
+    PHYSICS_SLIDER_DEFS,
+    type PhysicsConfig,
+    type PhysicsParamKey,
+  } from '../physics.js';
 
-  let { config, onchange, onreset, showStrataLines = false, ontogglestrata }: {
+  let {
+    config,
+    onchange,
+    onreset,
+    showStrataLines = false,
+    ontogglestrata,
+  }: {
     config: PhysicsConfig;
     onchange: (key: PhysicsParamKey, value: number) => void;
     onreset: () => void;
@@ -13,15 +24,22 @@
   let expanded = $state(false);
 
   const groups = $derived.by(() => {
-    const seen = new Set<string>();
+    const seen = new SvelteSet<string>();
     const result: string[] = [];
     for (const def of PHYSICS_SLIDER_DEFS) {
-      if (!seen.has(def.group)) { seen.add(def.group); result.push(def.group); }
+      if (!seen.has(def.group)) {
+        seen.add(def.group);
+        result.push(def.group);
+      }
     }
     return result;
   });
 
-  function formatValue(key: PhysicsParamKey, value: number, step: number): string {
+  function formatValue(
+    key: PhysicsParamKey,
+    value: number,
+    step: number,
+  ): string {
     const precision = step < 0.1 ? 2 : step < 1 ? 1 : 0;
     if (key === 'chargeStrength') {
       return '-' + Math.abs(value).toFixed(precision);
@@ -33,7 +51,9 @@
 <div class="physics-panel">
   <button
     class="physics-toggle"
-    onclick={() => { expanded = !expanded; }}
+    onclick={() => {
+      expanded = !expanded;
+    }}
     aria-expanded={expanded}
     aria-label="Toggle physics controls"
   >
@@ -44,13 +64,15 @@
 
   {#if expanded}
     <div class="physics-body" transition:slide={{ duration: 200 }}>
-      {#each groups as group}
+      {#each groups as group (group)}
         <div class="physics-group-header">{group}</div>
-        {#each PHYSICS_SLIDER_DEFS.filter(d => d.group === group) as def}
+        {#each PHYSICS_SLIDER_DEFS.filter((d) => d.group === group) as def (def.key)}
           <div class="physics-slider">
             <div class="physics-slider-row">
               <span class="physics-slider-label">{def.label}</span>
-              <span class="physics-slider-value">{formatValue(def.key, config[def.key], def.step)}</span>
+              <span class="physics-slider-value"
+                >{formatValue(def.key, config[def.key], def.step)}</span
+              >
             </div>
             <input
               type="range"
@@ -60,7 +82,11 @@
               step={def.step}
               value={config[def.key]}
               aria-label={def.label}
-              oninput={(e: Event) => onchange(def.key, parseFloat((e.currentTarget as HTMLInputElement).value))}
+              oninput={(e: Event) =>
+                onchange(
+                  def.key,
+                  parseFloat((e.currentTarget as HTMLInputElement).value),
+                )}
             />
           </div>
         {/each}
@@ -205,7 +231,7 @@
     cursor: pointer;
   }
 
-  .physics-checkbox input[type="checkbox"] {
+  .physics-checkbox input[type='checkbox'] {
     accent-color: var(--focus-ring);
     width: 14px;
     height: 14px;

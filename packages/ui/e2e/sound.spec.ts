@@ -1,20 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
-const fixturesDir = join(__dirname, 'fixtures');
-
-function loadFixture(name: string): string {
-  return readFileSync(join(fixturesDir, name), 'utf-8');
-}
+import { loadGraph } from './helpers/e2e-helpers.js';
 
 async function loadSimpleGraph(page: import('@playwright/test').Page) {
-  const content = loadFixture('simple.vine');
-  await page.route('**/fixtures/simple.vine', route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
-  );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/simple.vine'));
-  await page.waitForTimeout(2000);
+  await loadGraph(page, 'simple.vine');
 }
 
 test('mute button toggles icon between 🔊 and 🔇', async ({ page }) => {
@@ -44,12 +32,7 @@ test('mute state persists across page reload', async ({ page }) => {
   await expect(muteBtn).toContainText('🔇');
 
   // Reload the page with the same graph
-  const content = loadFixture('simple.vine');
-  await page.route('**/fixtures/simple.vine', route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
-  );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/simple.vine'));
-  await page.waitForTimeout(2000);
+  await loadGraph(page, 'simple.vine');
 
   // Should still be muted after reload
   await expect(page.locator('.mute-btn')).toContainText('🔇');

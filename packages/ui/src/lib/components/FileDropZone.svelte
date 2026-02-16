@@ -46,8 +46,15 @@
   class:success
   ondrop={handleDrop}
   ondragover={handleDragOver}
-  ondragleave={() => { dragover = false; }}
-  onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBrowse(); } }}
+  ondragleave={() => {
+    dragover = false;
+  }}
+  onkeydown={(e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleBrowse();
+    }
+  }}
   role="button"
   tabindex="0"
 >
@@ -58,7 +65,13 @@
     <p>Drop a <code>.vine</code> file here</p>
     <span class="separator">or</span>
     <button onclick={handleBrowse}>Browse</button>
-    <input bind:this={fileInput} type="file" accept=".vine,.txt" onchange={handleFileChange} hidden />
+    <input
+      bind:this={fileInput}
+      type="file"
+      accept=".vine,.txt"
+      onchange={handleFileChange}
+      hidden
+    />
   {/if}
 </div>
 
@@ -68,7 +81,9 @@
     border-radius: 12px;
     padding: 40px 32px;
     text-align: center;
-    transition: border-color 200ms, background 200ms;
+    transition:
+      border-color 200ms,
+      background 200ms;
     color: var(--text-muted);
     display: flex;
     flex-direction: column;
@@ -103,9 +118,17 @@
   }
 
   @keyframes pop-in {
-    0% { transform: scale(0); opacity: 0; }
-    60% { transform: scale(1.3); }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.3);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   p {
@@ -134,7 +157,9 @@
     color: var(--accent-green);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: background 150ms, color 150ms;
+    transition:
+      background 150ms,
+      color 150ms;
   }
 
   button:hover {

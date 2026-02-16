@@ -208,23 +208,40 @@ export function executeToolCall(
     switch (call.name) {
       case 'get_graph': {
         if (!graph) {
-          return { graph, result: 'No graph loaded. Use replace_graph to create one.', isError: false };
+          return {
+            graph,
+            result: 'No graph loaded. Use replace_graph to create one.',
+            isError: false,
+          };
         }
         return { graph, result: serialize(graph), isError: false };
       }
 
       case 'add_task': {
         if (!graph) {
-          return { graph, result: 'No graph loaded. Use replace_graph first to create the initial graph.', isError: true };
+          return {
+            graph,
+            result:
+              'No graph loaded. Use replace_graph first to create the initial graph.',
+            isError: true,
+          };
         }
         const input = call.input;
         const task: Task = {
           id: input.id as string,
           shortName: input.shortName as string,
-          status: typeof input.status === 'string' ? (input.status as Status) : 'notstarted',
-          description: typeof input.description === 'string' ? input.description : '',
-          dependencies: Array.isArray(input.dependencies) ? (input.dependencies as string[]) : [],
-          decisions: Array.isArray(input.decisions) ? (input.decisions as string[]) : [],
+          status:
+            typeof input.status === 'string'
+              ? (input.status as Status)
+              : 'notstarted',
+          description:
+            typeof input.description === 'string' ? input.description : '',
+          dependencies: Array.isArray(input.dependencies)
+            ? (input.dependencies as string[])
+            : [],
+          decisions: Array.isArray(input.decisions)
+            ? (input.decisions as string[])
+            : [],
         };
         // Patch root to depend on the new task so it doesn't become an island.
         // addTask inserts before root; we need root -> new-task for connectivity.
@@ -237,12 +254,23 @@ export function executeToolCall(
           };
           const patchedTasks = new Map(graph.tasks);
           patchedTasks.set(rootId, patchedRoot);
-          const patchedGraph: VineGraph = { tasks: patchedTasks, order: graph.order };
+          const patchedGraph: VineGraph = {
+            tasks: patchedTasks,
+            order: graph.order,
+          };
           const updated = addTask(patchedGraph, task);
-          return { graph: updated, result: `Added task "${task.id}" (${task.shortName})`, isError: false };
+          return {
+            graph: updated,
+            result: `Added task "${task.id}" (${task.shortName})`,
+            isError: false,
+          };
         }
         const updated = addTask(graph, task);
-        return { graph: updated, result: `Added task "${task.id}" (${task.shortName})`, isError: false };
+        return {
+          graph: updated,
+          result: `Added task "${task.id}" (${task.shortName})`,
+          isError: false,
+        };
       }
 
       case 'remove_task': {
@@ -251,7 +279,11 @@ export function executeToolCall(
         }
         const id = call.input.id as string;
         const updated = removeTask(graph, id);
-        return { graph: updated, result: `Removed task "${id}"`, isError: false };
+        return {
+          graph: updated,
+          result: `Removed task "${id}"`,
+          isError: false,
+        };
       }
 
       case 'set_status': {
@@ -261,7 +293,11 @@ export function executeToolCall(
         const id = call.input.id as string;
         const status = call.input.status as Status;
         const updated = setStatus(graph, id, status);
-        return { graph: updated, result: `Set "${id}" status to ${status}`, isError: false };
+        return {
+          graph: updated,
+          result: `Set "${id}" status to ${status}`,
+          isError: false,
+        };
       }
 
       case 'update_task': {
@@ -269,12 +305,23 @@ export function executeToolCall(
           return { graph, result: 'No graph loaded.', isError: true };
         }
         const id = call.input.id as string;
-        const fields: { shortName?: string; description?: string; decisions?: string[] } = {};
-        if (typeof call.input.shortName === 'string') fields.shortName = call.input.shortName;
-        if (typeof call.input.description === 'string') fields.description = call.input.description;
-        if (Array.isArray(call.input.decisions)) fields.decisions = call.input.decisions as string[];
+        const fields: {
+          shortName?: string;
+          description?: string;
+          decisions?: string[];
+        } = {};
+        if (typeof call.input.shortName === 'string')
+          fields.shortName = call.input.shortName;
+        if (typeof call.input.description === 'string')
+          fields.description = call.input.description;
+        if (Array.isArray(call.input.decisions))
+          fields.decisions = call.input.decisions as string[];
         const updated = updateTask(graph, id, fields);
-        return { graph: updated, result: `Updated task "${id}"`, isError: false };
+        return {
+          graph: updated,
+          result: `Updated task "${id}"`,
+          isError: false,
+        };
       }
 
       case 'add_dependency': {
@@ -284,7 +331,11 @@ export function executeToolCall(
         const taskId = call.input.taskId as string;
         const depId = call.input.dependencyId as string;
         const updated = addDependency(graph, taskId, depId);
-        return { graph: updated, result: `Added dependency: "${taskId}" -> "${depId}"`, isError: false };
+        return {
+          graph: updated,
+          result: `Added dependency: "${taskId}" -> "${depId}"`,
+          isError: false,
+        };
       }
 
       case 'remove_dependency': {
@@ -294,13 +345,21 @@ export function executeToolCall(
         const taskId = call.input.taskId as string;
         const depId = call.input.dependencyId as string;
         const updated = removeDependency(graph, taskId, depId);
-        return { graph: updated, result: `Removed dependency: "${taskId}" -> "${depId}"`, isError: false };
+        return {
+          graph: updated,
+          result: `Removed dependency: "${taskId}" -> "${depId}"`,
+          isError: false,
+        };
       }
 
       case 'replace_graph': {
         const vineText = call.input.vineText as string;
         const newGraph = parse(vineText);
-        return { graph: newGraph, result: `Graph replaced (${String(newGraph.order.length)} tasks)`, isError: false };
+        return {
+          graph: newGraph,
+          result: `Graph replaced (${String(newGraph.order.length)} tasks)`,
+          isError: false,
+        };
       }
 
       default:

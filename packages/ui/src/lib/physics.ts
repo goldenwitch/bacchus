@@ -26,7 +26,13 @@ export type PhysicsParamKey = keyof PhysicsConfig;
 export interface PhysicsSliderDef {
   key: PhysicsParamKey;
   label: string;
-  group: 'Repulsion' | 'Links' | 'Collisions' | 'Layout' | 'Damping' | 'Centering';
+  group:
+    | 'Repulsion'
+    | 'Links'
+    | 'Collisions'
+    | 'Layout'
+    | 'Damping'
+    | 'Centering';
   min: number;
   max: number;
   step: number;
@@ -34,18 +40,102 @@ export interface PhysicsSliderDef {
 
 /** Ordered slider definitions — drives the physics-panel UI. */
 export const PHYSICS_SLIDER_DEFS: readonly PhysicsSliderDef[] = [
-  { key: 'chargeStrength',    label: 'Charge Strength',    group: 'Repulsion',   min: -12000, max: -5,    step: 10    },
-  { key: 'chargeDistanceMax', label: 'Charge Range',       group: 'Repulsion',   min: 10,     max: 15000, step: 50    },
-  { key: 'linkStrength',      label: 'Link Strength',      group: 'Links',       min: 0.005,  max: 1.0,   step: 0.005 },
-  { key: 'minEdgeGap',        label: 'Edge Gap',           group: 'Links',       min: 2,      max: 2000,  step: 5     },
-  { key: 'collidePadding',    label: 'Collision Padding',  group: 'Collisions',  min: 0,      max: 400,   step: 2     },
-  { key: 'collideStrength',   label: 'Collision Strength', group: 'Collisions',  min: 0.01,   max: 1.0,   step: 0.01  },
-  { key: 'layerSpacing',      label: 'Layer Spacing',      group: 'Layout',      min: 8,      max: 4000,  step: 10    },
-  { key: 'layerStrength',     label: 'Layer Strength',     group: 'Layout',      min: 0.0,    max: 5.0,   step: 0.01  },
-  { key: 'layerExponent',     label: 'Layer Exponent',     group: 'Layout',      min: 0.1,    max: 3.0,   step: 0.1   },
-  { key: 'clusterStrength',   label: 'Cluster Strength',   group: 'Layout',      min: 0.0,    max: 5.0,   step: 0.01  },
-  { key: 'centerStrength',    label: 'Centering Strength', group: 'Centering',   min: 0.0,    max: 0.5,   step: 0.005 },
-  { key: 'velocityDecay',     label: 'Velocity Decay',     group: 'Damping',     min: 0.005,  max: 0.95,  step: 0.005 },
+  {
+    key: 'chargeStrength',
+    label: 'Charge Strength',
+    group: 'Repulsion',
+    min: -12000,
+    max: -5,
+    step: 10,
+  },
+  {
+    key: 'chargeDistanceMax',
+    label: 'Charge Range',
+    group: 'Repulsion',
+    min: 10,
+    max: 15000,
+    step: 50,
+  },
+  {
+    key: 'linkStrength',
+    label: 'Link Strength',
+    group: 'Links',
+    min: 0.005,
+    max: 1.0,
+    step: 0.005,
+  },
+  {
+    key: 'minEdgeGap',
+    label: 'Edge Gap',
+    group: 'Links',
+    min: 2,
+    max: 2000,
+    step: 5,
+  },
+  {
+    key: 'collidePadding',
+    label: 'Collision Padding',
+    group: 'Collisions',
+    min: 0,
+    max: 400,
+    step: 2,
+  },
+  {
+    key: 'collideStrength',
+    label: 'Collision Strength',
+    group: 'Collisions',
+    min: 0.01,
+    max: 1.0,
+    step: 0.01,
+  },
+  {
+    key: 'layerSpacing',
+    label: 'Layer Spacing',
+    group: 'Layout',
+    min: 8,
+    max: 4000,
+    step: 10,
+  },
+  {
+    key: 'layerStrength',
+    label: 'Layer Strength',
+    group: 'Layout',
+    min: 0.0,
+    max: 5.0,
+    step: 0.01,
+  },
+  {
+    key: 'layerExponent',
+    label: 'Layer Exponent',
+    group: 'Layout',
+    min: 0.1,
+    max: 3.0,
+    step: 0.1,
+  },
+  {
+    key: 'clusterStrength',
+    label: 'Cluster Strength',
+    group: 'Layout',
+    min: 0.0,
+    max: 5.0,
+    step: 0.01,
+  },
+  {
+    key: 'centerStrength',
+    label: 'Centering Strength',
+    group: 'Centering',
+    min: 0.0,
+    max: 0.5,
+    step: 0.005,
+  },
+  {
+    key: 'velocityDecay',
+    label: 'Velocity Decay',
+    group: 'Damping',
+    min: 0.005,
+    max: 0.95,
+    step: 0.005,
+  },
 ] as const;
 
 // Set of valid config keys for fast membership checks.
@@ -64,18 +154,18 @@ const VALID_KEYS: ReadonlySet<string> = new Set<PhysicsParamKey>(
  */
 export function getDefaults(): PhysicsConfig {
   return {
-    chargeStrength:    -10,
+    chargeStrength: -10,
     chargeDistanceMax: 10,
-    linkStrength:      0.01,
-    minEdgeGap:        2,
-    collidePadding:    40,
-    collideStrength:   1.00,
-    layerSpacing:      118,
-    layerStrength:     5.00,
-    layerExponent:     0.9,
-    clusterStrength:   0.00,
-    centerStrength:    0.02,
-    velocityDecay:     0.25,
+    linkStrength: 0.01,
+    minEdgeGap: 2,
+    collidePadding: 40,
+    collideStrength: 1.0,
+    layerSpacing: 118,
+    layerStrength: 5.0,
+    layerExponent: 0.9,
+    clusterStrength: 0.0,
+    centerStrength: 0.02,
+    velocityDecay: 0.25,
   };
 }
 
@@ -98,7 +188,8 @@ function readStoredObject(): Record<string, unknown> {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw == null) return {};
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+      return {};
     return parsed as Record<string, unknown>;
   } catch {
     return {};
@@ -129,7 +220,8 @@ export function loadOverrides(): Partial<PhysicsConfig> {
  */
 export function loadStrataOverride(): boolean {
   const stored = readStoredObject();
-  if (typeof stored.showStrataLines === 'boolean') return stored.showStrataLines;
+  if (typeof stored.showStrataLines === 'boolean')
+    return stored.showStrataLines;
   return DEFAULT_STRATA_LINES;
 }
 

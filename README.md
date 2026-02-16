@@ -28,29 +28,29 @@ const text = serialize(graph); // normalized .vine output
 
 ### API
 
-| Function                     | Description                                       |
-| ---------------------------- | ------------------------------------------------- |
-| `parse(input)`               | Parse `.vine` text into a validated `VineGraph`.  |
-| `serialize(graph)`           | Convert a `VineGraph` back to `.vine` text.       |
-| `validate(graph)`            | Check structural constraints (throws on failure). |
-| `getTask(graph, id)`         | Look up a task by id.                             |
-| `getRoot(graph)`             | Get the root task (last in file order).           |
-| `getDependencies(graph, id)` | Direct dependencies of a task.                    |
-| `getDependants(graph, id)`   | Tasks that depend on the given task.              |
-| `getAncestors(graph, id)`    | All transitive dependencies (BFS).                |
-| **Mutations** | |
-| `addTask(graph, task)` | Add a new task (returns new graph). |
-| `removeTask(graph, id)` | Remove a task and clean up references. |
-| `setStatus(graph, id, status)` | Change a task's status. |
-| `updateTask(graph, id, fields)` | Update task name/description/decisions. |
-| `addDependency(graph, taskId, depId)` | Add a dependency edge. |
-| `removeDependency(graph, taskId, depId)` | Remove a dependency edge. |
-| **Search & Filter** | |
-| `filterByStatus(graph, status)` | Tasks matching a given status. |
-| `searchTasks(graph, query)` | Case-insensitive text search. |
-| `getLeaves(graph)` | Tasks with no dependencies. |
-| `getDescendants(graph, id)` | All tasks transitively depending on a task. |
-| `getSummary(graph)` | Aggregate stats (totals, status counts, root). |
+| Function                                 | Description                                       |
+| ---------------------------------------- | ------------------------------------------------- |
+| `parse(input)`                           | Parse `.vine` text into a validated `VineGraph`.  |
+| `serialize(graph)`                       | Convert a `VineGraph` back to `.vine` text.       |
+| `validate(graph)`                        | Check structural constraints (throws on failure). |
+| `getTask(graph, id)`                     | Look up a task by id.                             |
+| `getRoot(graph)`                         | Get the root task (last in file order).           |
+| `getDependencies(graph, id)`             | Direct dependencies of a task.                    |
+| `getDependants(graph, id)`               | Tasks that depend on the given task.              |
+| `getAncestors(graph, id)`                | All transitive dependencies (BFS).                |
+| **Mutations**                            |                                                   |
+| `addTask(graph, task)`                   | Add a new task (returns new graph).               |
+| `removeTask(graph, id)`                  | Remove a task and clean up references.            |
+| `setStatus(graph, id, status)`           | Change a task's status.                           |
+| `updateTask(graph, id, fields)`          | Update task name/description/decisions.           |
+| `addDependency(graph, taskId, depId)`    | Add a dependency edge.                            |
+| `removeDependency(graph, taskId, depId)` | Remove a dependency edge.                         |
+| **Search & Filter**                      |                                                   |
+| `filterByStatus(graph, status)`          | Tasks matching a given status.                    |
+| `searchTasks(graph, query)`              | Case-insensitive text search.                     |
+| `getLeaves(graph)`                       | Tasks with no dependencies.                       |
+| `getDescendants(graph, id)`              | All tasks transitively depending on a task.       |
+| `getSummary(graph)`                      | Aggregate stats (totals, status counts, root).    |
 
 ### Error Handling
 
@@ -83,13 +83,13 @@ yarn dlx tsx packages/cli/src/cli.ts <command> [options]
 
 ### Commands
 
-| Command | Description |
-| ------- | ----------- |
-| `vine validate <file>` | Check a `.vine` file for parse/validation errors. |
-| `vine show <file>` | Print a graph summary (root, task count, status breakdown). |
-| `vine list <file>` | List all tasks. Supports `--status` and `--search` filters. |
-| `vine add <file>` | Add a task (`--id`, `--name`, optional `--status`, `--description`, `--depends-on`). |
-| `vine status <file> <id> <status>` | Update a task's status. |
+| Command                            | Description                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| `vine validate <file>`             | Check a `.vine` file for parse/validation errors.                                    |
+| `vine show <file>`                 | Print a graph summary (root, task count, status breakdown).                          |
+| `vine list <file>`                 | List all tasks. Supports `--status` and `--search` filters.                          |
+| `vine add <file>`                  | Add a task (`--id`, `--name`, optional `--status`, `--description`, `--depends-on`). |
+| `vine status <file> <id> <status>` | Update a task's status.                                                              |
 
 ### Examples
 
@@ -140,14 +140,14 @@ Drop a `.vine` file onto the landing page or enter a URL to visualize a task gra
 
 The [`examples/`](examples/) folder contains `.vine` files you can drag into the UI to explore different graph shapes:
 
-| File | What it shows |
-| ---- | ------------- |
-| `01-single-task.vine` | One node, no edges — the simplest graph. |
-| `02-linear-chain.vine` | A straight-line dependency chain (5 tasks). |
-| `03-diamond.vine` | Two parallel branches merging into one task. |
-| `04-all-statuses.vine` | Every status keyword in action. |
-| `05-decisions.vine` | Tasks annotated with `>` decision notes. |
-| `06-project-bacchus.vine` | A realistic 13-task project graph. |
+| File                      | What it shows                                |
+| ------------------------- | -------------------------------------------- |
+| `01-single-task.vine`     | One node, no edges — the simplest graph.     |
+| `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).  |
+| `03-diamond.vine`         | Two parallel branches merging into one task. |
+| `04-all-statuses.vine`    | Every status keyword in action.              |
+| `05-decisions.vine`       | Tasks annotated with `>` decision notes.     |
+| `06-project-bacchus.vine` | A realistic 13-task project graph.           |
 
 Start the dev server and drag any file onto the landing page to visualize it.
 
@@ -157,7 +157,7 @@ The UI includes an AI-powered chat panel for creating and editing task graphs th
 
 1. Click the **chat bubble** icon in the toolbar (or **"Plan with AI"** on the landing screen)
 2. Enter your **Anthropic API key** when prompted (stored locally, never sent to our servers)
-3. Describe the plan you'd like to create — e.g., *"Create a project plan for launching a mobile app"*
+3. Describe the plan you'd like to create — e.g., _"Create a project plan for launching a mobile app"_
 4. The AI uses structured tool calls to manipulate the graph with validated mutations
 5. Changes appear live in the visualization as the AI works
 

@@ -20,7 +20,16 @@ const MAX_SCALE = 4.0;
 export function computeBoundingBox(
   positions: { x: number; y: number }[],
   padding: number = DEFAULT_PADDING,
-): { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number; cx: number; cy: number } {
+): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  width: number;
+  height: number;
+  cx: number;
+  cy: number;
+} {
   if (positions.length === 0) {
     const half = MIN_BOX_SIZE / 2 + padding;
     return {
@@ -102,7 +111,11 @@ export function computeFocusFrame(
   viewportHeight: number,
 ): ViewportTransform {
   // 1. Collect all relevant positions
-  const allPositions = [focusedPos, ...dependantPositions, ...dependencyPositions];
+  const allPositions = [
+    focusedPos,
+    ...dependantPositions,
+    ...dependencyPositions,
+  ];
 
   // 2. Compute bounding box with 80px padding
   const box = computeBoundingBox(allPositions, DEFAULT_PADDING);

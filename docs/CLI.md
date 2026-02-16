@@ -49,10 +49,10 @@ yarn dlx tsx packages/cli/src/cli.ts show examples/06-project-bacchus.vine
 
 Lists all tasks in a table with columns **ID**, **NAME**, and **STATUS**.
 
-| Flag | Description |
-| ---- | ----------- |
-| `--status <status>` | Filter tasks by status (e.g. `complete`, `blocked`). |
-| `--search <query>` | Case-insensitive text search across task names and descriptions. |
+| Flag                | Description                                                      |
+| ------------------- | ---------------------------------------------------------------- |
+| `--status <status>` | Filter tasks by status (e.g. `complete`, `blocked`).             |
+| `--search <query>`  | Case-insensitive text search across task names and descriptions. |
 
 ```powershell
 yarn dlx tsx packages/cli/src/cli.ts list examples/04-all-statuses.vine
@@ -76,13 +76,13 @@ yarn dlx tsx packages/cli/src/cli.ts list examples/06-project-bacchus.vine --sea
 
 Adds a new task to a `.vine` file. **Modifies the file in-place.**
 
-| Flag | Required | Description |
-| ---- | -------- | ----------- |
-| `--id <id>` | Yes | Unique task identifier. |
-| `--name <name>` | Yes | Short task name. |
-| `--status <status>` | No | One of `complete`, `started`, `planning`, `notstarted`, `blocked`. Default: `notstarted`. |
-| `--description <text>` | No | Task description text. |
-| `--depends-on <ids...>` | No | Space-separated list of dependency task IDs. |
+| Flag                    | Required | Description                                                                               |
+| ----------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `--id <id>`             | Yes      | Unique task identifier.                                                                   |
+| `--name <name>`         | Yes      | Short task name.                                                                          |
+| `--status <status>`     | No       | One of `complete`, `started`, `planning`, `notstarted`, `blocked`. Default: `notstarted`. |
+| `--description <text>`  | No       | Task description text.                                                                    |
+| `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                                              |
 
 ```powershell
 yarn dlx tsx packages/cli/src/cli.ts add examples/03-diamond.vine \
@@ -108,9 +108,9 @@ yarn dlx tsx packages/cli/src/cli.ts status examples/03-diamond.vine left comple
 
 All commands surface typed errors from `@bacchus/core`:
 
-| Error | Details |
-| ----- | ------- |
-| **`VineParseError`** | Syntax issue. The `.line` property contains the 1-based line number where the error occurred. |
+| Error                     | Details                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **`VineParseError`**      | Syntax issue. The `.line` property contains the 1-based line number where the error occurred.                                         |
 | **`VineValidationError`** | Structural constraint violation. Check `.constraint` and `.details` for specifics (e.g. duplicate IDs, missing dependencies, cycles). |
 
 Both extend `VineError` and print a human-readable message to stderr.

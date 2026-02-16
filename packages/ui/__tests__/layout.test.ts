@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '@bacchus/core';
-import { computeDepths, computeNodeRadius, createSimulation, computeFocusBandPositions } from '../src/lib/layout.js';
+import {
+  computeDepths,
+  computeNodeRadius,
+  createSimulation,
+  computeFocusBandPositions,
+} from '../src/lib/layout.js';
 import type { SimNode, SimLink } from '../src/lib/types.js';
 import { getDefaults } from '../src/lib/physics.js';
 
@@ -130,7 +135,9 @@ describe('createSimulation', () => {
         const dy = a.y! - b.y!;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const minDist =
-          computeNodeRadius(a.task.shortName.length) + computeNodeRadius(b.task.shortName.length) - epsilon;
+          computeNodeRadius(a.task.shortName.length) +
+          computeNodeRadius(b.task.shortName.length) -
+          epsilon;
         expect(dist).toBeGreaterThan(minDist);
       }
     }
@@ -197,7 +204,12 @@ describe('computeFocusBandPositions', () => {
 
   it('returns a BandPosition for every node', () => {
     const result = computeFocusBandPositions(
-      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+      'mid',
+      nodes,
+      ['root'],
+      ['leaf-a', 'leaf-b'],
+      WIDTH,
+      HEIGHT,
     );
     expect(result).toHaveLength(4);
     const ids = result.map((r) => r.id);
@@ -209,7 +221,12 @@ describe('computeFocusBandPositions', () => {
 
   it('places focused node in the "focused" band at vertical center', () => {
     const result = computeFocusBandPositions(
-      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+      'mid',
+      nodes,
+      ['root'],
+      ['leaf-a', 'leaf-b'],
+      WIDTH,
+      HEIGHT,
     );
     const focused = result.find((r) => r.id === 'mid')!;
     expect(focused.band).toBe('focused');
@@ -219,7 +236,12 @@ describe('computeFocusBandPositions', () => {
 
   it('places dependants in the "dependants" band at top', () => {
     const result = computeFocusBandPositions(
-      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+      'mid',
+      nodes,
+      ['root'],
+      ['leaf-a', 'leaf-b'],
+      WIDTH,
+      HEIGHT,
     );
     const dep = result.find((r) => r.id === 'root')!;
     expect(dep.band).toBe('dependants');
@@ -228,7 +250,12 @@ describe('computeFocusBandPositions', () => {
 
   it('places dependencies in the "dependencies" band at bottom', () => {
     const result = computeFocusBandPositions(
-      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+      'mid',
+      nodes,
+      ['root'],
+      ['leaf-a', 'leaf-b'],
+      WIDTH,
+      HEIGHT,
     );
     const depA = result.find((r) => r.id === 'leaf-a')!;
     const depB = result.find((r) => r.id === 'leaf-b')!;
@@ -240,7 +267,12 @@ describe('computeFocusBandPositions', () => {
 
   it('evenly spaces multiple dependencies in the bottom band', () => {
     const result = computeFocusBandPositions(
-      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+      'mid',
+      nodes,
+      ['root'],
+      ['leaf-a', 'leaf-b'],
+      WIDTH,
+      HEIGHT,
     );
     const depA = result.find((r) => r.id === 'leaf-a')!;
     const depB = result.find((r) => r.id === 'leaf-b')!;
@@ -253,7 +285,12 @@ describe('computeFocusBandPositions', () => {
   it('assigns "periphery" band to unconnected nodes', () => {
     // Focus on 'root' — only 'mid' is a dependency; leaf-a and leaf-b are peripheral
     const result = computeFocusBandPositions(
-      'root', nodes, [], ['mid'], WIDTH, HEIGHT,
+      'root',
+      nodes,
+      [],
+      ['mid'],
+      WIDTH,
+      HEIGHT,
     );
     const peripherals = result.filter((r) => r.band === 'periphery');
     expect(peripherals).toHaveLength(2);
@@ -263,7 +300,12 @@ describe('computeFocusBandPositions', () => {
 
   it('handles node with no dependants or dependencies', () => {
     const result = computeFocusBandPositions(
-      'leaf-a', nodes, [], [], WIDTH, HEIGHT,
+      'leaf-a',
+      nodes,
+      [],
+      [],
+      WIDTH,
+      HEIGHT,
     );
     const focused = result.find((r) => r.id === 'leaf-a')!;
     expect(focused.band).toBe('focused');
@@ -274,7 +316,12 @@ describe('computeFocusBandPositions', () => {
 
   it('all positions have finite x and y', () => {
     const result = computeFocusBandPositions(
-      'mid', nodes, ['root'], ['leaf-a', 'leaf-b'], WIDTH, HEIGHT,
+      'mid',
+      nodes,
+      ['root'],
+      ['leaf-a', 'leaf-b'],
+      WIDTH,
+      HEIGHT,
     );
     for (const pos of result) {
       expect(Number.isFinite(pos.x)).toBe(true);

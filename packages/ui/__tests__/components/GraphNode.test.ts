@@ -98,8 +98,9 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { shortName: 'Deploy Service' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const texts = container.querySelectorAll('text');
-    const label = Array.from(texts).find((t) =>
-      t.textContent?.includes('Deploy') && t.textContent?.includes('Service'),
+    const label = Array.from(texts).find(
+      (t) =>
+        t.textContent?.includes('Deploy') && t.textContent?.includes('Service'),
     );
     expect(label).toBeDefined();
   });

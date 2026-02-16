@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { addTask, removeTask, setStatus, updateTask, addDependency, removeDependency } from '../src/mutations.js';
+import {
+  addTask,
+  removeTask,
+  setStatus,
+  updateTask,
+  addDependency,
+  removeDependency,
+} from '../src/mutations.js';
 import { parse } from '../src/parser.js';
 import { serialize } from '../src/serializer.js';
 import { VineError, VineValidationError } from '../src/errors.js';
@@ -412,7 +419,9 @@ describe('updateTask', () => {
   });
 
   it('updates description with known output', () => {
-    const result = updateTask(baseGraph, 'middle', { description: 'Updated description.' });
+    const result = updateTask(baseGraph, 'middle', {
+      description: 'Updated description.',
+    });
 
     expect(serialize(result)).toBe(
       [
@@ -436,7 +445,9 @@ describe('updateTask', () => {
   });
 
   it('updates decisions with known output', () => {
-    const result = updateTask(baseGraph, 'leaf-a', { decisions: ['Use TypeScript', 'Keep it simple'] });
+    const result = updateTask(baseGraph, 'leaf-a', {
+      decisions: ['Use TypeScript', 'Keep it simple'],
+    });
 
     expect(serialize(result)).toBe(
       [
@@ -510,7 +521,9 @@ describe('updateTask', () => {
   });
 
   it('throws VineError for nonexistent task', () => {
-    expect(() => updateTask(baseGraph, 'ghost', { shortName: 'X' })).toThrow(VineError);
+    expect(() => updateTask(baseGraph, 'ghost', { shortName: 'X' })).toThrow(
+      VineError,
+    );
   });
 });
 
@@ -567,7 +580,9 @@ describe('addDependency', () => {
   });
 
   it('throws VineValidationError for cycle', () => {
-    expect(() => addDependency(baseGraph, 'leaf-a', 'root')).toThrow(VineValidationError);
+    expect(() => addDependency(baseGraph, 'leaf-a', 'root')).toThrow(
+      VineValidationError,
+    );
     try {
       addDependency(baseGraph, 'leaf-a', 'root');
     } catch (e) {
@@ -577,11 +592,15 @@ describe('addDependency', () => {
   });
 
   it('throws VineError for duplicate dependency', () => {
-    expect(() => addDependency(baseGraph, 'middle', 'leaf-a')).toThrow(VineError);
+    expect(() => addDependency(baseGraph, 'middle', 'leaf-a')).toThrow(
+      VineError,
+    );
   });
 
   it("throws VineError when depId doesn't exist", () => {
-    expect(() => addDependency(baseGraph, 'root', 'phantom')).toThrow(VineError);
+    expect(() => addDependency(baseGraph, 'root', 'phantom')).toThrow(
+      VineError,
+    );
   });
 });
 
@@ -636,11 +655,16 @@ describe('removeDependency', () => {
     const withExtra = addDependency(baseGraph, 'root', 'leaf-a');
     removeDependency(withExtra, 'root', 'leaf-a');
 
-    expect(withExtra.tasks.get('root')!.dependencies).toEqual(['middle', 'leaf-a']);
+    expect(withExtra.tasks.get('root')!.dependencies).toEqual([
+      'middle',
+      'leaf-a',
+    ]);
   });
 
   it('throws VineValidationError when removal creates island', () => {
-    expect(() => removeDependency(baseGraph, 'root', 'middle')).toThrow(VineValidationError);
+    expect(() => removeDependency(baseGraph, 'root', 'middle')).toThrow(
+      VineValidationError,
+    );
     try {
       removeDependency(baseGraph, 'root', 'middle');
     } catch (e) {
@@ -650,10 +674,14 @@ describe('removeDependency', () => {
   });
 
   it("throws VineError when dependency doesn't exist", () => {
-    expect(() => removeDependency(baseGraph, 'leaf-a', 'leaf-b')).toThrow(VineError);
+    expect(() => removeDependency(baseGraph, 'leaf-a', 'leaf-b')).toThrow(
+      VineError,
+    );
   });
 
   it("throws VineError when task doesn't exist", () => {
-    expect(() => removeDependency(baseGraph, 'ghost', 'leaf-a')).toThrow(VineError);
+    expect(() => removeDependency(baseGraph, 'ghost', 'leaf-a')).toThrow(
+      VineError,
+    );
   });
 });

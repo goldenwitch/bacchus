@@ -25,7 +25,10 @@ function patchRootDeps(graph: VineGraph, newDepId: string): VineGraph {
   if (rootId === undefined) throw new Error('empty graph');
   const root = graph.tasks.get(rootId);
   if (!root) throw new Error('root task missing');
-  const patched: Task = { ...root, dependencies: [...root.dependencies, newDepId] };
+  const patched: Task = {
+    ...root,
+    dependencies: [...root.dependencies, newDepId],
+  };
   const tasks = new Map(graph.tasks);
   tasks.set(rootId, patched);
   return { tasks, order: graph.order };

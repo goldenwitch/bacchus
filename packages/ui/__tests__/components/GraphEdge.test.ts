@@ -73,7 +73,9 @@ describe('GraphEdge', () => {
   });
 
   it('has edge-flow animation class when highlighted', () => {
-    const { container } = render(GraphEdge, { props: defaultProps({ highlighted: true }) });
+    const { container } = render(GraphEdge, {
+      props: defaultProps({ highlighted: true }),
+    });
     const path = container.querySelector('.anim-edge-flow');
     expect(path).not.toBeNull();
   });
@@ -113,7 +115,9 @@ describe('GraphEdge', () => {
       props: defaultProps({ sourceId: 'a', targetId: 'b' }),
     });
     // Leaf decorations contain a path filled with vine-leaf color
-    const leafPaths = container.querySelectorAll('path[fill="var(--color-vine-leaf)"]');
+    const leafPaths = container.querySelectorAll(
+      'path[fill="var(--color-vine-leaf)"]',
+    );
     // At least 1 leaf + 1 arrowhead marker leaf
     expect(leafPaths.length).toBeGreaterThanOrEqual(2);
   });
@@ -129,16 +133,34 @@ describe('GraphEdge', () => {
   it('decoration count scales with edge distance', () => {
     // Short edge
     const { container: short } = render(GraphEdge, {
-      props: defaultProps({ sourceX: 0, sourceY: 0, targetX: 50, targetY: 0, sourceId: 'a', targetId: 'b' }),
+      props: defaultProps({
+        sourceX: 0,
+        sourceY: 0,
+        targetX: 50,
+        targetY: 0,
+        sourceId: 'a',
+        targetId: 'b',
+      }),
     });
     // Leaf paths minus the arrowhead marker path
-    const shortLeaves = short.querySelectorAll('path[fill="var(--color-vine-leaf)"][opacity="0.4"]');
+    const shortLeaves = short.querySelectorAll(
+      'path[fill="var(--color-vine-leaf)"][opacity="0.4"]',
+    );
 
     // Long edge
     const { container: long } = render(GraphEdge, {
-      props: defaultProps({ sourceX: 0, sourceY: 0, targetX: 600, targetY: 0, sourceId: 'c', targetId: 'd' }),
+      props: defaultProps({
+        sourceX: 0,
+        sourceY: 0,
+        targetX: 600,
+        targetY: 0,
+        sourceId: 'c',
+        targetId: 'd',
+      }),
     });
-    const longLeaves = long.querySelectorAll('path[fill="var(--color-vine-leaf)"][opacity="0.4"]');
+    const longLeaves = long.querySelectorAll(
+      'path[fill="var(--color-vine-leaf)"][opacity="0.4"]',
+    );
 
     expect(longLeaves.length).toBeGreaterThan(shortLeaves.length);
   });

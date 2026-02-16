@@ -59,7 +59,9 @@ describe('FileDropZone', () => {
     render(FileDropZone, { props: { onload } });
     const dropzone = document.querySelector('.dropzone')!;
 
-    const file = new File(['file content here'], 'test.vine', { type: 'text/plain' });
+    const file = new File(['file content here'], 'test.vine', {
+      type: 'text/plain',
+    });
     const dataTransfer = { files: [file] };
 
     await fireEvent.drop(dropzone, { dataTransfer });
@@ -85,7 +87,9 @@ describe('FileDropZone', () => {
 
   it('accepts .vine and .txt files', () => {
     render(FileDropZone, { props: { onload } });
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
     expect(input).toHaveAttribute('accept', '.vine,.txt');
   });
 });

@@ -1,6 +1,11 @@
 import type { VineGraph } from '@bacchus/core';
 import { serialize, getRoot } from '@bacchus/core';
-import type { ChatService, ChatMessage, ToolCall, ToolResult } from './types.js';
+import type {
+  ChatService,
+  ChatMessage,
+  ToolCall,
+  ToolResult,
+} from './types.js';
 import { GRAPH_TOOLS, executeToolCall } from './tools.js';
 
 // ---------------------------------------------------------------------------
@@ -9,7 +14,12 @@ import { GRAPH_TOOLS, executeToolCall } from './tools.js';
 
 export type OrchestratorEvent =
   | { readonly type: 'text'; readonly content: string }
-  | { readonly type: 'tool_exec'; readonly name: string; readonly result: string; readonly isError: boolean }
+  | {
+      readonly type: 'tool_exec';
+      readonly name: string;
+      readonly result: string;
+      readonly isError: boolean;
+    }
   | { readonly type: 'graph_update'; readonly graph: VineGraph }
   | { readonly type: 'done' }
   | { readonly type: 'error'; readonly message: string };
@@ -111,7 +121,9 @@ export class ChatOrchestrator {
    * executes any tool calls, feeds results back, and repeats until
    * the LLM responds with text only.
    */
-  async *send(userMessage: string): AsyncGenerator<OrchestratorEvent, void, unknown> {
+  async *send(
+    userMessage: string,
+  ): AsyncGenerator<OrchestratorEvent, void, unknown> {
     // Append user message to history
     this.messages.push({ role: 'user', content: userMessage });
 
@@ -151,9 +163,10 @@ export class ChatOrchestrator {
       }
 
       // Record the assistant message (with any tool calls)
-      const assistantMsg: ChatMessage = toolCalls.length > 0
-        ? { role: 'assistant', content: assistantText, toolCalls }
-        : { role: 'assistant', content: assistantText };
+      const assistantMsg: ChatMessage =
+        toolCalls.length > 0
+          ? { role: 'assistant', content: assistantText, toolCalls }
+          : { role: 'assistant', content: assistantText };
       this.messages.push(assistantMsg);
 
       // If no tool calls, the conversation turn is complete
@@ -200,7 +213,8 @@ export class ChatOrchestrator {
 
     yield {
       type: 'error',
-      message: 'Maximum tool-use rounds exceeded. Please try a simpler request.',
+      message:
+        'Maximum tool-use rounds exceeded. Please try a simpler request.',
     };
   }
 }

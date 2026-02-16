@@ -1,38 +1,22 @@
-import { test, expect, type Page } from '@playwright/test';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
-const fixturesDir = join(__dirname, 'fixtures');
-
-function loadFixture(name: string): string {
-  return readFileSync(join(fixturesDir, name), 'utf-8');
-}
-
-async function loadGraph(page: Page, fixtureName: string) {
-  const content = loadFixture(fixtureName);
-  await page.route('**/fixtures/' + fixtureName, route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
-  );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/' + fixtureName));
-  await page.waitForTimeout(2000); // Wait for entry animation
-}
+import { test, expect } from '@playwright/test';
+import { loadGraph } from './helpers/e2e-helpers.js';
 
 test('click node opens sidebar', async ({ page }) => {
   await loadGraph(page, 'simple.vine');
-  const circle = page.locator('svg circle').first();
-  await circle.click();
+  const node = page.locator('svg[role="group"] g[role="button"]').first();
+  await node.click();
   await expect(page.locator('.sidebar')).toBeVisible({ timeout: 3000 });
 });
 
 test('click background closes sidebar', async ({ page }) => {
   await loadGraph(page, 'simple.vine');
   // First open sidebar by clicking a node
-  const circle = page.locator('svg circle').first();
-  await circle.click();
+  const node = page.locator('svg[role="group"] g[role="button"]').first();
+  await node.click();
   await expect(page.locator('.sidebar')).toBeVisible({ timeout: 3000 });
 
   // Click on the SVG element itself (background) to close
-  const svg = page.locator('svg');
+  const svg = page.locator('svg[role="group"]');
   const box = await svg.boundingBox();
   if (box) {
     // Click near the top-left corner — likely background, not a node
@@ -43,39 +27,47 @@ test('click background closes sidebar', async ({ page }) => {
 
 test('ctrl+scroll zooms', async ({ page }) => {
   await loadGraph(page, 'simple.vine');
-  const svg = page.locator('svg');
+  const svg = page.locator('svg[role="group"]');
   const box = await svg.boundingBox();
   if (!box) return;
 
   // Get initial transform
-  const initialTransform = await page.locator('svg > g').getAttribute('transform');
+  const initialTransform = await page
+    .locator('svg[role="group"] > g')
+    .getAttribute('transform');
 
   // Dispatch a ctrl+wheel event to zoom
   await page.evaluate(() => {
-    const svg = document.querySelector('svg');
+    const svg = document.querySelector('svg[role="group"]');
     if (svg) {
-      svg.dispatchEvent(new WheelEvent('wheel', {
-        deltaY: -300,
-        ctrlKey: true,
-        bubbles: true,
-        clientX: 400,
-        clientY: 300,
-      }));
+      svg.dispatchEvent(
+        new WheelEvent('wheel', {
+          deltaY: -300,
+          ctrlKey: true,
+          bubbles: true,
+          clientX: 400,
+          clientY: 300,
+        }),
+      );
     }
   });
 
   await page.waitForTimeout(300);
-  const newTransform = await page.locator('svg > g').getAttribute('transform');
+  const newTransform = await page
+    .locator('svg[role="group"] > g')
+    .getAttribute('transform');
   expect(newTransform).not.toBe(initialTransform);
 });
 
 test('drag pans viewport', async ({ page }) => {
   await loadGraph(page, 'simple.vine');
-  const svg = page.locator('svg');
+  const svg = page.locator('svg[role="group"]');
   const box = await svg.boundingBox();
   if (!box) return;
 
-  const initialTransform = await page.locator('svg > g').getAttribute('transform');
+  const initialTransform = await page
+    .locator('svg[role="group"] > g')
+    .getAttribute('transform');
 
   // Drag from center of SVG
   const cx = box.x + box.width / 2;
@@ -86,21 +78,25 @@ test('drag pans viewport', async ({ page }) => {
   await page.mouse.up();
 
   await page.waitForTimeout(300);
-  const newTransform = await page.locator('svg > g').getAttribute('transform');
+  const newTransform = await page
+    .locator('svg[role="group"] > g')
+    .getAttribute('transform');
   expect(newTransform).not.toBe(initialTransform);
 });
 
 test('hover shows tooltip', async ({ page }) => {
   await loadGraph(page, 'simple.vine');
-  const circle = page.locator('svg circle').first();
-  await circle.hover();
+  const node = page.locator('svg[role="group"] g[role="button"]').first();
+  await node.hover();
   await expect(page.locator('.tooltip')).toBeVisible({ timeout: 3000 });
 });
 
-test('sidebar shows status pill, heading, and description', async ({ page }) => {
+test('sidebar shows status pill, heading, and description', async ({
+  page,
+}) => {
   await loadGraph(page, 'decisions.vine');
-  const circle = page.locator('svg circle').first();
-  await circle.click();
+  const node = page.locator('svg[role="group"] g[role="button"]').first();
+  await node.click();
   await expect(page.locator('.sidebar')).toBeVisible({ timeout: 3000 });
 
   await expect(page.locator('.sidebar .status-pill')).toBeVisible();
@@ -112,11 +108,11 @@ test('sidebar shows decisions when present', async ({ page }) => {
   await loadGraph(page, 'decisions.vine');
   // decisions.vine root has 3 decisions — click it
   // Find a node and click; we need the root node which has decisions
-  const circles = page.locator('svg circle');
-  const count = await circles.count();
-  // Try each node pair (2 circles per node) until we find the one with decisions
-  for (let i = 0; i < count; i += 2) {
-    await circles.nth(i).click();
+  const nodes = page.locator('svg[role="group"] g[role="button"]');
+  const count = await nodes.count();
+  // Try each node until we find the one with decisions
+  for (let i = 0; i < count; i++) {
+    await nodes.nth(i).click();
     await page.waitForTimeout(300);
     const sidebar = page.locator('.sidebar');
     if (await sidebar.isVisible()) {
@@ -129,7 +125,7 @@ test('sidebar shows decisions when present', async ({ page }) => {
       }
     }
     // Click background to reset
-    const svg = page.locator('svg');
+    const svg = page.locator('svg[role="group"]');
     const box = await svg.boundingBox();
     if (box) await page.mouse.click(box.x + 5, box.y + 5);
     await page.waitForTimeout(200);
@@ -140,8 +136,8 @@ test('sidebar shows decisions when present', async ({ page }) => {
 
 test('sidebar click does not close sidebar', async ({ page }) => {
   await loadGraph(page, 'simple.vine');
-  const circle = page.locator('svg circle').first();
-  await circle.click();
+  const node = page.locator('svg[role="group"] g[role="button"]').first();
+  await node.click();
   await expect(page.locator('.sidebar')).toBeVisible({ timeout: 3000 });
 
   // Click inside sidebar
@@ -153,13 +149,25 @@ test('sidebar click does not close sidebar', async ({ page }) => {
 test('focus dims unconnected nodes', async ({ page }) => {
   await loadGraph(page, 'diamond.vine');
   // diamond.vine has 4 nodes — click one to focus it
-  const firstCircle = page.locator('svg circle').first();
-  await firstCircle.click();
+  const firstNode = page.locator('svg[role="group"] g[role="button"]').first();
+  await firstNode.click();
   await page.waitForTimeout(500);
 
-  // Some node groups should have opacity 0.3 (dimmed)
-  const dimmedNodes = page.locator('svg > g > g > g[opacity="0.3"]');
-  const dimmedCount = await dimmedNodes.count();
+  // Some node groups should have reduced opacity (dimmed)
+  const dimmedNodes = page
+    .locator('svg[role="group"] g[role="button"]')
+    .filter({ has: page.locator(':scope') });
+  let dimmedCount = 0;
+  const nodeCount = await page
+    .locator('svg[role="group"] g[role="button"]')
+    .count();
+  for (let i = 0; i < nodeCount; i++) {
+    const opacity = await page
+      .locator('svg[role="group"] g[role="button"]')
+      .nth(i)
+      .getAttribute('opacity');
+    if (opacity && parseFloat(opacity) < 1) dimmedCount++;
+  }
   expect(dimmedCount).toBeGreaterThan(0);
 });
 

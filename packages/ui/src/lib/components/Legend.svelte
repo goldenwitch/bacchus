@@ -3,18 +3,25 @@
 
   let expanded = $state(false);
 
-  const entries = Object.entries(STATUS_MAP) as [string, typeof STATUS_MAP[keyof typeof STATUS_MAP]][];
+  const entries = Object.entries(STATUS_MAP);
 </script>
 
 <div class="legend-container">
-  <button class="legend-toggle" onclick={() => { expanded = !expanded; }} aria-expanded={expanded} aria-label="Toggle legend">
+  <button
+    class="legend-toggle"
+    onclick={() => {
+      expanded = !expanded;
+    }}
+    aria-expanded={expanded}
+    aria-label="Toggle legend"
+  >
     <span class="legend-icon">ℹ️</span>
     <span class="legend-title">Legend</span>
     <span class="legend-chevron" class:legend-chevron-open={expanded}>▸</span>
   </button>
   {#if expanded}
     <div class="legend-body">
-      {#each entries as [_key, info]}
+      {#each entries as [_key, info] (_key)}
         <div class="legend-item">
           <span class="legend-swatch" style="background: {info.color};"></span>
           <span class="legend-emoji">{info.emoji}</span>

@@ -19,18 +19,18 @@ A collapsible floating panel on the left edge of the graph view, visually matche
 
 Organized into logical groups with small section headers:
 
-| Group | Slider Label | Parameter | Min | Max | Step | Default |
-|-------|-------------|-----------|-----|-----|------|---------|
-| **Repulsion** | Charge Strength | `chargeStrength` | -1200 | -50 | 10 | -350 / -600 (auto) |
-| | Charge Range | `distanceMax` | 100 | 1500 | 50 | 600 |
-| **Links** | Link Strength | `link.strength` | 0.05 | 1.0 | 0.05 | 0.7 |
-| | Edge Gap | `MIN_EDGE_GAP` | 20 | 200 | 5 | 80 |
-| **Collisions** | Collision Padding | collide radius padding | 0 | 40 | 2 | 16 |
-| | Collision Strength | `collide.strength` | 0.1 | 1.0 | 0.05 | 0.9 |
-| **Layout** | Layer Spacing | `layerSpacing` | 80 | 400 | 10 | 180 / 220 (auto) |
-| | Layer Strength | `layerStrength` | 0.0 | 0.5 | 0.01 | 0.12 |
-| | Cluster Strength | `clusterStrength` | 0.0 | 0.5 | 0.01 | 0.15 |
-| **Damping** | Velocity Decay | `velocityDecay` | 0.05 | 0.9 | 0.05 | 0.45 |
+| Group          | Slider Label       | Parameter              | Min   | Max  | Step | Default            |
+| -------------- | ------------------ | ---------------------- | ----- | ---- | ---- | ------------------ |
+| **Repulsion**  | Charge Strength    | `chargeStrength`       | -1200 | -50  | 10   | -350 / -600 (auto) |
+|                | Charge Range       | `distanceMax`          | 100   | 1500 | 50   | 600                |
+| **Links**      | Link Strength      | `link.strength`        | 0.05  | 1.0  | 0.05 | 0.7                |
+|                | Edge Gap           | `MIN_EDGE_GAP`         | 20    | 200  | 5    | 80                 |
+| **Collisions** | Collision Padding  | collide radius padding | 0     | 40   | 2    | 16                 |
+|                | Collision Strength | `collide.strength`     | 0.1   | 1.0  | 0.05 | 0.9                |
+| **Layout**     | Layer Spacing      | `layerSpacing`         | 80    | 400  | 10   | 180 / 220 (auto)   |
+|                | Layer Strength     | `layerStrength`        | 0.0   | 0.5  | 0.01 | 0.12               |
+|                | Cluster Strength   | `clusterStrength`      | 0.0   | 0.5  | 0.01 | 0.15               |
+| **Damping**    | Velocity Decay     | `velocityDecay`        | 0.05  | 0.9  | 0.05 | 0.45               |
 
 Each slider shows: **label** on the left, **current value** on the right, HTML `<input type="range">` below. The value display updates live as the user drags.
 

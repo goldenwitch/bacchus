@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { parse } from '@bacchus/core';
-import type { ChatService, ChatEvent, ChatMessage, ToolDefinition } from '../../src/lib/chat/types.js';
+import type {
+  ChatService,
+  ChatEvent,
+  ChatMessage,
+  ToolDefinition,
+} from '../../src/lib/chat/types.js';
 import { ChatOrchestrator } from '../../src/lib/chat/orchestrator.js';
 import type { OrchestratorEvent } from '../../src/lib/chat/orchestrator.js';
 
@@ -15,9 +20,7 @@ The root.
 /**
  * Create a mock ChatService that returns scripted responses.
  */
-function mockService(
-  responses: ChatEvent[][],
-): ChatService {
+function mockService(responses: ChatEvent[][]): ChatService {
   let callIndex = 0;
   return {
     async *sendMessage(
@@ -67,7 +70,10 @@ describe('ChatOrchestrator', () => {
     const service = mockService([
       // First LLM call: returns a tool call
       [
-        { type: 'tool_call', call: { id: 'tc1', name: 'get_graph', input: {} } },
+        {
+          type: 'tool_call',
+          call: { id: 'tc1', name: 'get_graph', input: {} },
+        },
         { type: 'done', stopReason: 'tool_use' },
       ],
       // Second LLM call (after tool results): returns text
@@ -158,6 +164,7 @@ describe('ChatOrchestrator', () => {
 
   it('emits error on service failure', async () => {
     const service: ChatService = {
+      // eslint-disable-next-line require-yield
       async *sendMessage(): AsyncGenerator<ChatEvent, void, unknown> {
         throw new Error('Network failure');
       },

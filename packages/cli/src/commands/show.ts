@@ -25,7 +25,13 @@ export const showCommand = new Command('show')
     console.log('');
     console.log('Status breakdown:');
 
-    const statuses: Status[] = ['complete', 'started', 'planning', 'notstarted', 'blocked'];
+    const statuses: Status[] = [
+      'complete',
+      'started',
+      'planning',
+      'notstarted',
+      'blocked',
+    ];
     for (const s of statuses) {
       const count = summary.byStatus[s];
       if (count > 0) {

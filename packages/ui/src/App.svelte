@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { VineGraph } from '@bacchus/core';
-  import { parse, getRoot, VineParseError, VineValidationError } from '@bacchus/core';
+  import {
+    parse,
+    getRoot,
+    VineParseError,
+    VineValidationError,
+  } from '@bacchus/core';
   import GraphView from './lib/components/GraphView.svelte';
   import LandingScreen from './lib/components/LandingScreen.svelte';
   import { initAudio } from './lib/sound.js';
@@ -76,7 +81,12 @@
 
 <main>
   {#if vineGraph}
-    <GraphView graph={vineGraph} graphTitle={getRoot(vineGraph).shortName} onreset={handleReset} onupdate={handleGraphUpdate} />
+    <GraphView
+      graph={vineGraph}
+      graphTitle={getRoot(vineGraph).shortName}
+      onreset={handleReset}
+      onupdate={handleGraphUpdate}
+    />
   {:else if autoLoading}
     <div class="loading">
       <p>Loading…</p>
@@ -86,7 +96,11 @@
     {#if autoLoadError}
       <div class="auto-error">
         <p>{autoLoadError}</p>
-        <button onclick={() => { autoLoadError = null; }}>Dismiss</button>
+        <button
+          onclick={() => {
+            autoLoadError = null;
+          }}>Dismiss</button
+        >
       </div>
     {/if}
   {/if}
@@ -139,7 +153,9 @@
     color: var(--color-error);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: background 150ms, color 150ms;
+    transition:
+      background 150ms,
+      color 150ms;
     white-space: nowrap;
   }
 

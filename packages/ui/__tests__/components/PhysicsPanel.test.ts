@@ -53,7 +53,9 @@ describe('PhysicsPanel', () => {
   });
 
   it('expands on click', async () => {
-    const { getByRole, container } = render(PhysicsPanel, { props: defaultProps() });
+    const { getByRole, container } = render(PhysicsPanel, {
+      props: defaultProps(),
+    });
     const toggle = getByRole('button', { name: /toggle physics controls/i });
 
     await fireEvent.click(toggle);
@@ -64,7 +66,9 @@ describe('PhysicsPanel', () => {
   });
 
   it('renders all 9 sliders when expanded', async () => {
-    const { getByRole, container } = render(PhysicsPanel, { props: defaultProps() });
+    const { getByRole, container } = render(PhysicsPanel, {
+      props: defaultProps(),
+    });
     const toggle = getByRole('button', { name: /toggle physics controls/i });
 
     await fireEvent.click(toggle);
@@ -74,7 +78,9 @@ describe('PhysicsPanel', () => {
   });
 
   it('renders group headers', async () => {
-    const { getByRole, getByText } = render(PhysicsPanel, { props: defaultProps() });
+    const { getByRole, getByText } = render(PhysicsPanel, {
+      props: defaultProps(),
+    });
     const toggle = getByRole('button', { name: /toggle physics controls/i });
 
     await fireEvent.click(toggle);

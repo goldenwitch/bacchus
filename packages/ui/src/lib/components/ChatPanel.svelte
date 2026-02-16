@@ -6,7 +6,11 @@
   import type { OrchestratorEvent } from '../chat/orchestrator.js';
   import { getApiKey, setApiKey } from '../chat/apikey.js';
 
-  let { graph, onupdate, onclose }: {
+  let {
+    graph,
+    onupdate,
+    onclose,
+  }: {
     graph: VineGraph | null;
     onupdate: (graph: VineGraph) => void;
     onclose: () => void;
@@ -114,7 +118,10 @@
           // Subsequent text — append to existing assistant message
           const msg = messages[assistantIdx];
           if (msg.type === 'assistant') {
-            messages[assistantIdx] = { type: 'assistant', content: msg.content + event.content };
+            messages[assistantIdx] = {
+              type: 'assistant',
+              content: msg.content + event.content,
+            };
           }
         }
       }
@@ -154,8 +161,23 @@
   <!-- Header -->
   <div class="chat-header">
     <span class="chat-title">Chat Planner</span>
-    <button class="close-btn" onclick={onclose} aria-label="Close chat panel" title="Close">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button
+      class="close-btn"
+      onclick={onclose}
+      aria-label="Close chat panel"
+      title="Close"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />
       </svg>
@@ -174,21 +196,28 @@
           bind:value={keyInput}
           onkeydown={handleKeyInputKeyDown}
         />
-        <button class="key-save-btn" onclick={handleSaveKey} disabled={!keyInput.trim()}>
+        <button
+          class="key-save-btn"
+          onclick={handleSaveKey}
+          disabled={!keyInput.trim()}
+        >
           Save
         </button>
       </div>
-      <p class="key-hint">Stored locally in your browser. Never sent to our servers.</p>
+      <p class="key-hint">
+        Stored locally in your browser. Never sent to our servers.
+      </p>
     </div>
   {:else}
     <!-- Messages -->
     <div class="chat-messages" bind:this={messagesEl}>
       {#if messages.length === 0}
         <p class="chat-empty">
-          Describe the plan you'd like to create, or ask me to modify the current graph.
+          Describe the plan you'd like to create, or ask me to modify the
+          current graph.
         </p>
       {/if}
-      {#each messages as msg}
+      {#each messages as msg, i (i)}
         {#if msg.type === 'user'}
           <div class="msg msg-user">
             <p>{msg.content}</p>
@@ -234,7 +263,17 @@
         aria-label="Send message"
         title="Send"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
@@ -465,12 +504,20 @@
     animation: bounce 1.4s infinite ease-in-out both;
   }
 
-  .dot:nth-child(1) { animation-delay: -0.32s; }
-  .dot:nth-child(2) { animation-delay: -0.16s; }
-  .dot:nth-child(3) { animation-delay: 0s; }
+  .dot:nth-child(1) {
+    animation-delay: -0.32s;
+  }
+  .dot:nth-child(2) {
+    animation-delay: -0.16s;
+  }
+  .dot:nth-child(3) {
+    animation-delay: 0s;
+  }
 
   @keyframes bounce {
-    0%, 80%, 100% {
+    0%,
+    80%,
+    100% {
       transform: scale(0);
       opacity: 0.4;
     }

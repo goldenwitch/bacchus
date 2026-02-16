@@ -44,8 +44,10 @@ vi.mock('../../src/lib/layout.js', async (importOriginal) => {
       // Resolve link source/target strings → object references (like forceLink does)
       const nodeById = new Map(nodes.map((n: any) => [n.id, n]));
       for (const l of links) {
-        if (typeof l.source === 'string') l.source = nodeById.get(l.source) ?? l.source;
-        if (typeof l.target === 'string') l.target = nodeById.get(l.target) ?? l.target;
+        if (typeof l.source === 'string')
+          l.source = nodeById.get(l.source) ?? l.source;
+        if (typeof l.target === 'string')
+          l.target = nodeById.get(l.target) ?? l.target;
       }
       let tickFn: (() => void) | undefined;
       const sim = {
@@ -110,7 +112,9 @@ describe('GraphView', () => {
   });
 
   it('renders correct number of node groups', async () => {
-    const { container } = render(GraphView, { props: { graph: simpleGraph() } });
+    const { container } = render(GraphView, {
+      props: { graph: simpleGraph() },
+    });
     await vi.advanceTimersByTimeAsync(500);
     // simpleGraph has 3 tasks → 3 GraphNode components → 3 circles each (glow, fill, badge)
     // + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 13
@@ -119,7 +123,9 @@ describe('GraphView', () => {
   });
 
   it('renders correct number of edge paths', async () => {
-    const { container } = render(GraphView, { props: { graph: simpleGraph() } });
+    const { container } = render(GraphView, {
+      props: { graph: simpleGraph() },
+    });
     await vi.advanceTimersByTimeAsync(500);
     // simpleGraph: mid→leaf, root→mid = 2 edges; select main vine paths (stroke-width 2.5)
     const edgePaths = container.querySelectorAll('path[stroke-width="2.5"]');
@@ -127,20 +133,26 @@ describe('GraphView', () => {
   });
 
   it('renders sidebar component', async () => {
-    const { container } = render(GraphView, { props: { graph: simpleGraph() } });
+    const { container } = render(GraphView, {
+      props: { graph: simpleGraph() },
+    });
     await vi.advanceTimersByTimeAsync(500);
     // Sidebar is mounted but hidden when no task is focused
     expect(container.querySelector('aside.sidebar')).toBeNull();
   });
 
   it('renders toolbar component', async () => {
-    const { container } = render(GraphView, { props: { graph: simpleGraph() } });
+    const { container } = render(GraphView, {
+      props: { graph: simpleGraph() },
+    });
     await vi.advanceTimersByTimeAsync(500);
     expect(container.querySelector('.toolbar')).toBeTruthy();
   });
 
   it('single-task graph has one node and zero edges', async () => {
-    const { container } = render(GraphView, { props: { graph: singleTaskGraph() } });
+    const { container } = render(GraphView, {
+      props: { graph: singleTaskGraph() },
+    });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
     // 1 node × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 7
@@ -150,7 +162,9 @@ describe('GraphView', () => {
   });
 
   it('diamond graph has four nodes and four edges', async () => {
-    const { container } = render(GraphView, { props: { graph: diamondGraph() } });
+    const { container } = render(GraphView, {
+      props: { graph: diamondGraph() },
+    });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
     // 4 nodes × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 16

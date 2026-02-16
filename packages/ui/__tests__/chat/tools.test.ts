@@ -77,7 +77,11 @@ describe('executeToolCall', () => {
       const graph = sampleGraph();
       const result = executeToolCall(
         graph,
-        call('add_task', { id: 'new-task', shortName: 'New Task', status: 'planning' }),
+        call('add_task', {
+          id: 'new-task',
+          shortName: 'New Task',
+          status: 'planning',
+        }),
       );
       expect(result.isError).toBe(false);
       expect(result.graph).not.toBe(graph);
@@ -93,7 +97,9 @@ describe('executeToolCall', () => {
         call('add_task', { id: 'default-task', shortName: 'Default' }),
       );
       expect(result.isError).toBe(false);
-      expect(result.graph?.tasks.get('default-task')?.status).toBe('notstarted');
+      expect(result.graph?.tasks.get('default-task')?.status).toBe(
+        'notstarted',
+      );
     });
 
     it('returns error for duplicate id', () => {
@@ -119,14 +125,20 @@ describe('executeToolCall', () => {
   describe('remove_task', () => {
     it('removes a task', () => {
       const graph = sampleGraph();
-      const result = executeToolCall(graph, call('remove_task', { id: 'leaf' }));
+      const result = executeToolCall(
+        graph,
+        call('remove_task', { id: 'leaf' }),
+      );
       expect(result.isError).toBe(false);
       expect(result.graph?.tasks.has('leaf')).toBe(false);
     });
 
     it('returns error for root removal', () => {
       const graph = sampleGraph();
-      const result = executeToolCall(graph, call('remove_task', { id: 'root' }));
+      const result = executeToolCall(
+        graph,
+        call('remove_task', { id: 'root' }),
+      );
       expect(result.isError).toBe(true);
       expect(result.result).toContain('Error');
     });
@@ -211,7 +223,9 @@ describe('executeToolCall', () => {
         call('remove_dependency', { taskId: 'root', dependencyId: 'leaf' }),
       );
       expect(result.isError).toBe(false);
-      expect(result.graph?.tasks.get('root')?.dependencies).not.toContain('leaf');
+      expect(result.graph?.tasks.get('root')?.dependencies).not.toContain(
+        'leaf',
+      );
       expect(result.graph?.tasks.get('root')?.dependencies).toContain('mid');
     });
 
@@ -237,7 +251,10 @@ Just one task.
     });
 
     it('returns error for invalid VINE text', () => {
-      const result = executeToolCall(null, call('replace_graph', { vineText: 'not valid vine' }));
+      const result = executeToolCall(
+        null,
+        call('replace_graph', { vineText: 'not valid vine' }),
+      );
       expect(result.isError).toBe(true);
       expect(result.result).toContain('Error');
     });

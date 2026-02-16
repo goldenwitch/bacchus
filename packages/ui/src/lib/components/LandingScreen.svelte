@@ -7,7 +7,13 @@
   import ThemeToggle from './ThemeToggle.svelte';
   import ChatPanel from './ChatPanel.svelte';
 
-  let { onload, onupdate }: { onload: (graph: VineGraph) => void; onupdate?: (graph: VineGraph) => void } = $props();
+  let {
+    onload,
+    onupdate,
+  }: {
+    onload: (graph: VineGraph) => void;
+    onupdate?: (graph: VineGraph) => void;
+  } = $props();
   let error: string | null = $state(null);
   let chatOpen = $state(false);
 
@@ -107,9 +113,16 @@ End-to-end tests verifying the API and UI work together.
         <span>or plan with AI</span>
       </div>
 
-      <button class="try-example plan-ai" onclick={() => { chatOpen = !chatOpen; }}>
+      <button
+        class="try-example plan-ai"
+        onclick={() => {
+          chatOpen = !chatOpen;
+        }}
+      >
         <span class="try-example-label">💬 Plan with AI</span>
-        <span class="try-example-sub">Create a task graph through conversation</span>
+        <span class="try-example-sub"
+          >Create a task graph through conversation</span
+        >
       </button>
     </div>
 
@@ -117,12 +130,23 @@ End-to-end tests verifying the API and UI work together.
       <div class="error-card anim-error-shake">
         <span class="error-icon">⚠️</span>
         <p class="error-message">{error}</p>
-        <button class="dismiss" onclick={() => { error = null; }}>Dismiss</button>
+        <button
+          class="dismiss"
+          onclick={() => {
+            error = null;
+          }}>Dismiss</button
+        >
       </div>
     {/if}
   </div>
   {#if chatOpen}
-    <ChatPanel graph={null} onupdate={handleChatGraphUpdate} onclose={() => { chatOpen = false; }} />
+    <ChatPanel
+      graph={null}
+      onupdate={handleChatGraphUpdate}
+      onclose={() => {
+        chatOpen = false;
+      }}
+    />
   {/if}
 </div>
 
@@ -151,7 +175,11 @@ End-to-end tests verifying the API and UI work together.
     font-size: 3rem;
     font-weight: 700;
     margin: 0;
-    background: linear-gradient(135deg, var(--color-complete), var(--color-planning));
+    background: linear-gradient(
+      135deg,
+      var(--color-complete),
+      var(--color-planning)
+    );
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -212,7 +240,9 @@ End-to-end tests verifying the API and UI work together.
     color: var(--color-error);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: background 150ms, color 150ms;
+    transition:
+      background 150ms,
+      color 150ms;
     flex-shrink: 0;
   }
 

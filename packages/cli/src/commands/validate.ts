@@ -11,10 +11,14 @@ export const validateCommand = new Command('validate')
       console.log('✓ Valid — no errors found.');
     } catch (error: unknown) {
       if (error instanceof VineParseError) {
-        console.error(`Parse error (line ${String(error.line)}): ${error.message}`);
+        console.error(
+          `Parse error (line ${String(error.line)}): ${error.message}`,
+        );
         process.exitCode = 1;
       } else if (error instanceof VineValidationError) {
-        console.error(`Validation error [${error.constraint}]: ${error.message}`);
+        console.error(
+          `Validation error [${error.constraint}]: ${error.message}`,
+        );
         process.exitCode = 1;
       } else {
         throw error;

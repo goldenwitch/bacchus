@@ -60,8 +60,14 @@ export function buildDependantsMap(links: SimLink[]): Map<string, string[]> {
   for (const link of links) {
     // link.source depends on link.target (source → target means "source needs target")
     // So target's dependant is source.
-    const sourceId = typeof link.source === 'string' ? link.source : (link.source as SimNode).id;
-    const targetId = typeof link.target === 'string' ? link.target : (link.target as SimNode).id;
+    const sourceId =
+      typeof link.source === 'string'
+        ? link.source
+        : (link.source as SimNode).id;
+    const targetId =
+      typeof link.target === 'string'
+        ? link.target
+        : (link.target as SimNode).id;
     let arr = map.get(targetId);
     if (!arr) {
       arr = [];
@@ -77,13 +83,15 @@ export function buildDependantsMap(links: SimLink[]): Map<string, string[]> {
  * toward the mean x-position of its dependants (parents in the layer above).
  * This clusters sibling dependencies under their shared parent.
  */
-export function forceCluster(dependantsMap: Map<string, string[]>, strength: number) {
+export function forceCluster(
+  dependantsMap: Map<string, string[]>,
+  strength: number,
+) {
   let nodes: SimNode[] = [];
   let _strength = strength;
   let nodeById = new Map<string, SimNode>();
 
   function force(alpha: number) {
-
     for (const node of nodes) {
       const depIds = dependantsMap.get(node.id);
       if (!depIds || depIds.length === 0) continue;
@@ -249,9 +257,11 @@ export function createSimulation(
         .distance((link) => {
           const s = link.source as SimNode;
           const t = link.target as SimNode;
-          return computeNodeRadius(s.task.shortName.length)
-               + computeNodeRadius(t.task.shortName.length)
-               + cfg.minEdgeGap;
+          return (
+            computeNodeRadius(s.task.shortName.length) +
+            computeNodeRadius(t.task.shortName.length) +
+            cfg.minEdgeGap
+          );
         })
         .strength(cfg.linkStrength)
         .iterations(2),
@@ -262,7 +272,9 @@ export function createSimulation(
     // the range so distant clusters don't repel each other.
     .force(
       'charge',
-      forceManyBody<SimNode>().strength(cfg.chargeStrength).distanceMax(cfg.chargeDistanceMax),
+      forceManyBody<SimNode>()
+        .strength(cfg.chargeStrength)
+        .distanceMax(cfg.chargeDistanceMax),
     )
 
     // ── Horizontal centering force ──
@@ -275,7 +287,10 @@ export function createSimulation(
     .force(
       'collide',
       forceCollide<SimNode>()
-        .radius((d) => computeNodeRadius(d.task.shortName.length) + cfg.collidePadding)
+        .radius(
+          (d) =>
+            computeNodeRadius(d.task.shortName.length) + cfg.collidePadding,
+        )
         .strength(cfg.collideStrength)
         .iterations(2),
     )
@@ -308,7 +323,9 @@ export function createSimulation(
     )
     .force(
       'rootY',
-      forceY<SimNode>(height * 0.1).strength((d) => (d.id === rootId ? 0.3 : 0)),
+      forceY<SimNode>(height * 0.1).strength((d) =>
+        d.id === rootId ? 0.3 : 0,
+      ),
     );
 
   return sim;
@@ -329,30 +346,43 @@ export function applyPhysicsConfig(
   sim.velocityDecay(config.velocityDecay);
 
   // Patch link force
-  const linkForce = sim.force('link') as ReturnType<typeof forceLink<SimNode, SimLink>> | null;
+  const linkForce = sim.force('link') as ReturnType<
+    typeof forceLink<SimNode, SimLink>
+  > | null;
   if (linkForce) {
     linkForce
       .distance((link) => {
         const s = link.source as SimNode;
         const t = link.target as SimNode;
-        return computeNodeRadius(s.task.shortName.length)
-             + computeNodeRadius(t.task.shortName.length)
-             + config.minEdgeGap;
+        return (
+          computeNodeRadius(s.task.shortName.length) +
+          computeNodeRadius(t.task.shortName.length) +
+          config.minEdgeGap
+        );
       })
       .strength(config.linkStrength);
   }
 
   // Patch charge force
-  const chargeForce = sim.force('charge') as ReturnType<typeof forceManyBody<SimNode>> | null;
+  const chargeForce = sim.force('charge') as ReturnType<
+    typeof forceManyBody<SimNode>
+  > | null;
   if (chargeForce) {
-    chargeForce.strength(config.chargeStrength).distanceMax(config.chargeDistanceMax);
+    chargeForce
+      .strength(config.chargeStrength)
+      .distanceMax(config.chargeDistanceMax);
   }
 
   // Patch collide force
-  const collideForce = sim.force('collide') as ReturnType<typeof forceCollide<SimNode>> | null;
+  const collideForce = sim.force('collide') as ReturnType<
+    typeof forceCollide<SimNode>
+  > | null;
   if (collideForce) {
     collideForce
-      .radius((d: SimNode) => computeNodeRadius(d.task.shortName.length) + config.collidePadding)
+      .radius(
+        (d: SimNode) =>
+          computeNodeRadius(d.task.shortName.length) + config.collidePadding,
+      )
       .strength(config.collideStrength);
   }
 
@@ -369,23 +399,31 @@ export function applyPhysicsConfig(
   }
 
   // Patch cluster force
-  const clusterForce = sim.force('cluster') as ReturnType<typeof forceCluster> | null;
+  const clusterForce = sim.force('cluster') as ReturnType<
+    typeof forceCluster
+  > | null;
   if (clusterForce) {
     clusterForce.strength(config.clusterStrength);
   }
 
   // Patch horizontal centering force
-  const centerXForce = sim.force('centerX') as ReturnType<typeof forceX<SimNode>> | null;
+  const centerXForce = sim.force('centerX') as ReturnType<
+    typeof forceX<SimNode>
+  > | null;
   if (centerXForce) {
     centerXForce.x(cx).strength(config.centerStrength);
   }
 
   // Patch root positioning forces
-  const rootXForce = sim.force('rootX') as ReturnType<typeof forceX<SimNode>> | null;
+  const rootXForce = sim.force('rootX') as ReturnType<
+    typeof forceX<SimNode>
+  > | null;
   if (rootXForce) {
     rootXForce.x(cx);
   }
-  const rootYForce = sim.force('rootY') as ReturnType<typeof forceY<SimNode>> | null;
+  const rootYForce = sim.force('rootY') as ReturnType<
+    typeof forceY<SimNode>
+  > | null;
   if (rootYForce) {
     rootYForce.y(height * 0.1);
   }
@@ -427,7 +465,7 @@ export function computeFocusBandPositions(
 
   // Band Y positions: dependants at top ~25%, focused at center ~50%, deps at bottom ~75%
   const topY = height * 0.25;
-  const midY = height * 0.50;
+  const midY = height * 0.5;
   const botY = height * 0.75;
 
   const result: BandPosition[] = [];

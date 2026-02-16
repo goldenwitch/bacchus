@@ -1,4 +1,9 @@
-import type { ChatService, ChatEvent, ChatMessage, ToolDefinition } from './types.js';
+import type {
+  ChatService,
+  ChatEvent,
+  ChatMessage,
+  ToolDefinition,
+} from './types.js';
 
 /**
  * Anthropic Messages API chat service.
@@ -13,7 +18,7 @@ export class AnthropicChatService implements ChatService {
 
   constructor(options: { apiKey: string; model?: string; apiUrl?: string }) {
     this.apiKey = options.apiKey;
-    this.model = options.model ?? 'claude-opus-4-6-20250219';
+    this.model = options.model ?? 'claude-opus-4-6';
     this.apiUrl = options.apiUrl ?? 'https://api.anthropic.com';
   }
 
@@ -44,7 +49,9 @@ export class AnthropicChatService implements ChatService {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Anthropic API error ${String(response.status)}: ${errorText}`);
+      throw new Error(
+        `Anthropic API error ${String(response.status)}: ${errorText}`,
+      );
     }
 
     if (!response.body) {
@@ -61,9 +68,7 @@ export class AnthropicChatService implements ChatService {
    * `user` role message, and tool calls as `tool_use` blocks in an
    * `assistant` message.
    */
-  private mapMessages(
-    messages: readonly ChatMessage[],
-  ): AnthropicMessage[] {
+  private mapMessages(messages: readonly ChatMessage[]): AnthropicMessage[] {
     const result: AnthropicMessage[] = [];
 
     for (const msg of messages) {
@@ -205,8 +210,18 @@ export class AnthropicChatService implements ChatService {
 
 type AnthropicContentBlock =
   | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean };
+  | {
+      type: 'tool_use';
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }
+  | {
+      type: 'tool_result';
+      tool_use_id: string;
+      content: string;
+      is_error?: boolean;
+    };
 
 interface AnthropicMessage {
   role: 'user' | 'assistant';

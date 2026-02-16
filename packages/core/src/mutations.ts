@@ -164,9 +164,7 @@ export function addDependency(
     throw new VineError(`Task not found: ${depId}`);
   }
   if (task.dependencies.includes(depId)) {
-    throw new VineError(
-      `Task "${taskId}" already depends on "${depId}".`,
-    );
+    throw new VineError(`Task "${taskId}" already depends on "${depId}".`);
   }
 
   const updated: Task = {
@@ -197,9 +195,7 @@ export function removeDependency(
     throw new VineError(`Task not found: ${depId}`);
   }
   if (!task.dependencies.includes(depId)) {
-    throw new VineError(
-      `Task "${taskId}" does not depend on "${depId}".`,
-    );
+    throw new VineError(`Task "${taskId}" does not depend on "${depId}".`);
   }
 
   const updated: Task = {
