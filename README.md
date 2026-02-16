@@ -151,6 +151,18 @@ The [`examples/`](examples/) folder contains `.vine` files you can drag into the
 
 Start the dev server and drag any file onto the landing page to visualize it.
 
+### Chat Planner
+
+The UI includes an AI-powered chat panel for creating and editing task graphs through conversation:
+
+1. Click the **chat bubble** icon in the toolbar (or **"Plan with AI"** on the landing screen)
+2. Enter your **Anthropic API key** when prompted (stored locally, never sent to our servers)
+3. Describe the plan you'd like to create — e.g., *"Create a project plan for launching a mobile app"*
+4. The AI uses structured tool calls to manipulate the graph with validated mutations
+5. Changes appear live in the visualization as the AI works
+
+The chat planner uses Claude (Opus 4.6) via the Anthropic Messages API with streaming and tool-use. The LLM interface is abstracted behind a `ChatService` interface for future provider swaps.
+
 ### Commands
 
 | Command                              | Description                  |

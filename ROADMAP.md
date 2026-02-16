@@ -13,11 +13,17 @@ The following features are currently available:
 - **Sound Effects & Animations**: Tasks "pop" into existence with visual and audio feedback for a polished experience
 - **CLI Tool** (`@bacchus/cli`): Command-line interface for validating, viewing, listing, adding, and updating tasks in `.vine` files
 
+## Implemented (New)
+
+Recently completed features:
+
+- **Chat Planner** (`@bacchus/ui`): AI-powered chat panel for creating and editing task graphs through natural conversation. Uses Anthropic Claude with structured tool-use to call validated graph mutations. Includes API key management (localStorage), streaming responses, and a toggleable left-side chat panel.
+
 ## Planned
 
 High-priority features in active development:
 
-- **Chat Planner**: Ability to edit and create task graphs through natural conversation
+- **Chat Planner Enhancements**: Conversation persistence, model selection, export/import chat history, and richer tool feedback
 
 ## Exploring
 

@@ -67,17 +67,22 @@
       window.history.replaceState({}, '', url.toString());
     }
   }
+
+  function handleGraphUpdate(updated: VineGraph) {
+    vineGraph = updated;
+    document.title = `${getRoot(updated).shortName} — Bacchus`;
+  }
 </script>
 
 <main>
   {#if vineGraph}
-    <GraphView graph={vineGraph} graphTitle={getRoot(vineGraph).shortName} onreset={handleReset} />
+    <GraphView graph={vineGraph} graphTitle={getRoot(vineGraph).shortName} onreset={handleReset} onupdate={handleGraphUpdate} />
   {:else if autoLoading}
     <div class="loading">
       <p>Loading…</p>
     </div>
   {:else}
-    <LandingScreen onload={handleGraphLoaded} />
+    <LandingScreen onload={handleGraphLoaded} onupdate={handleGraphUpdate} />
     {#if autoLoadError}
       <div class="auto-error">
         <p>{autoLoadError}</p>

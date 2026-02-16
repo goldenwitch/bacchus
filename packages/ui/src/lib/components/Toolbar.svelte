@@ -2,7 +2,7 @@
   import MuteButton from './MuteButton.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
 
-  let { onreset, graphTitle, onzoomin, onzoomout, onfitview, zoomLevel, svgElement }: {
+  let { onreset, graphTitle, onzoomin, onzoomout, onfitview, zoomLevel, svgElement, onchat, chatOpen }: {
     onreset?: () => void;
     graphTitle?: string;
     onzoomin?: () => void;
@@ -10,6 +10,8 @@
     onfitview?: () => void;
     zoomLevel?: number;
     svgElement?: SVGSVGElement;
+    onchat?: () => void;
+    chatOpen?: boolean;
   } = $props();
 
   function resolveVarReferences(el: Element): void {
@@ -152,6 +154,19 @@
       </svg>
     </button>
   {/if}
+  {#if onchat}
+    <button
+      class="home-btn"
+      class:chat-active={chatOpen}
+      onclick={onchat}
+      aria-label={chatOpen ? 'Close chat planner' : 'Open chat planner'}
+      title={chatOpen ? 'Close chat' : 'Chat planner'}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    </button>
+  {/if}
   <ThemeToggle />
   <MuteButton />
 </div>
@@ -188,6 +203,10 @@
 
   .home-btn:hover {
     opacity: 0.8;
+  }
+
+  .chat-active {
+    color: var(--accent-green);
   }
 
   .zoom-level {

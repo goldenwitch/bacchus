@@ -1,0 +1,313 @@
+import type { VineGraph, Task, Status } from '@bacchus/core';
+import {
+  addTask,
+  removeTask,
+  setStatus,
+  updateTask,
+  addDependency,
+  removeDependency,
+  parse,
+  serialize,
+} from '@bacchus/core';
+import type { ToolCall, ToolDefinition } from './types.js';
+
+// ---------------------------------------------------------------------------
+// Tool definitions — JSON schemas for the LLM
+// ---------------------------------------------------------------------------
+
+export const GRAPH_TOOLS: readonly ToolDefinition[] = [
+  {
+    name: 'get_graph',
+    description:
+      'Get the current task graph as VINE text. Call this before making changes to understand the current state.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'add_task',
+    description:
+      'Add a new task to the graph. The task id must be unique (alphanumeric and hyphens). Status defaults to "notstarted". The task is inserted before the root.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Unique id for the task (alphanumeric and hyphens only)',
+        },
+        shortName: {
+          type: 'string',
+          description: 'Short display name for the task',
+        },
+        status: {
+          type: 'string',
+          enum: ['complete', 'notstarted', 'planning', 'blocked', 'started'],
+          description: 'Task status (defaults to "notstarted")',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the task',
+        },
+        dependencies: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of task ids this task depends on',
+        },
+        decisions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of decision notes for the task',
+        },
+      },
+      required: ['id', 'shortName'],
+    },
+  },
+  {
+    name: 'remove_task',
+    description:
+      'Remove a task from the graph. Cannot remove the root task. Also cleans up dependency references.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'The id of the task to remove',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'set_status',
+    description: 'Change the status of an existing task.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'The id of the task to update',
+        },
+        status: {
+          type: 'string',
+          enum: ['complete', 'notstarted', 'planning', 'blocked', 'started'],
+          description: 'The new status',
+        },
+      },
+      required: ['id', 'status'],
+    },
+  },
+  {
+    name: 'update_task',
+    description:
+      'Update metadata on an existing task (name, description, decisions). Does not change id, status, or dependencies.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'The id of the task to update',
+        },
+        shortName: {
+          type: 'string',
+          description: 'New short name',
+        },
+        description: {
+          type: 'string',
+          description: 'New description',
+        },
+        decisions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'New decision notes (replaces existing)',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'add_dependency',
+    description:
+      'Add a dependency edge. The task (taskId) will depend on the target (dependencyId). Cannot create cycles.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'The task that gains a new dependency',
+        },
+        dependencyId: {
+          type: 'string',
+          description: 'The task being depended on',
+        },
+      },
+      required: ['taskId', 'dependencyId'],
+    },
+  },
+  {
+    name: 'remove_dependency',
+    description: 'Remove a dependency edge between two tasks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: {
+          type: 'string',
+          description: 'The task that has the dependency',
+        },
+        dependencyId: {
+          type: 'string',
+          description: 'The dependency to remove',
+        },
+      },
+      required: ['taskId', 'dependencyId'],
+    },
+  },
+  {
+    name: 'replace_graph',
+    description:
+      'Replace the entire graph with new VINE text. Use this to create a graph from scratch or to make bulk changes. The text must be valid VINE format.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        vineText: {
+          type: 'string',
+          description: 'Complete VINE-format text for the new graph',
+        },
+      },
+      required: ['vineText'],
+    },
+  },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Tool execution
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of executing a tool call.
+ */
+export interface ToolExecResult {
+  readonly graph: VineGraph | null;
+  readonly result: string;
+  readonly isError: boolean;
+}
+
+/**
+ * Execute a tool call against the current graph.
+ *
+ * Returns the (possibly updated) graph and a human-readable result string.
+ * If the tool call fails validation, the error is returned as the result
+ * so the LLM can self-correct.
+ */
+export function executeToolCall(
+  graph: VineGraph | null,
+  call: ToolCall,
+): ToolExecResult {
+  try {
+    switch (call.name) {
+      case 'get_graph': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded. Use replace_graph to create one.', isError: false };
+        }
+        return { graph, result: serialize(graph), isError: false };
+      }
+
+      case 'add_task': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded. Use replace_graph first to create the initial graph.', isError: true };
+        }
+        const input = call.input;
+        const task: Task = {
+          id: input.id as string,
+          shortName: input.shortName as string,
+          status: typeof input.status === 'string' ? (input.status as Status) : 'notstarted',
+          description: typeof input.description === 'string' ? input.description : '',
+          dependencies: Array.isArray(input.dependencies) ? (input.dependencies as string[]) : [],
+          decisions: Array.isArray(input.decisions) ? (input.decisions as string[]) : [],
+        };
+        // Patch root to depend on the new task so it doesn't become an island.
+        // addTask inserts before root; we need root -> new-task for connectivity.
+        const rootId = graph.order[graph.order.length - 1];
+        const root = graph.tasks.get(rootId);
+        if (root && rootId !== task.id) {
+          const patchedRoot: Task = {
+            ...root,
+            dependencies: [...root.dependencies, task.id],
+          };
+          const patchedTasks = new Map(graph.tasks);
+          patchedTasks.set(rootId, patchedRoot);
+          const patchedGraph: VineGraph = { tasks: patchedTasks, order: graph.order };
+          const updated = addTask(patchedGraph, task);
+          return { graph: updated, result: `Added task "${task.id}" (${task.shortName})`, isError: false };
+        }
+        const updated = addTask(graph, task);
+        return { graph: updated, result: `Added task "${task.id}" (${task.shortName})`, isError: false };
+      }
+
+      case 'remove_task': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        const id = call.input.id as string;
+        const updated = removeTask(graph, id);
+        return { graph: updated, result: `Removed task "${id}"`, isError: false };
+      }
+
+      case 'set_status': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        const id = call.input.id as string;
+        const status = call.input.status as Status;
+        const updated = setStatus(graph, id, status);
+        return { graph: updated, result: `Set "${id}" status to ${status}`, isError: false };
+      }
+
+      case 'update_task': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        const id = call.input.id as string;
+        const fields: { shortName?: string; description?: string; decisions?: string[] } = {};
+        if (typeof call.input.shortName === 'string') fields.shortName = call.input.shortName;
+        if (typeof call.input.description === 'string') fields.description = call.input.description;
+        if (Array.isArray(call.input.decisions)) fields.decisions = call.input.decisions as string[];
+        const updated = updateTask(graph, id, fields);
+        return { graph: updated, result: `Updated task "${id}"`, isError: false };
+      }
+
+      case 'add_dependency': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        const taskId = call.input.taskId as string;
+        const depId = call.input.dependencyId as string;
+        const updated = addDependency(graph, taskId, depId);
+        return { graph: updated, result: `Added dependency: "${taskId}" -> "${depId}"`, isError: false };
+      }
+
+      case 'remove_dependency': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        const taskId = call.input.taskId as string;
+        const depId = call.input.dependencyId as string;
+        const updated = removeDependency(graph, taskId, depId);
+        return { graph: updated, result: `Removed dependency: "${taskId}" -> "${depId}"`, isError: false };
+      }
+
+      case 'replace_graph': {
+        const vineText = call.input.vineText as string;
+        const newGraph = parse(vineText);
+        return { graph: newGraph, result: `Graph replaced (${String(newGraph.order.length)} tasks)`, isError: false };
+      }
+
+      default:
+        return { graph, result: `Unknown tool: ${call.name}`, isError: true };
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { graph, result: `Error: ${message}`, isError: true };
+  }
+}

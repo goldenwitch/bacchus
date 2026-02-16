@@ -21,8 +21,9 @@
   import Toolbar from './Toolbar.svelte';
   import Legend from './Legend.svelte';
   import PhysicsPanel from './PhysicsPanel.svelte';
+  import ChatPanel from './ChatPanel.svelte';
 
-  let { graph, graphTitle, onreset }: { graph: VineGraph; graphTitle?: string; onreset?: () => void } = $props();
+  let { graph, graphTitle, onreset, onupdate }: { graph: VineGraph; graphTitle?: string; onreset?: () => void; onupdate?: (graph: VineGraph) => void } = $props();
 
   // Viewport dimensions — bound to the wrapper div
   let width = $state(800);
@@ -82,6 +83,7 @@
   let physicsOverrides: Partial<PhysicsConfig> = $state(loadOverrides());
   let physicsConfig: PhysicsConfig = $state(resolveConfig(0, physicsOverrides));
   let showStrataLines = $state(loadStrataOverride());
+  let chatOpen = $state(false);
 
   const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -549,8 +551,11 @@
   {/if}
   <Sidebar task={focusedTask} {graph} onclose={() => focusedTaskId = null} onfocus={(taskId) => focusedTaskId = taskId} />
   <Tooltip task={hoveredTask && !focusedTaskId ? hoveredTask : null} x={mouseX} y={mouseY} />
-  <Toolbar {onreset} {graphTitle} onzoomin={handleZoomIn} onzoomout={handleZoomOut} onfitview={handleFitView} zoomLevel={transform.k} svgElement={svgEl} />
+  <Toolbar {onreset} {graphTitle} onzoomin={handleZoomIn} onzoomout={handleZoomOut} onfitview={handleFitView} zoomLevel={transform.k} svgElement={svgEl} onchat={() => { chatOpen = !chatOpen; }} chatOpen={chatOpen} />
   <PhysicsPanel config={physicsConfig} onchange={handlePhysicsChange} onreset={handlePhysicsReset} {showStrataLines} ontogglestrata={(show) => { showStrataLines = show; saveStrataOverride(show); }} />
+  {#if chatOpen && onupdate}
+    <ChatPanel {graph} {onupdate} onclose={() => { chatOpen = false; }} />
+  {/if}
   <Legend />
 </div>
 

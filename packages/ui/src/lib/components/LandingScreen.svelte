@@ -5,9 +5,11 @@
   import FileDropZone from './FileDropZone.svelte';
   import UrlInput from './UrlInput.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
+  import ChatPanel from './ChatPanel.svelte';
 
-  let { onload }: { onload: (graph: VineGraph) => void } = $props();
+  let { onload, onupdate }: { onload: (graph: VineGraph) => void; onupdate?: (graph: VineGraph) => void } = $props();
   let error: string | null = $state(null);
+  let chatOpen = $state(false);
 
   const DIAMOND_EXAMPLE = `[schema] Design Database Schema (complete)
 Define tables, indexes, and constraints.
@@ -56,6 +58,13 @@ End-to-end tests verifying the API and UI work together.
     error = message;
   }
 
+  function handleChatGraphUpdate(graph: VineGraph) {
+    if (onupdate) {
+      onupdate(graph);
+    }
+    onload(graph);
+  }
+
   function formatDetails(details: ValidationDetails): string {
     switch (details.constraint) {
       case 'at-least-one-task':
@@ -93,6 +102,15 @@ End-to-end tests verifying the API and UI work together.
         <span class="try-example-label">✨ Try an example</span>
         <span class="try-example-sub">Load a sample dependency graph</span>
       </button>
+
+      <div class="divider">
+        <span>or plan with AI</span>
+      </div>
+
+      <button class="try-example plan-ai" onclick={() => { chatOpen = !chatOpen; }}>
+        <span class="try-example-label">💬 Plan with AI</span>
+        <span class="try-example-sub">Create a task graph through conversation</span>
+      </button>
     </div>
 
     {#if error}
@@ -103,6 +121,9 @@ End-to-end tests verifying the API and UI work together.
       </div>
     {/if}
   </div>
+  {#if chatOpen}
+    <ChatPanel graph={null} onupdate={handleChatGraphUpdate} onclose={() => { chatOpen = false; }} />
+  {/if}
 </div>
 
 <style>
@@ -227,6 +248,15 @@ End-to-end tests verifying the API and UI work together.
   .try-example-sub {
     font-size: 0.8rem;
     color: var(--text-dimmed);
+  }
+
+  .plan-ai {
+    border-color: var(--color-planning);
+    color: var(--color-planning);
+  }
+
+  .plan-ai:hover {
+    background: rgba(167, 139, 250, 0.1);
   }
 
   /* error-shake animation handled by global app.css */
