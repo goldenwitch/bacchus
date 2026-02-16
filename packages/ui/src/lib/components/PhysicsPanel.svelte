@@ -87,8 +87,7 @@
   .physics-panel {
     position: absolute;
     left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 60px;
     z-index: 135;
     background: var(--toolbar-bg);
     backdrop-filter: blur(8px);
@@ -140,7 +139,7 @@
 
   .physics-body {
     width: 230px;
-    max-height: 70vh;
+    max-height: calc(100vh - 180px);
     overflow-y: auto;
     padding: 0 12px 10px;
     scrollbar-width: thin;
@@ -161,7 +160,7 @@
   }
 
   .physics-group-header {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-dimmed);

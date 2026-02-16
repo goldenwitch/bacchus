@@ -190,6 +190,8 @@
       .scaleExtent([0.25, 4.0])
       .filter((event: Event) => {
         // Allow all wheel events for zoom, allow all other events for pan
+        // Block right-click so browser context menu still works
+        if (event instanceof MouseEvent && event.button === 2) return false;
         return true;
       })
       .on('zoom', (event) => {
@@ -215,7 +217,7 @@
   });
 
   const focusedStatusColor = $derived.by(() => {
-    if (!focusedTaskId) return 'var(--color-edge)';
+    if (!focusedTaskId) return 'var(--color-vine)';
     const task = getTask(graph, focusedTaskId);
     return getStatusColor(task.status);
   });
@@ -419,7 +421,7 @@
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const n of displayNodes) {
-      const r = n.radius || 40;
+      const r = computeNodeRadius(n.task.shortName.length);
       if (n.x! - r < minX) minX = n.x! - r;
       if (n.y! - r < minY) minY = n.y! - r;
       if (n.x! + r > maxX) maxX = n.x! + r;
@@ -480,7 +482,7 @@
 <div bind:clientWidth={width} bind:clientHeight={height} style="width: 100%; height: 100%;">
   <svg
     bind:this={svgEl}
-    role="img"
+    role="group"
     aria-label="Task dependency graph for {getRoot(graph).shortName}"
     style="width: 100%; height: 100%; display: block; background: var(--bg-primary); touch-action: none;"
     onclick={() => { focusedTaskId = null; dismissHints(); }}
@@ -502,6 +504,23 @@
         {/each}
       {/if}
 
+      <g pointer-events="none">
+        {#each displayLinks as link (link.sourceId + '-' + link.targetId)}
+          <GraphEdge
+            sourceX={link.sourceX}
+            sourceY={link.sourceY}
+            targetX={link.targetX}
+            targetY={link.targetY}
+            sourceId={link.sourceId}
+            targetId={link.targetId}
+            highlighted={focusedTaskId !== null && (link.sourceId === focusedTaskId || link.targetId === focusedTaskId)}
+            dimmed={focusedTaskId !== null && link.sourceId !== focusedTaskId && link.targetId !== focusedTaskId}
+            color={focusedTaskId !== null && (link.sourceId === focusedTaskId || link.targetId === focusedTaskId) ? focusedStatusColor : 'var(--color-vine)'}
+            visible={visibleNodeSet === null || (visibleNodeSet.has(link.sourceId) && visibleNodeSet.has(link.targetId))}
+          />
+        {/each}
+      </g>
+
       {#each displayNodes as node (node.id)}
         <GraphNode
           {node}
@@ -514,23 +533,6 @@
           onhoverend={() => { hoveredTaskId = null; }}
         />
       {/each}
-
-      <g pointer-events="none">
-        {#each displayLinks as link (link.sourceId + '-' + link.targetId)}
-          <GraphEdge
-            sourceX={link.sourceX}
-            sourceY={link.sourceY}
-            targetX={link.targetX}
-            targetY={link.targetY}
-            sourceId={link.sourceId}
-            targetId={link.targetId}
-            highlighted={focusedTaskId !== null && (link.sourceId === focusedTaskId || link.targetId === focusedTaskId)}
-            dimmed={focusedTaskId !== null && link.sourceId !== focusedTaskId && link.targetId !== focusedTaskId}
-            color={focusedTaskId !== null && (link.sourceId === focusedTaskId || link.targetId === focusedTaskId) ? focusedStatusColor : 'var(--color-edge-dim)'}
-            visible={visibleNodeSet === null || (visibleNodeSet.has(link.sourceId) && visibleNodeSet.has(link.targetId))}
-          />
-        {/each}
-      </g>
     </g>
   </svg>
   {#if showHints}

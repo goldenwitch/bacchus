@@ -137,7 +137,7 @@ End-to-end tests verifying the API and UI work together.
   }
 
   .tagline {
-    margin: -12px 0 0;
+    margin: 0;
     font-size: 1.1rem;
     color: var(--text-muted);
   }
@@ -229,19 +229,7 @@ End-to-end tests verifying the API and UI work together.
     color: var(--text-dimmed);
   }
 
-  @keyframes error-shake {
-    0%, 100% { transform: translateX(0); }
-    15% { transform: translateX(-4px); }
-    30% { transform: translateX(4px); }
-    45% { transform: translateX(-4px); }
-    60% { transform: translateX(4px); }
-    75% { transform: translateX(-2px); }
-    90% { transform: translateX(2px); }
-  }
-
-  .anim-error-shake {
-    animation: error-shake 300ms ease-out;
-  }
+  /* error-shake animation handled by global app.css */
 
   .theme-corner {
     position: absolute;

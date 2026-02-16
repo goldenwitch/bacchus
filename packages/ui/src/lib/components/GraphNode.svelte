@@ -1,17 +1,29 @@
 <script lang="ts">
   import { computeNodeRadius, type SimNode } from '../types.js';
-  import { STATUS_MAP } from '../status.js';
+  import { STATUS_MAP, themeVersion } from '../status.js';
   import { playPop, playHover } from '../sound.js';
 
   let { node, focused, dimmed, isRoot = false, visible = true, onfocus, onhoverstart, onhoverend }: { node: SimNode; focused: boolean; dimmed: boolean; isRoot?: boolean; visible?: boolean; onfocus: (id: string) => void; onhoverstart: (id: string, event: PointerEvent) => void; onhoverend: () => void } = $props();
 
-  const statusInfo = $derived(STATUS_MAP[node.task.status]);
+  const statusInfo = $derived.by(() => { void themeVersion(); return STATUS_MAP[node.task.status]; });
 
   const radius = $derived(computeNodeRadius(node.task.shortName.length));
 
   const opacity = $derived(dimmed ? 0.45 : 1.0);
 
   const filterId = $derived(`glow-${node.id}`);
+  const glassGradId = $derived(`glassGrad-${node.id}`);
+
+  // Glass effect: lighten the status fill for the gradient highlight
+  function adjustColor(hex: string, amount: number): string {
+    const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amount));
+    const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amount));
+    const b = Math.min(255, Math.max(0, parseInt(hex.slice(5, 7), 16) + amount));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }
+
+  const lightenedColor = $derived(adjustColor(statusInfo.darkColor, 40));
+  const darkenedColor = $derived(adjustColor(statusInfo.darkColor, -20));
 
   // Step 1: Wrap & truncate label text to fit inside the circle
   const textLines = $derived.by(() => {
@@ -91,6 +103,36 @@
   // Scale animation state
   let nodeScale = $state(visible ? 1 : 0);
 
+  // rAF-based tween to avoid GPU compositing layer promotion that corrupts
+  // SVG filter rendering (same class of bug as the .anim-label-bob removal).
+  let tweenRafId: number | null = null;
+
+  function cancelTween() {
+    if (tweenRafId !== null) {
+      cancelAnimationFrame(tweenRafId);
+      tweenRafId = null;
+    }
+  }
+
+  function animateScale(from: number, to: number, duration: number) {
+    cancelTween();
+    const start = performance.now();
+    function tick(now: number) {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      // Approximate cubic-bezier(0.34, 1.56, 0.64, 1) with an overshoot ease-out
+      const ease = 1 - Math.pow(1 - t, 3) * (1 - 1.56 * t);
+      nodeScale = from + (to - from) * ease;
+      if (t < 1) {
+        tweenRafId = requestAnimationFrame(tick);
+      } else {
+        nodeScale = to;
+        tweenRafId = null;
+      }
+    }
+    tweenRafId = requestAnimationFrame(tick);
+  }
+
   // React to visible prop changes (entry animation: scale 0 → 1)
   $effect(() => {
     if (visible) {
@@ -103,6 +145,7 @@
     onfocus(node.id);
     playPop();
     if (!prefersReducedMotion) {
+      cancelTween();
       // Squish sequence: 0.9 → 1.1 → 1.0
       nodeScale = 0.9;
       setTimeout(() => { nodeScale = 1.1; }, 80);
@@ -116,6 +159,7 @@
       onfocus(node.id);
       playPop();
       if (!prefersReducedMotion) {
+        cancelTween();
         nodeScale = 0.9;
         setTimeout(() => { nodeScale = 1.1; }, 80);
         setTimeout(() => { nodeScale = 1.0; }, 200);
@@ -126,12 +170,16 @@
   function handlePointerEnter(event: PointerEvent) {
     onhoverstart(node.id, event);
     playHover();
-    if (!prefersReducedMotion) nodeScale = 1.08;
+    if (!prefersReducedMotion) animateScale(nodeScale, 1.08, 200);
   }
 
   function handlePointerLeave() {
     onhoverend();
-    nodeScale = 1;
+    if (!prefersReducedMotion) {
+      animateScale(nodeScale, 1, 200);
+    } else {
+      nodeScale = 1;
+    }
   }
 </script>
 
@@ -150,12 +198,21 @@
   onfocusin={() => isFocused = true}
   onfocusout={() => isFocused = false}
 >
-  <g transform="scale({nodeScale})" style="transform-origin: 0px 0px;{prefersReducedMotion ? '' : ' transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);'}">
-    <!-- SVG filter for outer glow -->
+  <g transform="scale({nodeScale})" style="transform-origin: 0px 0px;">
+    <!-- SVG filters and gradients -->
     <defs>
+      <!-- Outer glow blur -->
       <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" />
       </filter>
+
+      <!-- Radial gradient: subtle lighter center → base → slightly darker edge -->
+      <radialGradient id={glassGradId} cx="45%" cy="40%" r="60%">
+        <stop offset="0%" stop-color={lightenedColor} />
+        <stop offset="60%" stop-color={statusInfo.darkColor} />
+        <stop offset="100%" stop-color={darkenedColor} />
+      </radialGradient>
+
     </defs>
 
     <!-- Root node gold outer ring -->
@@ -180,10 +237,10 @@
       class={node.task.status === 'started' ? 'anim-glow-pulse' : ''}
     />
 
-    <!-- Inner fill circle -->
+    <!-- Inner fill circle with gradient -->
     <circle
       r={radius}
-      fill={statusInfo.darkColor}
+      fill="url(#{glassGradId})"
       stroke={statusInfo.color}
       stroke-width="1.5"
       class={node.task.status === 'complete' ? 'anim-completion-shimmer' : ''}

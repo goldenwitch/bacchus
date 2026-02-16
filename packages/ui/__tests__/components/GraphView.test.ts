@@ -112,7 +112,8 @@ describe('GraphView', () => {
   it('renders correct number of node groups', async () => {
     const { container } = render(GraphView, { props: { graph: simpleGraph() } });
     await vi.advanceTimersByTimeAsync(500);
-    // simpleGraph has 3 tasks → 3 GraphNode components → 3 circles each + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 13
+    // simpleGraph has 3 tasks → 3 GraphNode components → 3 circles each (glow, fill, badge)
+    // + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 13
     const circles = container.querySelectorAll('circle');
     expect(circles.length).toBe(13);
   });
@@ -120,8 +121,8 @@ describe('GraphView', () => {
   it('renders correct number of edge paths', async () => {
     const { container } = render(GraphView, { props: { graph: simpleGraph() } });
     await vi.advanceTimersByTimeAsync(500);
-    // simpleGraph: mid→leaf, root→mid = 2 edges
-    const edgePaths = container.querySelectorAll('path[d*="Q"]');
+    // simpleGraph: mid→leaf, root→mid = 2 edges; select main vine paths (stroke-width 2.5)
+    const edgePaths = container.querySelectorAll('path[stroke-width="2.5"]');
     expect(edgePaths.length).toBe(2);
   });
 
@@ -142,7 +143,8 @@ describe('GraphView', () => {
     const { container } = render(GraphView, { props: { graph: singleTaskGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(7); // 1 node × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle
+    // 1 node × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 7
+    expect(circles.length).toBe(7);
     const edgePaths = container.querySelectorAll('path.anim-edge-flow');
     expect(edgePaths.length).toBe(0);
   });
@@ -151,8 +153,9 @@ describe('GraphView', () => {
     const { container } = render(GraphView, { props: { graph: diamondGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(16); // 4 nodes × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle
-    const edgePaths = container.querySelectorAll('path[d*="Q"]');
+    // 4 nodes × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 16
+    expect(circles.length).toBe(16);
+    const edgePaths = container.querySelectorAll('path[stroke-width="2.5"]');
     expect(edgePaths.length).toBe(4);
   });
 });

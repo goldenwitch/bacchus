@@ -46,7 +46,7 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
   },
   notstarted: {
     color: '#94a3b8',
-    darkColor: '#556270',
+    darkColor: '#3d4a5c',
     emoji: '📋',
     cssClass: 'status-notstarted',
     label: 'Not Started',
@@ -73,6 +73,17 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
   },
 };
 
+/** Reactive theme version counter — incremented on each refreshStatusColors() call.
+ *  Components should read this value in their $derived expressions to
+ *  re-compute when theme colors change. */
+let _themeVersion = 0;
+
+/** Current theme version — read this in $derived blocks to trigger
+ *  recomputation after theme changes. */
+export function themeVersion(): number {
+  return _themeVersion;
+}
+
 /** Read a CSS custom property value from the document root. */
 function getCssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -89,6 +100,7 @@ export function refreshStatusColors(): void {
     if (color) entry.color = color;
     if (darkColor) entry.darkColor = darkColor;
   }
+  _themeVersion++;
 }
 
 /** Get the primary color for a status. */
