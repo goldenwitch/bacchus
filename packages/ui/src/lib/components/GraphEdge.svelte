@@ -67,9 +67,8 @@
     };
   });
 
-  // Organic vine path: sample the base Bézier and add sinusoidal perturbation,
-  // then fit smooth cubic segments through the perturbed points
-  const vinePath = $derived.by(() => {
+  // Perturbed sample points along the base Bézier (shared by path + decorations)
+  const vinePoints = $derived.by(() => {
     const sx = sourceX, sy = sourceY;
     const ex = targetX, ey = targetY;
     const cx = controlPoint.x, cy = controlPoint.y;
@@ -78,30 +77,29 @@
     const amplitude = 5;
     const frequency = 3;
 
-    // Generate perturbed sample points along the base quad Bézier
     const points: { x: number; y: number }[] = [];
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
       const p = quadBezier(t, sx, sy, cx, cy, ex, ey);
       const tang = quadTangent(t, sx, sy, cx, cy, ex, ey);
       const tLen = Math.sqrt(tang.tx * tang.tx + tang.ty * tang.ty) || 1;
-      // Perpendicular to tangent
       const nx = -tang.ty / tLen;
       const ny = tang.tx / tLen;
-      // Sine wave displacement (zero at endpoints)
       const wave = Math.sin(t * Math.PI * frequency) * amplitude * Math.sin(t * Math.PI);
       points.push({ x: p.x + nx * wave, y: p.y + ny * wave });
     }
+    return points;
+  });
 
-    // Build smooth cubic Bézier path through the perturbed points
-    // Using Catmull-Rom → cubic Bézier conversion
+  // Smooth cubic Bézier path through the perturbed points (Catmull-Rom conversion)
+  const vinePath = $derived.by(() => {
+    const points = vinePoints;
     let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[Math.max(0, i - 1)];
       const p1 = points[i];
       const p2 = points[i + 1];
       const p3 = points[Math.min(points.length - 1, i + 2)];
-      // Catmull-Rom to cubic Bézier control points
       const cp1x = p1.x + (p2.x - p0.x) / 6;
       const cp1y = p1.y + (p2.y - p0.y) / 6;
       const cp2x = p2.x - (p3.x - p1.x) / 6;
@@ -111,46 +109,54 @@
     return d;
   });
 
+  // Interpolate position + tangent angle along the perturbed polyline at parameter t∈[0,1]
+  function samplePolyline(points: { x: number; y: number }[], t: number): { x: number; y: number; angle: number } {
+    t = Math.max(0, Math.min(1, t));
+    // Cumulative arc lengths
+    const lengths: number[] = [0];
+    for (let i = 1; i < points.length; i++) {
+      const dx = points[i].x - points[i - 1].x;
+      const dy = points[i].y - points[i - 1].y;
+      lengths.push(lengths[i - 1] + Math.sqrt(dx * dx + dy * dy));
+    }
+    const totalLen = lengths[lengths.length - 1] || 1;
+    const targetDist = t * totalLen;
+    // Find segment containing targetDist
+    let seg = 0;
+    for (let i = 1; i < lengths.length; i++) {
+      if (lengths[i] >= targetDist) { seg = i - 1; break; }
+      if (i === lengths.length - 1) seg = i - 1;
+    }
+    const segLen = lengths[seg + 1] - lengths[seg] || 1;
+    const local = (targetDist - lengths[seg]) / segLen;
+    const a = points[seg];
+    const b = points[seg + 1] ?? a;
+    return {
+      x: a.x + (b.x - a.x) * local,
+      y: a.y + (b.y - a.y) * local,
+      angle: Math.atan2(b.y - a.y, b.x - a.x) * (180 / Math.PI),
+    };
+  }
+
   // Straight-line distance used to determine decoration count
   const edgeLength = $derived(
     Math.sqrt((targetX - sourceX) ** 2 + (targetY - sourceY) ** 2)
   );
 
-  // Grapevine decorations: alternating leaves and tendrils along the vine
+  // Grapevine leaf decorations: fewer, larger, recognizable grape leaves
   const vineDecorations = $derived.by(() => {
-    const sx = sourceX, sy = sourceY;
-    const ex = targetX, ey = targetY;
-    const cx = controlPoint.x, cy = controlPoint.y;
-
-    // Dynamic count based on edge length, min 2, max 12
-    const count = Math.min(12, Math.max(2, Math.floor(edgeLength / 60)));
-    
-    // Evenly space from t=0.15 to t=0.85
+    const count = Math.min(6, Math.max(1, Math.floor(edgeLength / 120)));
     const decorations: Array<{
       x: number; y: number; angle: number;
-      type: 'leaf' | 'tendril';
-      scale: number;
+      side: number;
     }> = [];
 
     for (let i = 0; i < count; i++) {
-      const t = 0.15 + (i / (count - 1 || 1)) * 0.70;
-      const p = quadBezier(t, sx, sy, cx, cy, ex, ey);
-      const tang = quadTangent(t, sx, sy, cx, cy, ex, ey);
-      const tLen = Math.sqrt(tang.tx * tang.tx + tang.ty * tang.ty) || 1;
-      const angle = Math.atan2(tang.ty, tang.tx) * (180 / Math.PI);
+      const t = 0.2 + (i / (count - 1 || 1)) * 0.6;
+      const { x, y, angle } = samplePolyline(vinePoints, t);
       const side = i % 2 === 0 ? 1 : -1;
-      const type = i % 2 === 0 ? 'leaf' as const : 'tendril' as const;
-      
-      // Slight size variation seeded by index (0.8–1.2)
-      const scale = 0.8 + ((i * 7 + 3) % 5) / 10;
 
-      decorations.push({
-        x: p.x + (-tang.ty / tLen) * 6 * side,
-        y: p.y + (tang.tx / tLen) * 6 * side,
-        angle: angle + (side > 0 ? -30 : 150),
-        type,
-        scale,
-      });
+      decorations.push({ x, y, angle, side });
     }
 
     return decorations;
@@ -186,39 +192,24 @@
   style="transition: opacity 400ms, stroke 400ms;"
 />
 
-<!-- Grapevine decorations along the vine -->
+<!-- Grapevine leaf decorations along the vine -->
 {#each vineDecorations as deco}
-  {#if deco.type === 'leaf'}
-    <g
-      transform="translate({deco.x.toFixed(1)}, {deco.y.toFixed(1)}) rotate({deco.angle.toFixed(1)}) scale({deco.scale.toFixed(2)})"
-      opacity={opacity}
-      class="anim-vine-leaf-sway"
-      style="pointer-events: none; transition: opacity 400ms;"
-    >
+  <g
+    transform="translate({deco.x.toFixed(1)}, {deco.y.toFixed(1)}) rotate({(deco.angle + (deco.side > 0 ? -45 : 135)).toFixed(1)}) scale(2.2)"
+    opacity={opacity}
+    style="pointer-events: none; transition: opacity 400ms;"
+  >
+    <g>
+      <!-- Petiole (short stem connecting leaf to vine) -->
+      <line x1="0" y1="0" x2="3" y2="0" stroke="var(--color-vine)" stroke-width="0.5" opacity="0.4" />
+      <!-- Grape leaf: 3-lobed shape -->
       <path
-        d="M 0 0 C 1 -3, 6 -4, 8 0 C 6 4, 1 3, 0 0 z"
+        d="M 3 0 C 4 -2, 6 -4.5, 9 -3.5 C 10.5 -2.5, 11 -1, 10.5 0 C 11 1, 10.5 2.5, 9 3.5 C 6 4.5, 4 2, 3 0 z"
         fill="var(--color-vine-leaf)"
-        opacity="0.8"
+        opacity="0.4"
       />
-      <!-- Leaf vein -->
-      <line x1="0" y1="0" x2="7" y2="0" stroke="var(--color-vine)" stroke-width="0.5" opacity="0.5" />
+      <!-- Center vein -->
+      <line x1="3.5" y1="0" x2="9.5" y2="0" stroke="var(--color-vine)" stroke-width="0.3" opacity="0.25" />
     </g>
-  {:else}
-    <g
-      transform="translate({deco.x.toFixed(1)}, {deco.y.toFixed(1)}) rotate({deco.angle.toFixed(1)}) scale({deco.scale.toFixed(2)})"
-      opacity={opacity}
-      class="anim-vine-tendril-sway"
-      style="pointer-events: none; transition: opacity 400ms;"
-    >
-      <!-- Curling tendril -->
-      <path
-        d="M 0 0 C 2 -4, 5 -6, 4 -2 C 3 1, 6 3, 8 0"
-        fill="none"
-        stroke="var(--color-vine-leaf)"
-        stroke-width="0.8"
-        opacity="0.5"
-        stroke-linecap="round"
-      />
-    </g>
-  {/if}
+  </g>
 {/each}

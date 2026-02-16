@@ -13,11 +13,8 @@
 
   const filterId = $derived(`glow-${node.id}`);
   const glassGradId = $derived(`glassGrad-${node.id}`);
-  const innerShadowId = $derived(`innerShadow-${node.id}`);
-  const clipId = $derived(`nodeClip-${node.id}`);
-  const crescentGradId = $derived(`crescentGrad-${node.id}`);
 
-  // Glass effect: lighten/darken the status fill for gradient stops
+  // Glass effect: lighten the status fill for the gradient highlight
   function adjustColor(hex: string, amount: number): string {
     const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amount));
     const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amount));
@@ -26,47 +23,7 @@
   }
 
   const lightenedColor = $derived(adjustColor(statusInfo.darkColor, 40));
-  const darkenedColor = $derived(adjustColor(statusInfo.darkColor, -25));
-
-  // Crescent highlight geometry
-  const crescentPath = $derived.by(() => {
-    const outerR = radius * 0.92;
-    const innerR = radius * 0.75;
-    const angleSpread = 70 * (Math.PI / 180); // 70 degrees from top
-    
-    // Outer arc endpoints
-    const ox1 = -outerR * Math.sin(angleSpread);
-    const oy1 = -outerR * Math.cos(angleSpread);
-    const ox2 = outerR * Math.sin(angleSpread);
-    const oy2 = -outerR * Math.cos(angleSpread);
-    
-    // Inner arc endpoints (same angles, smaller radius)
-    const ix1 = -innerR * Math.sin(angleSpread);
-    const iy1 = -innerR * Math.cos(angleSpread);
-    const ix2 = innerR * Math.sin(angleSpread);
-    const iy2 = -innerR * Math.cos(angleSpread);
-    
-    // Path: outer arc left→right, then inner arc right→left (reversed)
-    return `M ${ox1.toFixed(1)} ${oy1.toFixed(1)} A ${outerR.toFixed(1)} ${outerR.toFixed(1)} 0 0 1 ${ox2.toFixed(1)} ${oy2.toFixed(1)} L ${ix2.toFixed(1)} ${iy2.toFixed(1)} A ${innerR.toFixed(1)} ${innerR.toFixed(1)} 0 0 0 ${ix1.toFixed(1)} ${iy1.toFixed(1)} Z`;
-  });
-
-  const ambientCrescentPath = $derived.by(() => {
-    const outerR = radius * 0.85;
-    const innerR = radius * 0.55;
-    const angleSpread = 50 * (Math.PI / 180); // 50 degrees from top
-    
-    const ox1 = -outerR * Math.sin(angleSpread);
-    const oy1 = -outerR * Math.cos(angleSpread);
-    const ox2 = outerR * Math.sin(angleSpread);
-    const oy2 = -outerR * Math.cos(angleSpread);
-    
-    const ix1 = -innerR * Math.sin(angleSpread);
-    const iy1 = -innerR * Math.cos(angleSpread);
-    const ix2 = innerR * Math.sin(angleSpread);
-    const iy2 = -innerR * Math.cos(angleSpread);
-    
-    return `M ${ox1.toFixed(1)} ${oy1.toFixed(1)} A ${outerR.toFixed(1)} ${outerR.toFixed(1)} 0 0 1 ${ox2.toFixed(1)} ${oy2.toFixed(1)} L ${ix2.toFixed(1)} ${iy2.toFixed(1)} A ${innerR.toFixed(1)} ${innerR.toFixed(1)} 0 0 0 ${ix1.toFixed(1)} ${iy1.toFixed(1)} Z`;
-  });
+  const darkenedColor = $derived(adjustColor(statusInfo.darkColor, -20));
 
   // Step 1: Wrap & truncate label text to fit inside the circle
   const textLines = $derived.by(() => {
@@ -146,6 +103,36 @@
   // Scale animation state
   let nodeScale = $state(visible ? 1 : 0);
 
+  // rAF-based tween to avoid GPU compositing layer promotion that corrupts
+  // SVG filter rendering (same class of bug as the .anim-label-bob removal).
+  let tweenRafId: number | null = null;
+
+  function cancelTween() {
+    if (tweenRafId !== null) {
+      cancelAnimationFrame(tweenRafId);
+      tweenRafId = null;
+    }
+  }
+
+  function animateScale(from: number, to: number, duration: number) {
+    cancelTween();
+    const start = performance.now();
+    function tick(now: number) {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      // Approximate cubic-bezier(0.34, 1.56, 0.64, 1) with an overshoot ease-out
+      const ease = 1 - Math.pow(1 - t, 3) * (1 - 1.56 * t);
+      nodeScale = from + (to - from) * ease;
+      if (t < 1) {
+        tweenRafId = requestAnimationFrame(tick);
+      } else {
+        nodeScale = to;
+        tweenRafId = null;
+      }
+    }
+    tweenRafId = requestAnimationFrame(tick);
+  }
+
   // React to visible prop changes (entry animation: scale 0 → 1)
   $effect(() => {
     if (visible) {
@@ -158,6 +145,7 @@
     onfocus(node.id);
     playPop();
     if (!prefersReducedMotion) {
+      cancelTween();
       // Squish sequence: 0.9 → 1.1 → 1.0
       nodeScale = 0.9;
       setTimeout(() => { nodeScale = 1.1; }, 80);
@@ -171,6 +159,7 @@
       onfocus(node.id);
       playPop();
       if (!prefersReducedMotion) {
+        cancelTween();
         nodeScale = 0.9;
         setTimeout(() => { nodeScale = 1.1; }, 80);
         setTimeout(() => { nodeScale = 1.0; }, 200);
@@ -181,12 +170,16 @@
   function handlePointerEnter(event: PointerEvent) {
     onhoverstart(node.id, event);
     playHover();
-    if (!prefersReducedMotion) nodeScale = 1.08;
+    if (!prefersReducedMotion) animateScale(nodeScale, 1.08, 200);
   }
 
   function handlePointerLeave() {
     onhoverend();
-    nodeScale = 1;
+    if (!prefersReducedMotion) {
+      animateScale(nodeScale, 1, 200);
+    } else {
+      nodeScale = 1;
+    }
   }
 </script>
 
@@ -205,7 +198,7 @@
   onfocusin={() => isFocused = true}
   onfocusout={() => isFocused = false}
 >
-  <g transform="scale({nodeScale})" style="transform-origin: 0px 0px;{prefersReducedMotion ? '' : ' transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);'}">
+  <g transform="scale({nodeScale})" style="transform-origin: 0px 0px;">
     <!-- SVG filters and gradients -->
     <defs>
       <!-- Outer glow blur -->
@@ -213,33 +206,13 @@
         <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" />
       </filter>
 
-      <!-- Glass radial gradient: lighter center → base → darker edge -->
-      <radialGradient id={glassGradId} cx="40%" cy="35%" r="65%">
+      <!-- Radial gradient: subtle lighter center → base → slightly darker edge -->
+      <radialGradient id={glassGradId} cx="45%" cy="40%" r="60%">
         <stop offset="0%" stop-color={lightenedColor} />
-        <stop offset="55%" stop-color={statusInfo.darkColor} />
+        <stop offset="60%" stop-color={statusInfo.darkColor} />
         <stop offset="100%" stop-color={darkenedColor} />
       </radialGradient>
 
-      <!-- Inner shadow filter for depth -->
-      <filter id={innerShadowId} x="-10%" y="-10%" width="120%" height="120%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
-        <feOffset dx="0" dy="2" result="offsetBlur" />
-        <feComposite in="SourceGraphic" in2="offsetBlur" operator="over" />
-      </filter>
-
-      <!-- Clip for specular highlight -->
-      <clipPath id={clipId}>
-        <circle r={radius} cx="0" cy="0" />
-      </clipPath>
-
-      <!-- Crescent highlight gradient (bright center, transparent tips) -->
-      <linearGradient id={crescentGradId} x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="white" stop-opacity="0" />
-        <stop offset="30%" stop-color="white" stop-opacity="0.6" />
-        <stop offset="50%" stop-color="white" stop-opacity="1" />
-        <stop offset="70%" stop-color="white" stop-opacity="0.6" />
-        <stop offset="100%" stop-color="white" stop-opacity="0" />
-      </linearGradient>
     </defs>
 
     <!-- Root node gold outer ring -->
@@ -264,42 +237,13 @@
       class={node.task.status === 'started' ? 'anim-glow-pulse' : ''}
     />
 
-    <!-- Inner fill circle with glass gradient -->
+    <!-- Inner fill circle with gradient -->
     <circle
       r={radius}
       fill="url(#{glassGradId})"
       stroke={statusInfo.color}
       stroke-width="1.5"
       class={node.task.status === 'complete' ? 'anim-completion-shimmer' : ''}
-    />
-
-    <!-- Inner shadow overlay for depth -->
-    <circle
-      r={radius}
-      fill="none"
-      stroke="var(--color-glass-inner-shadow)"
-      stroke-width="6"
-      stroke-opacity="0.5"
-      clip-path="url(#{clipId})"
-      style="pointer-events: none;"
-    />
-
-    <!-- Primary crescent highlight (soap-bubble reflection) -->
-    <path
-      d={crescentPath}
-      fill="url(#{crescentGradId})"
-      opacity="0.28"
-      clip-path="url(#{clipId})"
-      style="pointer-events: none;"
-    />
-
-    <!-- Secondary ambient crescent (soft caustic) -->
-    <path
-      d={ambientCrescentPath}
-      fill="var(--color-glass-highlight)"
-      opacity="0.08"
-      clip-path="url(#{clipId})"
-      style="pointer-events: none;"
     />
 
     <!-- Keyboard focus ring -->

@@ -112,10 +112,10 @@ describe('GraphView', () => {
   it('renders correct number of node groups', async () => {
     const { container } = render(GraphView, { props: { graph: simpleGraph() } });
     await vi.advanceTimersByTimeAsync(500);
-    // simpleGraph has 3 tasks → 3 GraphNode components → 5 circles each (clipPath, glow, fill, shadow, badge)
-    // + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 19
+    // simpleGraph has 3 tasks → 3 GraphNode components → 3 circles each (glow, fill, badge)
+    // + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 13
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(19);
+    expect(circles.length).toBe(13);
   });
 
   it('renders correct number of edge paths', async () => {
@@ -143,8 +143,8 @@ describe('GraphView', () => {
     const { container } = render(GraphView, { props: { graph: singleTaskGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    // 1 node × 5 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 9
-    expect(circles.length).toBe(9);
+    // 1 node × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 7
+    expect(circles.length).toBe(7);
     const edgePaths = container.querySelectorAll('path.anim-edge-flow');
     expect(edgePaths.length).toBe(0);
   });
@@ -153,8 +153,8 @@ describe('GraphView', () => {
     const { container } = render(GraphView, { props: { graph: diamondGraph() } });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    // 4 nodes × 5 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 24
-    expect(circles.length).toBe(24);
+    // 4 nodes × 3 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 16
+    expect(circles.length).toBe(16);
     const edgePaths = container.querySelectorAll('path[stroke-width="2.5"]');
     expect(edgePaths.length).toBe(4);
   });

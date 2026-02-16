@@ -112,30 +112,18 @@ describe('GraphEdge', () => {
     const { container } = render(GraphEdge, {
       props: defaultProps({ sourceId: 'a', targetId: 'b' }),
     });
-    // Leaf decorations use the sway animation class
-    const leafGroups = container.querySelectorAll('.anim-vine-leaf-sway');
-    expect(leafGroups.length).toBeGreaterThanOrEqual(1);
-    // Each leaf group contains a leaf path
-    for (const g of leafGroups) {
-      const leafPath = g.querySelector('path');
-      expect(leafPath).not.toBeNull();
-      expect(leafPath!.getAttribute('fill')).toBe('var(--color-vine-leaf)');
-    }
+    // Leaf decorations contain a path filled with vine-leaf color
+    const leafPaths = container.querySelectorAll('path[fill="var(--color-vine-leaf)"]');
+    // At least 1 leaf + 1 arrowhead marker leaf
+    expect(leafPaths.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders tendril decorations along the vine', () => {
+  it('all decorations are leaves (no tendrils)', () => {
     const { container } = render(GraphEdge, {
       props: defaultProps({ sourceId: 'a', targetId: 'b' }),
     });
     const tendrilGroups = container.querySelectorAll('.anim-vine-tendril-sway');
-    expect(tendrilGroups.length).toBeGreaterThanOrEqual(1);
-    // Each tendril is a stroke-only path (no fill)
-    for (const g of tendrilGroups) {
-      const tendrilPath = g.querySelector('path');
-      expect(tendrilPath).not.toBeNull();
-      expect(tendrilPath!.getAttribute('fill')).toBe('none');
-      expect(tendrilPath!.getAttribute('stroke')).toBe('var(--color-vine-leaf)');
-    }
+    expect(tendrilGroups.length).toBe(0);
   });
 
   it('decoration count scales with edge distance', () => {
@@ -143,15 +131,16 @@ describe('GraphEdge', () => {
     const { container: short } = render(GraphEdge, {
       props: defaultProps({ sourceX: 0, sourceY: 0, targetX: 50, targetY: 0, sourceId: 'a', targetId: 'b' }),
     });
-    const shortDecos = short.querySelectorAll('.anim-vine-leaf-sway, .anim-vine-tendril-sway');
+    // Leaf paths minus the arrowhead marker path
+    const shortLeaves = short.querySelectorAll('path[fill="var(--color-vine-leaf)"][opacity="0.4"]');
 
     // Long edge
     const { container: long } = render(GraphEdge, {
       props: defaultProps({ sourceX: 0, sourceY: 0, targetX: 600, targetY: 0, sourceId: 'c', targetId: 'd' }),
     });
-    const longDecos = long.querySelectorAll('.anim-vine-leaf-sway, .anim-vine-tendril-sway');
+    const longLeaves = long.querySelectorAll('path[fill="var(--color-vine-leaf)"][opacity="0.4"]');
 
-    expect(longDecos.length).toBeGreaterThan(shortDecos.length);
+    expect(longLeaves.length).toBeGreaterThan(shortLeaves.length);
   });
 
   it('vine path has round line caps', () => {
