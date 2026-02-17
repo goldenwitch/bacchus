@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parse, serialize } from '@bacchus/core';
+import type { VineGraph } from '@bacchus/core';
 import type { ToolCall } from '../../src/lib/chat/types.js';
 import { GRAPH_TOOLS, executeToolCall } from '../../src/lib/chat/tools.js';
 
@@ -81,6 +82,8 @@ describe('executeToolCall', () => {
           id: 'new-task',
           shortName: 'New Task',
           status: 'planning',
+          dependencies: ['leaf'],
+          decisions: ['Chose A'],
         }),
       );
       expect(result.isError).toBe(false);
@@ -88,6 +91,12 @@ describe('executeToolCall', () => {
       expect(result.graph?.tasks.has('new-task')).toBe(true);
       expect(result.graph?.tasks.get('new-task')?.shortName).toBe('New Task');
       expect(result.graph?.tasks.get('new-task')?.status).toBe('planning');
+      expect(result.graph?.tasks.get('new-task')?.dependencies).toContain(
+        'leaf',
+      );
+      expect(result.graph?.tasks.get('new-task')?.decisions).toContain(
+        'Chose A',
+      );
     });
 
     it('defaults status to notstarted', () => {
@@ -119,6 +128,16 @@ describe('executeToolCall', () => {
       );
       expect(result.isError).toBe(true);
       expect(result.result).toContain('No graph loaded');
+    });
+
+    it('adds a task to an empty graph without root patching', () => {
+      const emptyGraph: VineGraph = { tasks: new Map(), order: [] };
+      const result = executeToolCall(
+        emptyGraph,
+        call('add_task', { id: 'solo', shortName: 'Solo Task' }),
+      );
+      expect(result.isError).toBe(false);
+      expect(result.graph?.tasks.has('solo')).toBe(true);
     });
   });
 
