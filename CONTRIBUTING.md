@@ -132,6 +132,10 @@ yarn typecheck && yarn lint && yarn format:check && yarn test
 4. Open a PR against `main`
 5. Wait for CI to pass and address any review feedback
 
+> **Note:** Merging to `main` triggers automatic deployment to
+> [grapesofgraph.com](https://grapesofgraph.com) via Cloudflare Pages.
+> The deploy job runs after all CI checks pass (typecheck, lint, test, e2e).
+
 ## Code Style
 
 - **TypeScript**: Strict mode, no `any` types
