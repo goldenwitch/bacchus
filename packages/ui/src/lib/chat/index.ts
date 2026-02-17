@@ -9,6 +9,7 @@ export type {
   ToolCall,
   ToolResult,
   ToolDefinition,
+  DisplayMessage,
 } from './types.js';
 
 // Anthropic provider
@@ -21,6 +22,9 @@ export type { ToolExecResult } from './tools.js';
 // Orchestrator
 export { ChatOrchestrator } from './orchestrator.js';
 export type { OrchestratorEvent } from './orchestrator.js';
+
+// Session (lifted chat state)
+export { ChatSession } from './session.js';
 
 // API key management
 export { getApiKey, setApiKey, clearApiKey } from './apikey.js';

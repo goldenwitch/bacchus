@@ -162,6 +162,67 @@ describe('ChatOrchestrator', () => {
     expect(orchestrator.getMessages()).toHaveLength(0);
   });
 
+  it('restores history via setMessages', async () => {
+    const service = mockService([
+      [
+        { type: 'text', content: 'Continued.' },
+        { type: 'done', stopReason: 'end_turn' },
+      ],
+    ]);
+
+    const orchestrator = new ChatOrchestrator(service, null);
+    orchestrator.setMessages([
+      { role: 'user', content: 'Previous message' },
+      { role: 'assistant', content: 'Previous reply' },
+    ]);
+
+    expect(orchestrator.getMessages()).toHaveLength(2);
+
+    // Sending a new message should append to the restored history
+    await collectEvents(orchestrator.send('Follow-up'));
+    expect(orchestrator.getMessages()).toHaveLength(4);
+  });
+
+  it('tool_exec events include call and detail fields', async () => {
+    const graph = parse(SAMPLE_VINE);
+    const service = mockService([
+      [
+        {
+          type: 'tool_call',
+          call: {
+            id: 'tc1',
+            name: 'set_status',
+            input: { id: 'leaf', status: 'blocked' },
+          },
+        },
+        { type: 'done', stopReason: 'tool_use' },
+      ],
+      [
+        { type: 'text', content: 'Done.' },
+        { type: 'done', stopReason: 'end_turn' },
+      ],
+    ]);
+
+    const orchestrator = new ChatOrchestrator(service, graph);
+    const events = await collectEvents(orchestrator.send('Block leaf'));
+
+    const toolExec = events.find((e) => e.type === 'tool_exec');
+    expect(toolExec).toBeDefined();
+    if (toolExec?.type === 'tool_exec') {
+      // call field
+      expect(toolExec.call.name).toBe('set_status');
+      expect(toolExec.call.id).toBe('tc1');
+
+      // detail field
+      expect(toolExec.detail.kind).toBe('set_status');
+      if (toolExec.detail.kind === 'set_status') {
+        expect(toolExec.detail.id).toBe('leaf');
+        expect(toolExec.detail.oldStatus).toBe('complete');
+        expect(toolExec.detail.newStatus).toBe('blocked');
+      }
+    }
+  });
+
   it('emits error on service failure', async () => {
     const service: ChatService = {
       // eslint-disable-next-line require-yield

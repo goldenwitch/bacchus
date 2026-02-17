@@ -17,5 +17,14 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       exclude: ['d3-transition'],
     },
+    // SPA fallback: serve index.html for /bacchus/* routes in dev
+    server: {
+      historyApiFallback: true,
+    },
+    // For preview server
+    preview: {
+      historyApiFallback: true,
+    },
+    appType: 'spa',
   };
 });

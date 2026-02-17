@@ -48,6 +48,23 @@ export type ChatEvent =
   | { readonly type: 'tool_call'; readonly call: ToolCall }
   | { readonly type: 'done'; readonly stopReason: string };
 
+import type { ToolFeedbackDetail } from './toolFeedback.js';
+
+/**
+ * Messages displayed in the chat UI.
+ */
+export type DisplayMessage =
+  | { readonly type: 'user'; readonly content: string }
+  | { readonly type: 'assistant'; readonly content: string }
+  | {
+      readonly type: 'tool';
+      readonly name: string;
+      readonly result: string;
+      readonly isError: boolean;
+      readonly detail: ToolFeedbackDetail;
+    }
+  | { readonly type: 'error'; readonly message: string };
+
 /**
  * Abstract interface for LLM chat providers.
  *

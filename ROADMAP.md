@@ -18,13 +18,14 @@ The following features are currently available:
 Recently completed features:
 
 - **Chat Planner** (`@bacchus/ui`): AI-powered chat panel for creating and editing task graphs through natural conversation. Uses Anthropic Claude with structured tool-use to call validated graph mutations. Includes API key management (localStorage), streaming responses, and a toggleable left-side chat panel.
+- **Chat Planner Enhancements** (`@bacchus/ui`): Persistent chat state across views (landing ↔ graph), session persistence across refreshes per `.vine` file (localStorage circular buffer, max 5 sessions), URL routing (`/bacchus/{vineId}`), and structured tool feedback cards showing rich detail for each graph mutation.
 - **Chat E2E Test Suite** (`@bacchus/ui`): Comprehensive Playwright e2e tests for all conversational flows. Includes 16 deterministic mocked tests (SSE interception via `page.route`) and 6 live-agent tests against the real Anthropic API. Shared helper layer for SSE response construction, API key seeding, and chat interactions.
 
 ## Planned
 
 High-priority features in active development:
 
-- **Chat Planner Enhancements**: Conversation persistence, model selection, export/import chat history, and richer tool feedback
+- **Chat Planner UX Improvements**: Conversation export/import, keyboard shortcuts for chat navigation
 
 ## Exploring
 

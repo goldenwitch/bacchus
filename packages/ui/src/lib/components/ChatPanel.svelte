@@ -1,59 +1,59 @@
 <script lang="ts">
   import type { VineGraph } from '@bacchus/core';
   import { fly } from 'svelte/transition';
-  import { AnthropicChatService } from '../chat/anthropic.js';
-  import { ChatOrchestrator } from '../chat/orchestrator.js';
+  import type { DisplayMessage } from '../chat/types.js';
+  import { ChatSession } from '../chat/session.js';
   import type { OrchestratorEvent } from '../chat/orchestrator.js';
-  import { getApiKey, setApiKey } from '../chat/apikey.js';
+  import ToolFeedbackCard from './ToolFeedbackCard.svelte';
 
   let {
     graph,
     onupdate,
     onclose,
+    session,
   }: {
     graph: VineGraph | null;
     onupdate: (graph: VineGraph) => void;
     onclose: () => void;
+    session: ChatSession;
   } = $props();
 
   // ---------------------------------------------------------------------------
-  // Display message types
+  // Local state — initialized from session, written back on change
   // ---------------------------------------------------------------------------
 
-  type DisplayMessage =
-    | { type: 'user'; content: string }
-    | { type: 'assistant'; content: string }
-    | { type: 'tool'; name: string; result: string; isError: boolean }
-    | { type: 'error'; message: string };
-
-  // ---------------------------------------------------------------------------
-  // State
-  // ---------------------------------------------------------------------------
-
-  let apiKey = $state(getApiKey());
+  let messages: DisplayMessage[] = $state([...session.displayMessages]);
+  let inputText = $state(session.inputDraft);
+  let isLoading = $state(session.isLoading);
+  let apiKey = $state(session.apiKey);
   let keyInput = $state('');
-  let messages: DisplayMessage[] = $state([]);
-  let inputText = $state('');
-  let isLoading = $state(false);
   let messagesEl: HTMLDivElement | undefined = $state(undefined);
 
-  // ---------------------------------------------------------------------------
-  // Orchestrator
-  // ---------------------------------------------------------------------------
-
-  let orchestrator: ChatOrchestrator | null = $state(null);
-
+  // Sync local messages back to session
   $effect(() => {
-    if (apiKey) {
-      const service = new AnthropicChatService({ apiKey });
-      orchestrator = new ChatOrchestrator(service, graph);
+    session.displayMessages = messages;
+  });
+
+  // Sync input draft back to session
+  $effect(() => {
+    session.inputDraft = inputText;
+  });
+
+  // ---------------------------------------------------------------------------
+  // Orchestrator init
+  // ---------------------------------------------------------------------------
+
+  // Initialize orchestrator when API key is available
+  $effect(() => {
+    if (apiKey && !session.isReady) {
+      session.initOrchestrator(graph);
     }
   });
 
   // Keep orchestrator's graph in sync
   $effect(() => {
-    if (orchestrator && graph) {
-      orchestrator.setGraph(graph);
+    if (graph !== undefined) {
+      session.setGraph(graph);
     }
   });
 
@@ -77,7 +77,7 @@
   function handleSaveKey() {
     const trimmed = keyInput.trim();
     if (!trimmed) return;
-    setApiKey(trimmed);
+    session.saveApiKey(trimmed, graph);
     apiKey = trimmed;
     keyInput = '';
   }
@@ -98,7 +98,7 @@
 
   async function handleSend() {
     const text = inputText.trim();
-    if (!text || !orchestrator || isLoading) return;
+    if (!text || isLoading) return;
 
     inputText = '';
     messages.push({ type: 'user', content: text });
@@ -108,7 +108,7 @@
     let assistantIdx = -1;
 
     try {
-      for await (const event of orchestrator.send(text)) {
+      for await (const event of session.send(text)) {
         handleEvent(event, assistantIdx);
         if (event.type === 'text' && assistantIdx === -1) {
           // First text chunk — create the assistant message placeholder
@@ -141,6 +141,7 @@
           name: event.name,
           result: event.result,
           isError: event.isError,
+          detail: event.detail,
         });
         break;
       case 'graph_update':
@@ -227,9 +228,17 @@
             <p>{msg.content}</p>
           </div>
         {:else if msg.type === 'tool'}
-          <div class="msg msg-tool" class:msg-tool-error={msg.isError}>
-            <span class="tool-name">{msg.name}</span>
-            <span class="tool-result">{msg.result}</span>
+          <div
+            class="msg"
+            class:msg-tool={!msg.isError}
+            class:msg-tool-error={msg.isError}
+          >
+            <ToolFeedbackCard
+              detail={msg.detail}
+              name={msg.name}
+              result={msg.result}
+              isError={msg.isError}
+            />
           </div>
         {:else if msg.type === 'error'}
           <div class="msg msg-error">
@@ -442,40 +451,6 @@
     padding: 8px 12px;
     border-radius: 12px 12px 12px 4px;
     max-width: 85%;
-  }
-
-  .msg-tool {
-    align-self: flex-start;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-subtle);
-    padding: 6px 10px;
-    border-radius: 8px;
-    max-width: 90%;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .msg-tool-error {
-    border-color: var(--color-error-border);
-  }
-
-  .tool-name {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text-dimmed);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  .msg-tool-error .tool-name {
-    color: var(--color-error);
-  }
-
-  .tool-result {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    word-break: break-word;
   }
 
   .msg-error {

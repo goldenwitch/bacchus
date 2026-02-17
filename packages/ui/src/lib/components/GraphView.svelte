@@ -41,17 +41,24 @@
   import Legend from './Legend.svelte';
   import PhysicsPanel from './PhysicsPanel.svelte';
   import ChatPanel from './ChatPanel.svelte';
+  import type { ChatSession } from '../chat/session.js';
 
   let {
     graph,
     graphTitle,
     onreset,
     onupdate,
+    chatOpen,
+    chatSession,
+    ontoggle,
   }: {
     graph: VineGraph;
     graphTitle?: string;
     onreset?: () => void;
     onupdate?: (graph: VineGraph) => void;
+    chatOpen: boolean;
+    chatSession: ChatSession;
+    ontoggle: () => void;
   } = $props();
 
   // Viewport dimensions — bound to the wrapper div
@@ -113,7 +120,6 @@
   let physicsOverrides: Partial<PhysicsConfig> = $state(loadOverrides());
   let physicsConfig: PhysicsConfig = $state(resolveConfig(0, physicsOverrides));
   let showStrataLines = $state(loadStrataOverride());
-  let chatOpen = $state(false);
 
   const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -671,7 +677,7 @@
     zoomLevel={transform.k}
     svgElement={svgEl}
     onchat={() => {
-      chatOpen = !chatOpen;
+      ontoggle();
     }}
     {chatOpen}
   />
@@ -690,8 +696,9 @@
       {graph}
       {onupdate}
       onclose={() => {
-        chatOpen = false;
+        ontoggle();
       }}
+      session={chatSession}
     />
   {/if}
   <Legend />

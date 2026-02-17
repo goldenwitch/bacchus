@@ -9,13 +9,92 @@
   import GraphView from './lib/components/GraphView.svelte';
   import LandingScreen from './lib/components/LandingScreen.svelte';
   import { initAudio } from './lib/sound.js';
+  import { ChatSession } from './lib/chat/session.js';
+  import { saveSession, loadSession } from './lib/chat/sessionStore.js';
 
   let vineGraph: VineGraph | null = $state(null);
+  const chatSession = new ChatSession();
+  let chatOpen = $state(false);
+
+  // Keep the session's graph in sync with the app graph
+  $effect(() => {
+    chatSession.setGraph(vineGraph);
+  });
+
+  // Track the vineId (root task id) and persist chat sessions
+  let vineId: string | null = $state(null);
+
+  $effect(() => {
+    if (vineGraph) {
+      const rootId = getRoot(vineGraph).id;
+      if (rootId !== vineId) {
+        // Save previous session before switching
+        if (vineId && chatSession.displayMessages.length > 0) {
+          saveSession(vineId, chatSession.displayMessages, [
+            ...chatSession.getChatMessages(),
+          ]);
+        }
+        vineId = rootId;
+        chatSession.vineId = rootId;
+
+        // Try to restore a previous session for the new vineId
+        const saved = loadSession(rootId);
+        if (saved && saved.displayMessages.length > 0) {
+          chatSession.displayMessages = [...saved.displayMessages];
+          chatSession.initOrchestrator(vineGraph);
+          chatSession.setChatMessages([...saved.chatMessages]);
+        }
+      }
+    } else {
+      // Leaving graph view — save current session
+      if (vineId && chatSession.displayMessages.length > 0) {
+        saveSession(vineId, chatSession.displayMessages, [
+          ...chatSession.getChatMessages(),
+        ]);
+      }
+      vineId = null;
+      chatSession.vineId = null;
+    }
+  });
+
+  // Save the chat session after each completed assistant turn
+  $effect(() => {
+    // Re-run when display messages change
+    void chatSession.displayMessages.length;
+    if (
+      vineId &&
+      chatSession.displayMessages.length > 0 &&
+      !chatSession.isLoading
+    ) {
+      saveSession(vineId, chatSession.displayMessages, [
+        ...chatSession.getChatMessages(),
+      ]);
+    }
+  });
+
   let autoLoading = $state(false);
   let autoLoadError: string | null = $state(null);
 
-  // On mount: check for ?file=<url> parameter
+  // ---------------------------------------------------------------------------
+  // URL routing: /bacchus/{vineId} ↔ landing page
+  // ---------------------------------------------------------------------------
+
+  function pushVineRoute(id: string): void {
+    const target = `/bacchus/${encodeURIComponent(id)}`;
+    if (window.location.pathname !== target) {
+      window.history.pushState({ vineId: id }, '', target);
+    }
+  }
+
+  function pushLandingRoute(): void {
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
+  }
+
+  // On mount: parse the current URL to decide initial state
   $effect(() => {
+    // Check for ?file=<url> first (legacy sharing link)
     const params = new URLSearchParams(window.location.search);
     const fileUrl = params.get('file');
     if (fileUrl) {
@@ -30,7 +109,10 @@
           const text = await response.text();
           try {
             vineGraph = parse(text);
+            const rootId = getRoot(vineGraph).id;
             document.title = `${getRoot(vineGraph).shortName} — Bacchus`;
+            // Redirect to the canonical route
+            pushVineRoute(rootId);
           } catch (e: unknown) {
             if (e instanceof VineParseError) {
               autoLoadError = `Parse error on line ${e.line}: ${e.message}`;
@@ -47,7 +129,44 @@
         .finally(() => {
           autoLoading = false;
         });
+      return;
     }
+
+    // Check for /bacchus/{vineId} route — try restoring from session store
+    const match = /^\/bacchus\/([^/]+)$/.exec(window.location.pathname);
+    if (match) {
+      const routeVineId = decodeURIComponent(match[1]);
+      const saved = loadSession(routeVineId);
+      if (saved) {
+        // We have a saved session — restore chat history.
+        // We can't restore the graph itself (not stored), so show the
+        // landing page with chat context pre-loaded.
+        chatSession.displayMessages = [...saved.displayMessages];
+        chatSession.vineId = routeVineId;
+        chatSession.initOrchestrator(null);
+        chatSession.setChatMessages([...saved.chatMessages]);
+        chatOpen = true;
+      }
+      // If no saved session, fall through to landing screen
+    }
+
+    // Handle browser back/forward navigation
+    const handlePopState = () => {
+      const popMatch = /^\/bacchus\/([^/]+)$/.exec(window.location.pathname);
+      if (popMatch && vineGraph) {
+        // Already on graphs view — check if we need to switch
+        const popVineId = decodeURIComponent(popMatch[1]);
+        if (popVineId !== vineId) {
+          // Different vine — try to restore. For now, just stay.
+        }
+      } else if (!popMatch && vineGraph) {
+        // Navigated back to landing
+        vineGraph = null;
+        document.title = 'Bacchus UI';
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   });
 
   // Initialize audio context on first user interaction
@@ -59,18 +178,15 @@
 
   function handleGraphLoaded(graph: VineGraph) {
     vineGraph = graph;
+    const rootId = getRoot(graph).id;
     document.title = `${getRoot(graph).shortName} — Bacchus`;
+    pushVineRoute(rootId);
   }
 
   function handleReset() {
     vineGraph = null;
     document.title = 'Bacchus UI';
-    // Clear ?file= query param so it doesn't auto-reload
-    const url = new URL(window.location.href);
-    if (url.searchParams.has('file')) {
-      url.searchParams.delete('file');
-      window.history.replaceState({}, '', url.toString());
-    }
+    pushLandingRoute();
   }
 
   function handleGraphUpdate(updated: VineGraph) {
@@ -86,13 +202,26 @@
       graphTitle={getRoot(vineGraph).shortName}
       onreset={handleReset}
       onupdate={handleGraphUpdate}
+      {chatOpen}
+      {chatSession}
+      ontoggle={() => {
+        chatOpen = !chatOpen;
+      }}
     />
   {:else if autoLoading}
     <div class="loading">
       <p>Loading…</p>
     </div>
   {:else}
-    <LandingScreen onload={handleGraphLoaded} onupdate={handleGraphUpdate} />
+    <LandingScreen
+      onload={handleGraphLoaded}
+      onupdate={handleGraphUpdate}
+      {chatOpen}
+      {chatSession}
+      ontoggle={() => {
+        chatOpen = !chatOpen;
+      }}
+    />
     {#if autoLoadError}
       <div class="auto-error">
         <p>{autoLoadError}</p>

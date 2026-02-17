@@ -6,16 +6,22 @@
   import UrlInput from './UrlInput.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
   import ChatPanel from './ChatPanel.svelte';
+  import type { ChatSession } from '../chat/session.js';
 
   let {
     onload,
     onupdate,
+    chatOpen,
+    chatSession,
+    ontoggle,
   }: {
     onload: (graph: VineGraph) => void;
     onupdate?: (graph: VineGraph) => void;
+    chatOpen: boolean;
+    chatSession: ChatSession;
+    ontoggle: () => void;
   } = $props();
   let error: string | null = $state(null);
-  let chatOpen = $state(false);
 
   const DIAMOND_EXAMPLE = `[schema] Design Database Schema (complete)
 Define tables, indexes, and constraints.
@@ -116,7 +122,7 @@ End-to-end tests verifying the API and UI work together.
       <button
         class="try-example plan-ai"
         onclick={() => {
-          chatOpen = !chatOpen;
+          ontoggle();
         }}
       >
         <span class="try-example-label">💬 Plan with AI</span>
@@ -144,8 +150,9 @@ End-to-end tests verifying the API and UI work together.
       graph={null}
       onupdate={handleChatGraphUpdate}
       onclose={() => {
-        chatOpen = false;
+        ontoggle();
       }}
+      session={chatSession}
     />
   {/if}
 </div>

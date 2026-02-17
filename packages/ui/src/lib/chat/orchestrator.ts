@@ -7,6 +7,7 @@ import type {
   ToolResult,
 } from './types.js';
 import { GRAPH_TOOLS, executeToolCall } from './tools.js';
+import { buildToolFeedback, type ToolFeedbackDetail } from './toolFeedback.js';
 
 // ---------------------------------------------------------------------------
 // Orchestrator events — emitted to the UI
@@ -19,6 +20,8 @@ export type OrchestratorEvent =
       readonly name: string;
       readonly result: string;
       readonly isError: boolean;
+      readonly call: ToolCall;
+      readonly detail: ToolFeedbackDetail;
     }
   | { readonly type: 'graph_update'; readonly graph: VineGraph }
   | { readonly type: 'done' }
@@ -115,6 +118,13 @@ export class ChatOrchestrator {
   }
 
   /**
+   * Restore conversation history (e.g. from a saved session).
+   */
+  setMessages(messages: ChatMessage[]): void {
+    this.messages = messages;
+  }
+
+  /**
    * Send a user message and stream orchestrator events.
    *
    * The generator handles the full tool-use loop: it calls the LLM,
@@ -179,7 +189,10 @@ export class ChatOrchestrator {
       const toolResults: ToolResult[] = [];
 
       for (const call of toolCalls) {
+        // Capture pre-mutation graph for feedback detail
+        const preGraph = this.graph;
         const execResult = executeToolCall(this.graph, call);
+        const detail = buildToolFeedback(call, preGraph, execResult.result);
 
         // Update graph if the tool changed it
         if (execResult.graph !== this.graph) {
@@ -194,6 +207,8 @@ export class ChatOrchestrator {
           name: call.name,
           result: execResult.result,
           isError: execResult.isError,
+          call,
+          detail,
         };
 
         toolResults.push({
