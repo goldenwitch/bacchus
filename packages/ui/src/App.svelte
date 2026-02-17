@@ -233,7 +233,13 @@
       </div>
     {/if}
   {/if}
+  <span class="version-watermark">v{__APP_VERSION__} ({__APP_COMMIT__})</span>
 </main>
+
+<script module lang="ts">
+  declare const __APP_VERSION__: string;
+  declare const __APP_COMMIT__: string;
+</script>
 
 <style>
   main {
@@ -241,6 +247,18 @@
     height: 100vh;
     overflow: hidden;
     background: var(--bg-primary);
+  }
+
+  .version-watermark {
+    position: fixed;
+    bottom: 6px;
+    right: 10px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 9999;
+    font-family: monospace;
   }
 
   .loading {

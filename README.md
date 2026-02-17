@@ -5,6 +5,8 @@
 
 A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE.md).
 
+**Live at [grapesofgraph.com](https://grapesofgraph.com)** — automatically deployed on every push to `main`.
+
 ## @bacchus/core
 
 ### Quick Start
@@ -218,5 +220,6 @@ Safe to re-run at any time.
 | Testing         | Vitest (>90% line coverage target)                         |
 | Build           | tsc (type-check only), Vite (UI), ESM-only                 |
 | Pre-commit      | Husky + lint-staged                                        |
-| CI/CD           | GitHub Actions — type-check, lint, test, build on every PR |
+| CI/CD           | GitHub Actions — type-check, lint, test, build, deploy     |
+| Hosting         | Cloudflare Pages — https://grapesofgraph.com               |
 | Editor          | VS Code + ZipFS extension + Yarn SDK                       |
