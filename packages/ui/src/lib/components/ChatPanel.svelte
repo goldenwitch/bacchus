@@ -3,7 +3,6 @@
   import { fly } from 'svelte/transition';
   import type { DisplayMessage } from '../chat/types.js';
   import { ChatSession } from '../chat/session.js';
-  import type { OrchestratorEvent } from '../chat/orchestrator.js';
   import ToolFeedbackCard from './ToolFeedbackCard.svelte';
 
   let {
@@ -19,19 +18,30 @@
   } = $props();
 
   // ---------------------------------------------------------------------------
-  // Local state — initialized from session, written back on change
+  // Local reactive state — initialized from session, kept in sync via callback
   // ---------------------------------------------------------------------------
 
   let messages: DisplayMessage[] = $state([...session.displayMessages]);
-  let inputText = $state(session.inputDraft);
   let isLoading = $state(session.isLoading);
-  let apiKey = $state(session.apiKey);
+  let apiKey: string | null = $state(session.apiKey);
+  let inputText = $state(session.inputDraft);
   let keyInput = $state('');
   let messagesEl: HTMLDivElement | undefined = $state(undefined);
 
-  // Sync local messages back to session
+  // Sync session → local via onStateChange callback.
+  // The session calls this after every displayMessages / isLoading / apiKey
+  // mutation (including mid-stream during processMessage).
   $effect(() => {
-    session.displayMessages = messages;
+    session.onStateChange = () => {
+      messages = [...session.displayMessages];
+      isLoading = session.isLoading;
+      apiKey = session.apiKey;
+    };
+    return () => {
+      if (session.onStateChange) {
+        session.onStateChange = null;
+      }
+    };
   });
 
   // Sync input draft back to session
@@ -40,7 +50,7 @@
   });
 
   // ---------------------------------------------------------------------------
-  // Orchestrator init
+  // Orchestrator init & graph sync
   // ---------------------------------------------------------------------------
 
   // Initialize orchestrator when API key is available
@@ -55,6 +65,17 @@
     if (graph !== undefined) {
       session.setGraph(graph);
     }
+  });
+
+  // Wire the graph-update callback so session events reach the parent
+  $effect(() => {
+    session.onGraphUpdate = onupdate;
+    return () => {
+      // Only clear if we're still the active callback
+      if (session.onGraphUpdate === onupdate) {
+        session.onGraphUpdate = null;
+      }
+    };
   });
 
   // Auto-scroll to bottom when messages change
@@ -78,7 +99,6 @@
     const trimmed = keyInput.trim();
     if (!trimmed) return;
     session.saveApiKey(trimmed, graph);
-    apiKey = trimmed;
     keyInput = '';
   }
 
@@ -96,65 +116,16 @@
     }
   }
 
-  async function handleSend() {
+  function handleSend() {
     const text = inputText.trim();
     if (!text || isLoading) return;
 
     inputText = '';
-    messages.push({ type: 'user', content: text });
-    isLoading = true;
-
-    // Track the index where the assistant message will be streamed
-    let assistantIdx = -1;
-
-    try {
-      for await (const event of session.send(text)) {
-        handleEvent(event, assistantIdx);
-        if (event.type === 'text' && assistantIdx === -1) {
-          // First text chunk — create the assistant message placeholder
-          assistantIdx = messages.length;
-          messages.push({ type: 'assistant', content: event.content });
-        } else if (event.type === 'text' && assistantIdx >= 0) {
-          // Subsequent text — append to existing assistant message
-          const msg = messages[assistantIdx];
-          if (msg.type === 'assistant') {
-            messages[assistantIdx] = {
-              type: 'assistant',
-              content: msg.content + event.content,
-            };
-          }
-        }
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      messages.push({ type: 'error', message: msg });
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  function handleEvent(event: OrchestratorEvent, _assistantIdx: number): void {
-    switch (event.type) {
-      case 'tool_exec':
-        messages.push({
-          type: 'tool',
-          name: event.name,
-          result: event.result,
-          isError: event.isError,
-          detail: event.detail,
-        });
-        break;
-      case 'graph_update':
-        onupdate(event.graph);
-        break;
-      case 'error':
-        messages.push({ type: 'error', message: event.message });
-        break;
-      case 'text':
-      case 'done':
-        // Handled in the main loop
-        break;
-    }
+    // Fire-and-forget — the session owns the async loop and will
+    // update displayMessages / isLoading regardless of whether this
+    // component survives (e.g. during a Landing→Graph view swap).
+    // State changes flow back via the onStateChange callback.
+    void session.processMessage(text);
   }
 </script>
 

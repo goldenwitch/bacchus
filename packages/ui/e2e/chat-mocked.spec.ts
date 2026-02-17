@@ -219,6 +219,75 @@ test.describe('Chat panel (mocked)', () => {
   });
 
   // -----------------------------------------------------------------------
+  // 9b. Landing→graph transition leaves chat usable for follow-up messages
+  // -----------------------------------------------------------------------
+  test('landing chat creates graph and continues conversation', async ({
+    page,
+  }) => {
+    await seedApiKey(page);
+
+    const vineText =
+      '[design] Design (notstarted)\nDesign the system.\n\n[build] Build (notstarted)\nBuild it.\n-> design\n\n[ship] Ship (notstarted)\nShip it.\n-> build';
+
+    // Conversation 1 (from landing): replace_graph + text summary
+    const round1: ContentBlock[] = [
+      {
+        type: 'tool_use',
+        id: toolId(),
+        name: 'replace_graph',
+        input: { vineText },
+      },
+    ];
+    const round2: ContentBlock[] = [
+      { type: 'text', text: 'Created a 3-task project plan.' },
+    ];
+    // Conversation 2 (follow-up in graph view): plain text reply
+    const round3: ContentBlock[] = [
+      { type: 'text', text: 'Sure, I can modify the plan for you.' },
+    ];
+
+    await routeAnthropicAPI(page, [round1, round2, round3]);
+    await page.goto('/');
+    await openChatFromLanding(page);
+
+    // Send the initial message (don't use sendMessage() — see test 9 comment)
+    await page.locator('.chat-input').fill('Create a simple 3-task project');
+    await page.locator('.send-btn').click();
+
+    // Wait for the graph to render after the transition
+    await expect(
+      page.locator('svg[role="group"] g[role="button"]'),
+    ).toHaveCount(3, { timeout: 15_000 });
+
+    // The chat panel should still be open in graph view
+    await expect(page.locator('.chat-panel')).toBeVisible();
+
+    // The assistant's text summary should have streamed through
+    await expect(page.locator('.msg-assistant').first()).toContainText(
+      '3-task project plan',
+      { timeout: 10_000 },
+    );
+
+    // Loading should be done — input must be enabled
+    await expect(page.locator('.loading-indicator')).not.toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.locator('.chat-input')).toBeEnabled();
+
+    // Send a follow-up message in graph view
+    await sendMessage(page, 'Can you modify it?');
+    await waitForAssistantReply(page);
+
+    // Verify the follow-up reply appeared
+    const allMessages = await getMessages(page);
+    const assistantMsgs = allMessages.filter((m) => m.type === 'msg-assistant');
+    expect(assistantMsgs.length).toBeGreaterThanOrEqual(2);
+    expect(assistantMsgs[assistantMsgs.length - 1]!.text).toContain(
+      'modify the plan',
+    );
+  });
+
+  // -----------------------------------------------------------------------
   // 10. Multi-turn conversation
   // -----------------------------------------------------------------------
   test('multi-turn conversation', async ({ page }) => {

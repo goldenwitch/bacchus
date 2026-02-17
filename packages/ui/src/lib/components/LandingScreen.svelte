@@ -74,7 +74,18 @@ End-to-end tests verifying the API and UI work together.
     if (onupdate) {
       onupdate(graph);
     }
-    onload(graph);
+    // Don't call onload() synchronously — the session's async send loop
+    // is still running (e.g. round 2: the text summary after replace_graph).
+    // If we swap views now, the old ChatPanel is destroyed but the session
+    // keeps running fine — however the user would miss the assistant reply
+    // that's still streaming.  Instead, wait for the turn to complete
+    // (isLoading → false) before triggering the view transition.
+    const poll = setInterval(() => {
+      if (!chatSession.isLoading) {
+        clearInterval(poll);
+        onload(graph);
+      }
+    }, 50);
   }
 
   function formatDetails(details: ValidationDetails): string {

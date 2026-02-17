@@ -6,7 +6,8 @@ const mockOrchestrator = {
   setMessages: vi.fn(),
   clearHistory: vi.fn(),
   send: vi.fn(async function* () {
-    yield { type: 'text_delta' as const, text: 'hi' };
+    yield { type: 'text' as const, content: 'hi' };
+    yield { type: 'done' as const };
   }),
 };
 
@@ -101,38 +102,33 @@ describe('ChatSession', () => {
     expect(mockOrchestrator.clearHistory).toHaveBeenCalled();
   });
 
-  it('send yields events from orchestrator', async () => {
+  it('processMessage updates displayMessages from orchestrator', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
 
-    const events = [];
-    for await (const e of session.send('hello')) {
-      events.push(e);
-    }
+    await session.processMessage('hello');
 
-    expect(events).toEqual([{ type: 'text_delta', text: 'hi' }]);
+    // Should contain the user message + the assistant reply
+    expect(session.displayMessages).toEqual([
+      { type: 'user', content: 'hello' },
+      { type: 'assistant', content: 'hi' },
+    ]);
     expect(session.isLoading).toBe(false);
   });
 
-  it('send does nothing without orchestrator', async () => {
+  it('processMessage does nothing without orchestrator', async () => {
     const session = new ChatSession();
-    const events = [];
-    for await (const e of session.send('hello')) {
-      events.push(e);
-    }
-    expect(events).toHaveLength(0);
+    await session.processMessage('hello');
+    expect(session.displayMessages).toEqual([]);
   });
 
-  it('send does nothing if already loading', async () => {
+  it('processMessage does nothing if already loading', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
     session.isLoading = true;
 
-    const events = [];
-    for await (const e of session.send('hello')) {
-      events.push(e);
-    }
-    expect(events).toHaveLength(0);
+    await session.processMessage('hello');
+    expect(session.displayMessages).toEqual([]);
   });
 
   it('resets isLoading on error', async () => {
@@ -144,12 +140,53 @@ describe('ChatSession', () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
 
-    await expect(async () => {
-      for await (const _e of session.send('hello')) {
-        // consume
-      }
-    }).rejects.toThrow('boom');
+    await session.processMessage('hello');
 
     expect(session.isLoading).toBe(false);
+    // Should contain user message + error message
+    expect(session.displayMessages).toHaveLength(2);
+    expect(session.displayMessages[1]).toEqual({
+      type: 'error',
+      message: 'boom',
+    });
+  });
+
+  it('calls onGraphUpdate callback on graph_update events', async () => {
+    const fakeGraph = { order: [], tasks: {} };
+    mockOrchestrator.send.mockImplementation(async function* () {
+      yield { type: 'graph_update' as const, graph: fakeGraph };
+      yield { type: 'done' as const };
+    });
+
+    const session = new ChatSession();
+    session.saveApiKey('sk-key', null);
+    const callback = vi.fn();
+    session.onGraphUpdate = callback;
+
+    await session.processMessage('create a graph');
+
+    expect(callback).toHaveBeenCalledWith(fakeGraph);
+  });
+
+  it('appends tool_exec events to displayMessages', async () => {
+    mockOrchestrator.send.mockImplementation(async function* () {
+      yield {
+        type: 'tool_exec' as const,
+        name: 'add_task',
+        result: 'Added task foo',
+        isError: false,
+        call: { id: 'tc1', name: 'add_task', input: {} },
+        detail: { type: 'add_task' as const, id: 'foo', name: 'Foo' },
+      };
+      yield { type: 'done' as const };
+    });
+
+    const session = new ChatSession();
+    session.saveApiKey('sk-key', null);
+
+    await session.processMessage('add a task');
+
+    expect(session.displayMessages).toHaveLength(2); // user + tool
+    expect(session.displayMessages[1]!.type).toBe('tool');
   });
 });

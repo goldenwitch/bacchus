@@ -23,10 +23,6 @@ Recently completed features:
 
 ## Planned
 
-High-priority features in active development:
-
-- **Chat Planner UX Improvements**: Conversation export/import, keyboard shortcuts for chat navigation
-
 ## Exploring
 
 Ideas under consideration for future development:
