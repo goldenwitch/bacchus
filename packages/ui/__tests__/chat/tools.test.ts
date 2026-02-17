@@ -142,6 +142,12 @@ describe('executeToolCall', () => {
       expect(result.isError).toBe(true);
       expect(result.result).toContain('Error');
     });
+
+    it('returns error when graph is null', () => {
+      const result = executeToolCall(null, call('remove_task', { id: 'a' }));
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
   });
 
   describe('set_status', () => {
@@ -163,6 +169,15 @@ describe('executeToolCall', () => {
       );
       expect(result.isError).toBe(true);
     });
+
+    it('returns error when graph is null', () => {
+      const result = executeToolCall(
+        null,
+        call('set_status', { id: 'a', status: 'blocked' }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
   });
 
   describe('update_task', () => {
@@ -182,6 +197,15 @@ describe('executeToolCall', () => {
       expect(task?.shortName).toBe('Updated Leaf');
       expect(task?.description).toBe('New description');
       expect(task?.decisions).toEqual(['Decided something']);
+    });
+
+    it('returns error when graph is null', () => {
+      const result = executeToolCall(
+        null,
+        call('update_task', { id: 'a', shortName: 'X' }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
     });
   });
 
@@ -211,6 +235,15 @@ describe('executeToolCall', () => {
       expect(result.isError).toBe(true);
       expect(result.result).toContain('Error');
     });
+
+    it('returns error when graph is null', () => {
+      const result = executeToolCall(
+        null,
+        call('add_dependency', { taskId: 'a', dependencyId: 'b' }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
   });
 
   describe('remove_dependency', () => {
@@ -236,6 +269,15 @@ describe('executeToolCall', () => {
         call('remove_dependency', { taskId: 'leaf', dependencyId: 'root' }),
       );
       expect(result.isError).toBe(true);
+    });
+
+    it('returns error when graph is null', () => {
+      const result = executeToolCall(
+        null,
+        call('remove_dependency', { taskId: 'a', dependencyId: 'b' }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
     });
   });
 

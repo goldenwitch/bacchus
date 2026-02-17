@@ -90,7 +90,7 @@ describe('ChatSession', () => {
   it('clear resets state and orchestrator', () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
-    session.displayMessages = [{ role: 'user' as const, content: 'hello' }];
+    session.displayMessages = [{ type: 'user' as const, content: 'hello' }];
     session.inputDraft = 'some text';
     session.isLoading = true;
 
@@ -188,5 +188,43 @@ describe('ChatSession', () => {
 
     expect(session.displayMessages).toHaveLength(2); // user + tool
     expect(session.displayMessages[1]!.type).toBe('tool');
+  });
+
+  it('accumulates multiple text events into a single assistant message', async () => {
+    mockOrchestrator.send.mockImplementation(async function* () {
+      yield { type: 'text' as const, content: 'Hello' };
+      yield { type: 'text' as const, content: ' world' };
+      yield { type: 'text' as const, content: '!' };
+      yield { type: 'done' as const };
+    });
+
+    const session = new ChatSession();
+    session.saveApiKey('sk-key', null);
+
+    await session.processMessage('hi');
+
+    // user message + single concatenated assistant message
+    expect(session.displayMessages).toEqual([
+      { type: 'user', content: 'hi' },
+      { type: 'assistant', content: 'Hello world!' },
+    ]);
+  });
+
+  it('handleEvent appends error events to displayMessages', async () => {
+    mockOrchestrator.send.mockImplementation(async function* () {
+      yield { type: 'error' as const, message: 'something went wrong' };
+      yield { type: 'done' as const };
+    });
+
+    const session = new ChatSession();
+    session.saveApiKey('sk-key', null);
+
+    await session.processMessage('do it');
+
+    const errorMsg = session.displayMessages.find((m) => m.type === 'error');
+    expect(errorMsg).toEqual({
+      type: 'error',
+      message: 'something went wrong',
+    });
   });
 });
