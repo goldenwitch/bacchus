@@ -50,26 +50,36 @@ export async function seedApiKey(
   }, key);
 }
 
+/** Clear any stored/env-injected API key so tests can exercise the key-entry flow. */
+export async function clearApiKey(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.removeItem('bacchus:anthropic-key');
+    // Neutralize the Vite build-time env var so getApiKey() returns null
+    (import.meta.env as Record<string, unknown>).VITE_ANTHROPIC_API_KEY =
+      undefined;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Chat panel navigation
 // ---------------------------------------------------------------------------
 
-/** Open the chat panel via the Toolbar chat toggle button. Waits for panel visible. */
+/** Open the chat panel via the Toolbar chat toggle button. Waits for panel expanded. */
 export async function openChatFromToolbar(page: Page): Promise<void> {
   await page.click('button[aria-label="Open chat planner"]');
-  await expect(page.locator('.chat-panel')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('.chat-body')).toBeVisible({ timeout: 5000 });
 }
 
 /** Open the chat panel from the Landing Screen "Plan with AI" button. */
 export async function openChatFromLanding(page: Page): Promise<void> {
   await page.click('.plan-ai');
-  await expect(page.locator('.chat-panel')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('.chat-body')).toBeVisible({ timeout: 5000 });
 }
 
-/** Close the chat panel via the header close button. */
+/** Close the chat panel by clicking the accordion toggle. */
 export async function closeChatPanel(page: Page): Promise<void> {
-  await page.locator('.chat-panel .close-btn').click();
-  await expect(page.locator('.chat-panel')).not.toBeVisible({ timeout: 5000 });
+  await page.click('button[aria-label="Close chat planner"]');
+  await expect(page.locator('.chat-body')).not.toBeVisible({ timeout: 5000 });
 }
 
 // ---------------------------------------------------------------------------

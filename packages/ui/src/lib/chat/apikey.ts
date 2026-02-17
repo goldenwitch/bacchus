@@ -31,10 +31,3 @@ export function getApiKey(): string | null {
 export function setApiKey(key: string): void {
   localStorage.setItem(STORAGE_KEY, key);
 }
-
-/**
- * Remove the stored API key.
- */
-export function clearApiKey(): void {
-  localStorage.removeItem(STORAGE_KEY);
-}

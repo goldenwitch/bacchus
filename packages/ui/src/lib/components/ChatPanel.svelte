@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { VineGraph } from '@bacchus/core';
-  import { fly } from 'svelte/transition';
+  import GlassAccordion from './GlassAccordion.svelte';
   import type { DisplayMessage } from '../chat/types.js';
   import { ChatSession } from '../chat/session.js';
   import ToolFeedbackCard from './ToolFeedbackCard.svelte';
@@ -10,11 +10,13 @@
     onupdate,
     onclose,
     session,
+    expanded = false,
   }: {
     graph: VineGraph | null;
     onupdate: (graph: VineGraph) => void;
     onclose: () => void;
     session: ChatSession;
+    expanded?: boolean;
   } = $props();
 
   // ---------------------------------------------------------------------------
@@ -29,8 +31,6 @@
   let messagesEl: HTMLDivElement | undefined = $state(undefined);
 
   // Sync session → local via onStateChange callback.
-  // The session calls this after every displayMessages / isLoading / apiKey
-  // mutation (including mid-stream during processMessage).
   $effect(() => {
     session.onStateChange = () => {
       messages = [...session.displayMessages];
@@ -53,25 +53,21 @@
   // Orchestrator init & graph sync
   // ---------------------------------------------------------------------------
 
-  // Initialize orchestrator when API key is available
   $effect(() => {
     if (apiKey && !session.isReady) {
       session.initOrchestrator(graph);
     }
   });
 
-  // Keep orchestrator's graph in sync
   $effect(() => {
     if (graph !== undefined) {
       session.setGraph(graph);
     }
   });
 
-  // Wire the graph-update callback so session events reach the parent
   $effect(() => {
     session.onGraphUpdate = onupdate;
     return () => {
-      // Only clear if we're still the active callback
       if (session.onGraphUpdate === onupdate) {
         session.onGraphUpdate = null;
       }
@@ -81,7 +77,6 @@
   // Auto-scroll to bottom when messages change
   $effect(() => {
     if (messagesEl && messages.length > 0) {
-      // Access messages.length to track the dependency
       void messages.length;
       requestAnimationFrame(() => {
         if (messagesEl) {
@@ -121,145 +116,127 @@
     if (!text || isLoading) return;
 
     inputText = '';
-    // Fire-and-forget — the session owns the async loop and will
-    // update displayMessages / isLoading regardless of whether this
-    // component survives (e.g. during a Landing→Graph view swap).
-    // State changes flow back via the onStateChange callback.
     void session.processMessage(text);
   }
 </script>
 
-<div class="chat-panel" transition:fly={{ x: -320, duration: 300 }}>
-  <!-- Header -->
-  <div class="chat-header">
-    <span class="chat-title">Chat Planner</span>
-    <button
-      class="close-btn"
-      onclick={onclose}
-      aria-label="Close chat panel"
-      title="Close"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
-    </button>
-  </div>
-
-  {#if !apiKey}
-    <!-- API Key entry -->
-    <div class="key-setup">
-      <p class="key-label">Enter your Anthropic API key to start planning.</p>
-      <div class="key-input-row">
-        <input
-          type="password"
-          class="key-input"
-          placeholder="sk-ant-..."
-          bind:value={keyInput}
-          onkeydown={handleKeyInputKeyDown}
-        />
-        <button
-          class="key-save-btn"
-          onclick={handleSaveKey}
-          disabled={!keyInput.trim()}
-        >
-          Save
-        </button>
-      </div>
-      <p class="key-hint">
-        Stored locally in your browser. Never sent to our servers.
-      </p>
-    </div>
-  {:else}
-    <!-- Messages -->
-    <div class="chat-messages" bind:this={messagesEl}>
-      {#if messages.length === 0}
-        <p class="chat-empty">
-          Describe the plan you'd like to create, or ask me to modify the
-          current graph.
-        </p>
-      {/if}
-      {#each messages as msg, i (i)}
-        {#if msg.type === 'user'}
-          <div class="msg msg-user">
-            <p>{msg.content}</p>
-          </div>
-        {:else if msg.type === 'assistant'}
-          <div class="msg msg-assistant">
-            <p>{msg.content}</p>
-          </div>
-        {:else if msg.type === 'tool'}
-          <div
-            class="msg"
-            class:msg-tool={!msg.isError}
-            class:msg-tool-error={msg.isError}
-          >
-            <ToolFeedbackCard
-              detail={msg.detail}
-              name={msg.name}
-              result={msg.result}
-              isError={msg.isError}
+<div class="chat-panel">
+  <GlassAccordion
+    icon="💬"
+    title="Chat Planner"
+    {expanded}
+    ontoggle={onclose}
+    ariaLabel="Toggle chat planner"
+  >
+    <div class="chat-body">
+      {#if !apiKey}
+        <!-- API Key entry -->
+        <div class="key-setup">
+          <p class="key-label">
+            Enter your Anthropic API key to start planning.
+          </p>
+          <div class="key-input-row">
+            <input
+              type="password"
+              class="key-input"
+              placeholder="sk-ant-..."
+              bind:value={keyInput}
+              onkeydown={handleKeyInputKeyDown}
             />
+            <button
+              class="key-save-btn"
+              onclick={handleSaveKey}
+              disabled={!keyInput.trim()}
+            >
+              Save
+            </button>
           </div>
-        {:else if msg.type === 'error'}
-          <div class="msg msg-error">
-            <p>{msg.message}</p>
-          </div>
-        {/if}
-      {/each}
-      {#if isLoading}
-        <div class="loading-indicator">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
+          <p class="key-hint">
+            Stored locally in your browser. Never sent to our servers.
+          </p>
+        </div>
+      {:else}
+        <!-- Messages -->
+        <div class="chat-messages" bind:this={messagesEl}>
+          {#if messages.length === 0}
+            <p class="chat-empty">
+              Describe the plan you'd like to create, or ask me to modify the
+              current graph.
+            </p>
+          {/if}
+          {#each messages as msg, i (i)}
+            {#if msg.type === 'user'}
+              <div class="msg msg-user">
+                <p>{msg.content}</p>
+              </div>
+            {:else if msg.type === 'assistant'}
+              <div class="msg msg-assistant">
+                <p>{msg.content}</p>
+              </div>
+            {:else if msg.type === 'tool'}
+              <div
+                class="msg"
+                class:msg-tool={!msg.isError}
+                class:msg-tool-error={msg.isError}
+              >
+                <ToolFeedbackCard
+                  detail={msg.detail}
+                  name={msg.name}
+                  result={msg.result}
+                  isError={msg.isError}
+                />
+              </div>
+            {:else if msg.type === 'error'}
+              <div class="msg msg-error">
+                <p>{msg.message}</p>
+              </div>
+            {/if}
+          {/each}
+          {#if isLoading}
+            <div class="loading-indicator">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-row">
+          <textarea
+            class="chat-input"
+            placeholder="Describe your plan..."
+            rows="2"
+            bind:value={inputText}
+            onkeydown={handleKeyDown}
+            disabled={isLoading}
+          ></textarea>
+          <button
+            class="send-btn"
+            onclick={handleSend}
+            disabled={isLoading || !inputText.trim()}
+            aria-label="Send message"
+            title="Send"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
         </div>
       {/if}
     </div>
-
-    <!-- Input -->
-    <div class="chat-input-row">
-      <textarea
-        class="chat-input"
-        placeholder="Describe your plan..."
-        rows="2"
-        bind:value={inputText}
-        onkeydown={handleKeyDown}
-        disabled={isLoading}
-      ></textarea>
-      <button
-        class="send-btn"
-        onclick={handleSend}
-        disabled={isLoading || !inputText.trim()}
-        aria-label="Send message"
-        title="Send"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="22" y1="2" x2="11" y2="13" />
-          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-        </svg>
-      </button>
-    </div>
-  {/if}
+  </GlassAccordion>
 </div>
 
 <style>
@@ -268,50 +245,15 @@
     left: 16px;
     bottom: 16px;
     z-index: 136;
-    width: 380px;
-    max-height: calc(100vh - 100px);
-    background: var(--sidebar-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
+  }
+
+  /* Body container */
+  .chat-body {
+    width: 340px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-
-  /* Header */
-  .chat-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-subtle);
-    flex-shrink: 0;
-  }
-
-  .chat-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .close-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-  }
-
-  .close-btn:hover {
-    color: var(--text-primary);
-    background: var(--hover-bg);
+    max-height: calc(100vh - 180px);
   }
 
   /* API Key setup */

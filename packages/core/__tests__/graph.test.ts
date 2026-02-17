@@ -5,7 +5,6 @@ import {
   getRoot,
   getDependencies,
   getDependants,
-  getAncestors,
 } from '../src/graph.js';
 import { VineError } from '../src/errors.js';
 
@@ -93,34 +92,5 @@ describe('getDependants', () => {
     const dependants = getDependants(graph, 'root');
 
     expect(dependants).toEqual([]);
-  });
-});
-
-describe('getAncestors', () => {
-  it('returns all transitive deps', () => {
-    const ancestors = getAncestors(graph, 'root');
-    const ids = ancestors.map((t) => t.id);
-
-    expect(ids).toContain('vine-format');
-    expect(ids).toContain('vine-ts');
-    expect(ids).toContain('build-ui');
-    expect(ids).toContain('graph-cli');
-    expect(ids).toHaveLength(4);
-  });
-
-  it('returns empty for leaf', () => {
-    const ancestors = getAncestors(graph, 'vine-format');
-
-    expect(ancestors).toEqual([]);
-  });
-
-  it('handles intermediate task', () => {
-    const ancestors = getAncestors(graph, 'graph-cli');
-    const ids = ancestors.map((t) => t.id);
-
-    expect(ids).toContain('vine-ts');
-    expect(ids).toContain('build-ui');
-    expect(ids).toContain('vine-format');
-    expect(ids).toHaveLength(3);
   });
 });

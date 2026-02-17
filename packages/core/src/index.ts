@@ -11,13 +11,7 @@ export { serialize } from './serializer.js';
 export { validate } from './validator.js';
 
 // Graph Queries
-export {
-  getTask,
-  getRoot,
-  getDependencies,
-  getDependants,
-  getAncestors,
-} from './graph.js';
+export { getTask, getRoot, getDependencies, getDependants } from './graph.js';
 
 // Mutations
 export {

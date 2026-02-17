@@ -691,7 +691,7 @@
       saveStrataOverride(show);
     }}
   />
-  {#if chatOpen && onupdate}
+  {#if onupdate}
     <ChatPanel
       {graph}
       {onupdate}
@@ -699,6 +699,7 @@
         ontoggle();
       }}
       session={chatSession}
+      expanded={chatOpen}
     />
   {/if}
   <Legend />

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { slide } from 'svelte/transition';
+  import GlassAccordion from './GlassAccordion.svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import {
     PHYSICS_SLIDER_DEFS,
@@ -49,21 +49,13 @@
 </script>
 
 <div class="physics-panel">
-  <button
-    class="physics-toggle"
-    onclick={() => {
-      expanded = !expanded;
-    }}
-    aria-expanded={expanded}
-    aria-label="Toggle physics controls"
+  <GlassAccordion
+    icon="🎛️"
+    title="Physics"
+    bind:expanded
+    ariaLabel="Toggle physics controls"
   >
-    <span class="physics-icon">🎛️</span>
-    <span class="physics-title">Physics</span>
-    <span class="physics-chevron" class:physics-chevron-open={expanded}>▸</span>
-  </button>
-
-  {#if expanded}
-    <div class="physics-body" transition:slide={{ duration: 200 }}>
+    <div class="physics-body">
       {#each groups as group (group)}
         <div class="physics-group-header">{group}</div>
         {#each PHYSICS_SLIDER_DEFS.filter((d) => d.group === group) as def (def.key)}
@@ -106,7 +98,7 @@
         Reset Defaults
       </button>
     </div>
-  {/if}
+  </GlassAccordion>
 </div>
 
 <style>
@@ -115,52 +107,6 @@
     left: 16px;
     top: 60px;
     z-index: 135;
-    background: var(--toolbar-bg);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    min-width: 160px;
-    user-select: none;
-  }
-
-  .physics-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-    padding: 8px 12px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    border-radius: 12px;
-  }
-
-  .physics-toggle:hover {
-    background: var(--hover-bg);
-  }
-
-  .physics-icon {
-    font-size: 1rem;
-  }
-
-  .physics-title {
-    flex: 1;
-    text-align: left;
-    font-weight: 500;
-  }
-
-  .physics-chevron {
-    display: inline-block;
-    transition: transform 0.2s ease;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-  }
-
-  .physics-chevron-open {
-    transform: rotate(90deg);
   }
 
   .physics-body {

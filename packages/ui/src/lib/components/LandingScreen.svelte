@@ -156,16 +156,15 @@ End-to-end tests verifying the API and UI work together.
       </div>
     {/if}
   </div>
-  {#if chatOpen}
-    <ChatPanel
-      graph={null}
-      onupdate={handleChatGraphUpdate}
-      onclose={() => {
-        ontoggle();
-      }}
-      session={chatSession}
-    />
-  {/if}
+  <ChatPanel
+    graph={null}
+    onupdate={handleChatGraphUpdate}
+    onclose={() => {
+      ontoggle();
+    }}
+    session={chatSession}
+    expanded={chatOpen}
+  />
 </div>
 
 <style>

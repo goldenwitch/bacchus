@@ -9,6 +9,7 @@ import {
 import {
   loadGraph,
   seedApiKey,
+  clearApiKey,
   openChatFromToolbar,
   openChatFromLanding,
   closeChatPanel,
@@ -27,9 +28,9 @@ test.describe('Chat panel (mocked)', () => {
     await seedApiKey(page);
     await loadGraph(page, 'simple.vine');
     await openChatFromToolbar(page);
-    await expect(page.locator('.chat-panel')).toBeVisible();
+    await expect(page.locator('.chat-body')).toBeVisible();
     await closeChatPanel(page);
-    await expect(page.locator('.chat-panel')).not.toBeVisible();
+    await expect(page.locator('.chat-body')).not.toBeVisible();
   });
 
   // -----------------------------------------------------------------------
@@ -39,7 +40,7 @@ test.describe('Chat panel (mocked)', () => {
     await seedApiKey(page);
     await page.goto('/');
     await openChatFromLanding(page);
-    await expect(page.locator('.chat-panel')).toBeVisible();
+    await expect(page.locator('.chat-body')).toBeVisible();
     await expect(page.locator('.chat-empty')).toBeVisible();
   });
 
@@ -47,6 +48,7 @@ test.describe('Chat panel (mocked)', () => {
   // 3. API key entry flow
   // -----------------------------------------------------------------------
   test('API key entry flow', async ({ page }) => {
+    await clearApiKey(page);
     await page.goto('/');
     await openChatFromLanding(page);
     await expect(page.locator('.key-setup')).toBeVisible();
@@ -62,6 +64,7 @@ test.describe('Chat panel (mocked)', () => {
   // 4. API key entry via Enter key
   // -----------------------------------------------------------------------
   test('API key entry via Enter key', async ({ page }) => {
+    await clearApiKey(page);
     await page.goto('/');
     await openChatFromLanding(page);
     await page.locator('.key-input').fill('sk-ant-test-key-12345');
@@ -260,7 +263,7 @@ test.describe('Chat panel (mocked)', () => {
     ).toHaveCount(3, { timeout: 15_000 });
 
     // The chat panel should still be open in graph view
-    await expect(page.locator('.chat-panel')).toBeVisible();
+    await expect(page.locator('.chat-body')).toBeVisible();
 
     // The assistant's text summary should have streamed through
     await expect(page.locator('.msg-assistant').first()).toContainText(
