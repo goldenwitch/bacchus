@@ -11,10 +11,24 @@ export { serialize } from './serializer.js';
 export { validate } from './validator.js';
 
 // Graph Queries
+export { getTask, getRoot, getDependencies, getDependants } from './graph.js';
+
+// Mutations
 export {
-  getTask,
-  getRoot,
-  getDependencies,
-  getDependants,
-  getAncestors,
-} from './graph.js';
+  addTask,
+  removeTask,
+  setStatus,
+  updateTask,
+  addDependency,
+  removeDependency,
+} from './mutations.js';
+
+// Search & Filter
+export type { GraphSummary } from './search.js';
+export {
+  filterByStatus,
+  searchTasks,
+  getLeaves,
+  getDescendants,
+  getSummary,
+} from './search.js';

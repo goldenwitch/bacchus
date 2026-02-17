@@ -38,35 +38,3 @@ export function getDependants(graph: VineGraph, id: string): Task[] {
   }
   return result;
 }
-
-/**
- * Returns all transitive dependencies (ancestors) of a task.
- * Useful for viz camera framing. BFS through dependency edges.
- * Does NOT include the starting task itself.
- */
-export function getAncestors(graph: VineGraph, id: string): Task[] {
-  const start = getTask(graph, id);
-  const visited = new Set<string>();
-  const queue: string[] = [...start.dependencies];
-  const ancestors: Task[] = [];
-
-  for (const dep of queue) {
-    visited.add(dep);
-  }
-
-  while (queue.length > 0) {
-    const currentId = queue.shift();
-    if (currentId === undefined) break;
-    const current = getTask(graph, currentId);
-    ancestors.push(current);
-
-    for (const depId of current.dependencies) {
-      if (!visited.has(depId)) {
-        visited.add(depId);
-        queue.push(depId);
-      }
-    }
-  }
-
-  return ancestors;
-}

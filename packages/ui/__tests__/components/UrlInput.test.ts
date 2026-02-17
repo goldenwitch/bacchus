@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/svelte';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from '@testing-library/svelte';
 import { tick } from 'svelte';
 import UrlInput from '../../src/lib/components/UrlInput.svelte';
 
@@ -19,7 +25,9 @@ describe('UrlInput', () => {
 
   it('renders text input and Load button', () => {
     render(UrlInput, { props: { onload, onerror } });
-    expect(screen.getByPlaceholderText('https://example.com/project.vine')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('https://example.com/project.vine'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /load/i })).toBeInTheDocument();
   });
 
@@ -41,10 +49,14 @@ describe('UrlInput', () => {
     );
 
     render(UrlInput, { props: { onload, onerror } });
-    const input = screen.getByPlaceholderText('https://example.com/project.vine');
+    const input = screen.getByPlaceholderText(
+      'https://example.com/project.vine',
+    );
     const button = screen.getByRole('button', { name: /load/i });
 
-    await fireEvent.input(input, { target: { value: 'https://example.com/test.vine' } });
+    await fireEvent.input(input, {
+      target: { value: 'https://example.com/test.vine' },
+    });
     await tick();
     await fireEvent.click(button);
     await tick();
@@ -60,46 +72,71 @@ describe('UrlInput', () => {
   it('fetches URL and calls onload on success', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(new Response('vine file content', { status: 200 })),
+      vi
+        .fn()
+        .mockResolvedValue(new Response('vine file content', { status: 200 })),
     );
 
     render(UrlInput, { props: { onload, onerror } });
-    const input = screen.getByPlaceholderText('https://example.com/project.vine');
+    const input = screen.getByPlaceholderText(
+      'https://example.com/project.vine',
+    );
 
-    await fireEvent.input(input, { target: { value: 'https://example.com/test.vine' } });
+    await fireEvent.input(input, {
+      target: { value: 'https://example.com/test.vine' },
+    });
     await tick();
     await fireEvent.click(screen.getByRole('button', { name: /load/i }));
 
-    await waitFor(() => expect(onload).toHaveBeenCalledWith('vine file content'));
+    await waitFor(() =>
+      expect(onload).toHaveBeenCalledWith('vine file content'),
+    );
     expect(onerror).not.toHaveBeenCalled();
   });
 
   it('calls onerror with status on HTTP failure', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(new Response('', { status: 404, statusText: 'Not Found' })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response('', { status: 404, statusText: 'Not Found' }),
+        ),
     );
 
     render(UrlInput, { props: { onload, onerror } });
-    const input = screen.getByPlaceholderText('https://example.com/project.vine');
+    const input = screen.getByPlaceholderText(
+      'https://example.com/project.vine',
+    );
 
-    await fireEvent.input(input, { target: { value: 'https://example.com/missing.vine' } });
+    await fireEvent.input(input, {
+      target: { value: 'https://example.com/missing.vine' },
+    });
     await tick();
     await fireEvent.click(screen.getByRole('button', { name: /load/i }));
 
     await waitFor(() =>
-      expect(onerror).toHaveBeenCalledWith('Failed to load file: 404 Not Found'),
+      expect(onerror).toHaveBeenCalledWith(
+        'Failed to load file: 404 Not Found',
+      ),
     );
     expect(onload).not.toHaveBeenCalled();
   });
 
   it('calls onerror with Network error on fetch rejection', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    );
 
     render(UrlInput, { props: { onload, onerror } });
-    const input = screen.getByPlaceholderText('https://example.com/project.vine');
+    const input = screen.getByPlaceholderText(
+      'https://example.com/project.vine',
+    );
 
-    await fireEvent.input(input, { target: { value: 'https://example.com/test.vine' } });
+    await fireEvent.input(input, {
+      target: { value: 'https://example.com/test.vine' },
+    });
     await tick();
     await fireEvent.click(screen.getByRole('button', { name: /load/i }));
 
@@ -114,9 +151,13 @@ describe('UrlInput', () => {
     );
 
     render(UrlInput, { props: { onload, onerror } });
-    const input = screen.getByPlaceholderText('https://example.com/project.vine');
+    const input = screen.getByPlaceholderText(
+      'https://example.com/project.vine',
+    );
 
-    await fireEvent.input(input, { target: { value: 'https://example.com/test.vine' } });
+    await fireEvent.input(input, {
+      target: { value: 'https://example.com/test.vine' },
+    });
     await tick();
     await fireEvent.keyDown(input, { key: 'Enter' });
 
@@ -127,7 +168,9 @@ describe('UrlInput', () => {
     vi.stubGlobal('fetch', vi.fn());
 
     render(UrlInput, { props: { onload, onerror } });
-    const input = screen.getByPlaceholderText('https://example.com/project.vine');
+    const input = screen.getByPlaceholderText(
+      'https://example.com/project.vine',
+    );
 
     await fireEvent.keyDown(input, { key: 'Enter' });
     await tick();

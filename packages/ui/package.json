@@ -1,7 +1,7 @@
 {
   "name": "@bacchus/ui",
   "description": "Interactive browser app for visualizing VINE task graphs",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -18,7 +18,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test --config e2e/playwright.config.ts --project=default --project=chat-mocked",
+    "e2e:chat": "playwright test --config e2e/playwright.config.ts --project=chat-mocked",
+    "e2e:chat:live": "playwright test --config e2e/playwright.config.ts --project=chat-live"
   },
   "dependencies": {
     "@bacchus/core": "workspace:*",
@@ -29,6 +32,7 @@
     "svelte": "^5.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@testing-library/jest-dom": "^6",
     "@testing-library/svelte": "^5",
@@ -36,6 +40,7 @@
     "@types/d3-selection": "^3.0.0",
     "@types/d3-transition": "^3",
     "@types/d3-zoom": "^3.0.0",
+    "dotenv": "^16.4.0",
     "jsdom": "^25",
     "svelte-htm": "^1",
     "vite": "^6.0.0"

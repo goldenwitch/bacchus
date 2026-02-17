@@ -2,7 +2,17 @@
   import MuteButton from './MuteButton.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
 
-  let { onreset, graphTitle, onzoomin, onzoomout, onfitview, zoomLevel, svgElement }: {
+  let {
+    onreset,
+    graphTitle,
+    onzoomin,
+    onzoomout,
+    onfitview,
+    zoomLevel,
+    svgElement,
+    onchat,
+    chatOpen,
+  }: {
     onreset?: () => void;
     graphTitle?: string;
     onzoomin?: () => void;
@@ -10,6 +20,8 @@
     onfitview?: () => void;
     zoomLevel?: number;
     svgElement?: SVGSVGElement;
+    onchat?: () => void;
+    chatOpen?: boolean;
   } = $props();
 
   function resolveVarReferences(el: Element): void {
@@ -45,10 +57,18 @@
     const clone = svgElement.cloneNode(true) as SVGSVGElement;
     // Resolve all CSS var() references so the SVG is portable
     resolveVarReferences(clone);
-    const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    const bgRect = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect',
+    );
     bgRect.setAttribute('width', '100%');
     bgRect.setAttribute('height', '100%');
-    bgRect.setAttribute('fill', getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim());
+    bgRect.setAttribute(
+      'fill',
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--bg-primary')
+        .trim(),
+    );
     clone.insertBefore(bgRect, clone.firstChild);
     const serializer = new XMLSerializer();
     const svgStr = serializer.serializeToString(clone);
@@ -98,7 +118,17 @@
       aria-label="Zoom out"
       title="Zoom out"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
         <line x1="8" y1="11" x2="14" y2="11" />
@@ -112,7 +142,17 @@
       aria-label="Zoom in"
       title="Zoom in"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
         <line x1="11" y1="8" x2="11" y2="14" />
@@ -130,7 +170,17 @@
       aria-label="Fit graph to view"
       title="Fit to view"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M15 3h6v6" />
         <path d="M9 21H3v-6" />
         <path d="M21 3l-7 7" />
@@ -145,10 +195,45 @@
       aria-label="Export graph as SVG"
       title="Export as SVG"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
         <polyline points="7 10 12 15 17 10" />
         <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </button>
+  {/if}
+  {#if onchat}
+    <button
+      class="home-btn"
+      class:chat-active={chatOpen}
+      onclick={onchat}
+      aria-label={chatOpen ? 'Close chat planner' : 'Open chat planner'}
+      title={chatOpen ? 'Close chat' : 'Chat planner'}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+        />
       </svg>
     </button>
   {/if}
@@ -188,6 +273,10 @@
 
   .home-btn:hover {
     opacity: 0.8;
+  }
+
+  .chat-active {
+    color: var(--accent-green);
   }
 
   .zoom-level {

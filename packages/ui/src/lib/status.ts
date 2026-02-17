@@ -86,7 +86,9 @@ export function themeVersion(): number {
 
 /** Read a CSS custom property value from the document root. */
 function getCssVar(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
 }
 
 /**

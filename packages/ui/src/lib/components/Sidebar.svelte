@@ -5,7 +5,17 @@
   import { quintOut, quintIn } from 'svelte/easing';
   import { STATUS_MAP } from '../status.js';
 
-  let { task, graph, onclose, onfocus }: { task: Task | null; graph: VineGraph; onclose?: () => void; onfocus?: (taskId: string) => void } = $props();
+  let {
+    task,
+    graph,
+    onclose,
+    onfocus,
+  }: {
+    task: Task | null;
+    graph: VineGraph;
+    onclose?: () => void;
+    onfocus?: (taskId: string) => void;
+  } = $props();
 
   const statusInfo = $derived(task ? STATUS_MAP[task.status] : null);
   const deps = $derived(task ? getDependencies(graph, task.id) : []);
@@ -20,13 +30,16 @@
     const g = parseInt(hex.slice(3, 5), 16) / 255;
     const b = parseInt(hex.slice(5, 7), 16) / 255;
     const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-    return luminance > 0.5 ? 'var(--color-node-text-dark)' : 'var(--color-node-text-light)';
+    return luminance > 0.5
+      ? 'var(--color-node-text-dark)'
+      : 'var(--color-node-text-light)';
   });
 
   // Detect mobile for transition direction
-  const isMobile = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(max-width: 480px)').matches
-    : false;
+  const isMobile =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 480px)').matches
+      : false;
 
   let copied = $state(false);
 
@@ -34,7 +47,9 @@
     if (!task) return;
     navigator.clipboard.writeText(task.id);
     copied = true;
-    setTimeout(() => { copied = false; }, 1500);
+    setTimeout(() => {
+      copied = false;
+    }, 1500);
   }
 </script>
 
@@ -43,17 +58,35 @@
     class="sidebar"
     role="region"
     aria-label="Task details"
-    in:fly={{ x: isMobile ? 0 : 360, y: isMobile ? 300 : 0, duration: 300, easing: quintOut }}
-    out:fly={{ x: isMobile ? 0 : 360, y: isMobile ? 300 : 0, duration: 200, easing: quintIn }}
+    in:fly={{
+      x: isMobile ? 0 : 360,
+      y: isMobile ? 300 : 0,
+      duration: 300,
+      easing: quintOut,
+    }}
+    out:fly={{
+      x: isMobile ? 0 : 360,
+      y: isMobile ? 300 : 0,
+      duration: 200,
+      easing: quintIn,
+    }}
     onclick={(e: MouseEvent) => e.stopPropagation()}
-    onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onclose?.(); }}
+    onkeydown={(e: KeyboardEvent) => {
+      if (e.key === 'Escape') onclose?.();
+    }}
   >
     {#if onclose}
-      <button class="close-btn" aria-label="Close sidebar" onclick={onclose}>✕</button>
+      <button class="close-btn" aria-label="Close sidebar" onclick={onclose}
+        >✕</button
+      >
     {/if}
     {#if statusInfo}
-      <span class="status-pill" style="background: {statusInfo.color}; color: {pillTextColor};">
-        {statusInfo.emoji} {statusInfo.label}
+      <span
+        class="status-pill"
+        style="background: {statusInfo.color}; color: {pillTextColor};"
+      >
+        {statusInfo.emoji}
+        {statusInfo.label}
       </span>
     {/if}
 
@@ -65,7 +98,7 @@
       <div class="decisions">
         <h3 class="section-heading">Decisions</h3>
         <ul>
-          {#each task.decisions as decision}
+          {#each task.decisions as decision, i (i)}
             <li>{decision}</li>
           {/each}
         </ul>
@@ -77,7 +110,7 @@
       {#if deps.length === 0}
         <span class="dep-empty">None</span>
       {:else}
-        {#each deps as dep}
+        {#each deps as dep (dep.id)}
           <button class="dep-item" onclick={() => onfocus?.(dep.id)}>
             <span>{STATUS_MAP[dep.status].emoji}</span>
             <span>{dep.shortName}</span>
@@ -91,7 +124,7 @@
       {#if dependants.length === 0}
         <span class="dep-empty">None</span>
       {:else}
-        {#each dependants as dep}
+        {#each dependants as dep (dep.id)}
           <button class="dep-item" onclick={() => onfocus?.(dep.id)}>
             <span>{STATUS_MAP[dep.status].emoji}</span>
             <span>{dep.shortName}</span>

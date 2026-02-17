@@ -78,7 +78,10 @@ beforeEach(() => {
   vi.resetModules();
 
   mockCtx = createMockAudioContext();
-  vi.stubGlobal('AudioContext', vi.fn(() => mockCtx));
+  vi.stubGlobal(
+    'AudioContext',
+    vi.fn(() => mockCtx),
+  );
 
   const storage: Record<string, string> = {};
   vi.stubGlobal('localStorage', {
@@ -214,8 +217,14 @@ describe('sound spec compliance', () => {
     sound.initAudio();
     sound.playPop();
     const osc = mockCtx.createOscillator.mock.results[0]?.value;
-    expect(osc.frequency.setValueAtTime).toHaveBeenCalledWith(600, expect.any(Number));
-    expect(osc.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(200, expect.any(Number));
+    expect(osc.frequency.setValueAtTime).toHaveBeenCalledWith(
+      600,
+      expect.any(Number),
+    );
+    expect(osc.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(
+      200,
+      expect.any(Number),
+    );
   });
 
   it('playPop has 5ms attack and 150ms decay', async () => {
@@ -224,7 +233,10 @@ describe('sound spec compliance', () => {
     sound.playPop();
     const gain = mockCtx.createGain.mock.results[1]?.value; // index 1 = pop's gain (0 = master)
     expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(1, 0.005);
-    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, 0.005 + 0.15);
+    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      0.005 + 0.15,
+    );
   });
 
   it('playHover is 880Hz sine with 3ms attack and 60ms decay', async () => {
@@ -235,7 +247,10 @@ describe('sound spec compliance', () => {
     expect(osc.frequency.setValueAtTime).toHaveBeenCalledWith(880, 0);
     const gain = mockCtx.createGain.mock.results[1]?.value;
     expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0.5, 0.003);
-    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, 0.003 + 0.06);
+    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      0.003 + 0.06,
+    );
   });
 
   it('playWhoosh bandpass sweeps 200 to 800 Hz', async () => {
@@ -244,7 +259,10 @@ describe('sound spec compliance', () => {
     sound.playWhoosh();
     const filter = mockCtx.createBiquadFilter.mock.results[0]?.value;
     expect(filter.frequency.setValueAtTime).toHaveBeenCalledWith(200, 0);
-    expect(filter.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(800, expect.any(Number));
+    expect(filter.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(
+      800,
+      expect.any(Number),
+    );
   });
 
   it('playWhoosh has 10ms attack and 300ms decay', async () => {
@@ -253,7 +271,10 @@ describe('sound spec compliance', () => {
     sound.playWhoosh();
     const gain = mockCtx.createGain.mock.results[1]?.value;
     expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0.8, 0.01);
-    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, 0.01 + 0.3);
+    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      0.01 + 0.3,
+    );
   });
 
   it('master gain is 0.3 when unmuted', async () => {

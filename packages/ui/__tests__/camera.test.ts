@@ -42,9 +42,18 @@ describe('computeBoundingBox', () => {
   });
 
   it('applies padding correctly', () => {
-    const noPad = computeBoundingBox([{ x: 0, y: 0 }, { x: 100, y: 100 }], 0);
+    const noPad = computeBoundingBox(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 },
+      ],
+      0,
+    );
     const withPad = computeBoundingBox(
-      [{ x: 0, y: 0 }, { x: 100, y: 100 }],
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 },
+      ],
       50,
     );
     // With padding, the box should be exactly 100px wider and taller (50 per side)
@@ -87,22 +96,25 @@ describe('computeFocusFrame', () => {
     expect(farApart.k).toBeGreaterThanOrEqual(0.25);
 
     // Single point with small viewport → would try very large scale
-    const tight = computeFocusFrame(
-      { x: 0, y: 0 },
-      [],
-      [],
-      8000,
-      6000,
-    );
+    const tight = computeFocusFrame({ x: 0, y: 0 }, [], [], 8000, 6000);
     expect(tight.k).toBeLessThanOrEqual(4.0);
   });
 });
 
 describe('camera spec compliance', () => {
   it('bounding box uses 80px default padding', () => {
-    const box = computeBoundingBox([{ x: 0, y: 0 }, { x: 100, y: 100 }]);
+    const box = computeBoundingBox([
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+    ]);
     // With default 80px padding, the box should be larger by 160px in each dimension
-    const noPad = computeBoundingBox([{ x: 0, y: 0 }, { x: 100, y: 100 }], 0);
+    const noPad = computeBoundingBox(
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 },
+      ],
+      0,
+    );
     expect(box.width).toBeCloseTo(noPad.width + 160);
     expect(box.height).toBeCloseTo(noPad.height + 160);
   });
@@ -113,7 +125,8 @@ describe('camera spec compliance', () => {
       { x: 0, y: 0 },
       [{ x: 50000, y: 50000 }],
       [{ x: -50000, y: -50000 }],
-      800, 600,
+      800,
+      600,
     );
     expect(verySpread.k).toBe(0.25);
 

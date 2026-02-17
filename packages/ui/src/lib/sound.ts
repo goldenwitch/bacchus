@@ -5,7 +5,6 @@
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let noiseBuffer: AudioBuffer | null = null;
-let muted = false;
 
 // ---------------------------------------------------------------------------
 // Mute state (persisted to localStorage)
@@ -15,6 +14,7 @@ const MUTE_KEY = 'bacchus-ui-muted';
 const VOLUME_KEY = 'bacchus-ui-volume';
 
 let volume = 0.3; // default volume level (0–1)
+let muted = loadMuteState();
 
 function loadMuteState(): boolean {
   try {
@@ -148,7 +148,7 @@ export function playPop(): void {
 
     const gain = ac.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(1, now + 0.005);   // 5ms attack
+    gain.gain.linearRampToValueAtTime(1, now + 0.005); // 5ms attack
     gain.gain.linearRampToValueAtTime(0, now + 0.005 + 0.15); // 150ms decay
 
     osc.connect(gain);
@@ -213,7 +213,7 @@ export function playWhoosh(): void {
 
     const gain = ac.createGain();
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.8, now + 0.01);  // 10ms attack
+    gain.gain.linearRampToValueAtTime(0.8, now + 0.01); // 10ms attack
     gain.gain.linearRampToValueAtTime(0, now + 0.01 + 0.3); // 300ms decay
 
     source.connect(filter);

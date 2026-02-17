@@ -22,7 +22,11 @@ const mockAudioContext = {
   })),
   createOscillator: vi.fn(() => ({
     type: 'sine',
-    frequency: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    frequency: {
+      value: 0,
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
     connect: vi.fn(),
     start: vi.fn(),
     stop: vi.fn(),
@@ -35,7 +39,11 @@ const mockAudioContext = {
   })),
   createBiquadFilter: vi.fn(() => ({
     type: 'bandpass',
-    frequency: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    frequency: {
+      value: 0,
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
     Q: { value: 0, setValueAtTime: vi.fn() },
     connect: vi.fn(),
   })),
@@ -48,7 +56,10 @@ const mockAudioContext = {
   })),
 };
 
-vi.stubGlobal('AudioContext', vi.fn(() => ({ ...mockAudioContext })));
+vi.stubGlobal(
+  'AudioContext',
+  vi.fn(() => ({ ...mockAudioContext })),
+);
 
 // ---------------------------------------------------------------------------
 // Mock localStorage
@@ -56,6 +67,10 @@ vi.stubGlobal('AudioContext', vi.fn(() => ({ ...mockAudioContext })));
 const storage: Record<string, string> = {};
 vi.stubGlobal('localStorage', {
   getItem: vi.fn((key: string) => storage[key] ?? null),
-  setItem: vi.fn((key: string, val: string) => { storage[key] = val; }),
-  removeItem: vi.fn((key: string) => { delete storage[key]; }),
+  setItem: vi.fn((key: string, val: string) => {
+    storage[key] = val;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete storage[key];
+  }),
 });

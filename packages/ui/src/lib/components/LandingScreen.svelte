@@ -5,8 +5,22 @@
   import FileDropZone from './FileDropZone.svelte';
   import UrlInput from './UrlInput.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
+  import ChatPanel from './ChatPanel.svelte';
+  import type { ChatSession } from '../chat/session.js';
 
-  let { onload }: { onload: (graph: VineGraph) => void } = $props();
+  let {
+    onload,
+    onupdate,
+    chatOpen,
+    chatSession,
+    ontoggle,
+  }: {
+    onload: (graph: VineGraph) => void;
+    onupdate?: (graph: VineGraph) => void;
+    chatOpen: boolean;
+    chatSession: ChatSession;
+    ontoggle: () => void;
+  } = $props();
   let error: string | null = $state(null);
 
   const DIAMOND_EXAMPLE = `[schema] Design Database Schema (complete)
@@ -56,6 +70,24 @@ End-to-end tests verifying the API and UI work together.
     error = message;
   }
 
+  function handleChatGraphUpdate(graph: VineGraph) {
+    if (onupdate) {
+      onupdate(graph);
+    }
+    // Don't call onload() synchronously — the session's async send loop
+    // is still running (e.g. round 2: the text summary after replace_graph).
+    // If we swap views now, the old ChatPanel is destroyed but the session
+    // keeps running fine — however the user would miss the assistant reply
+    // that's still streaming.  Instead, wait for the turn to complete
+    // (isLoading → false) before triggering the view transition.
+    const poll = setInterval(() => {
+      if (!chatSession.isLoading) {
+        clearInterval(poll);
+        onload(graph);
+      }
+    }, 50);
+  }
+
   function formatDetails(details: ValidationDetails): string {
     switch (details.constraint) {
       case 'at-least-one-task':
@@ -93,16 +125,46 @@ End-to-end tests verifying the API and UI work together.
         <span class="try-example-label">✨ Try an example</span>
         <span class="try-example-sub">Load a sample dependency graph</span>
       </button>
+
+      <div class="divider">
+        <span>or plan with AI</span>
+      </div>
+
+      <button
+        class="try-example plan-ai"
+        onclick={() => {
+          ontoggle();
+        }}
+      >
+        <span class="try-example-label">💬 Plan with AI</span>
+        <span class="try-example-sub"
+          >Create a task graph through conversation</span
+        >
+      </button>
     </div>
 
     {#if error}
       <div class="error-card anim-error-shake">
         <span class="error-icon">⚠️</span>
         <p class="error-message">{error}</p>
-        <button class="dismiss" onclick={() => { error = null; }}>Dismiss</button>
+        <button
+          class="dismiss"
+          onclick={() => {
+            error = null;
+          }}>Dismiss</button
+        >
       </div>
     {/if}
   </div>
+  <ChatPanel
+    graph={null}
+    onupdate={handleChatGraphUpdate}
+    onclose={() => {
+      ontoggle();
+    }}
+    session={chatSession}
+    expanded={chatOpen}
+  />
 </div>
 
 <style>
@@ -130,7 +192,11 @@ End-to-end tests verifying the API and UI work together.
     font-size: 3rem;
     font-weight: 700;
     margin: 0;
-    background: linear-gradient(135deg, var(--color-complete), var(--color-planning));
+    background: linear-gradient(
+      135deg,
+      var(--color-complete),
+      var(--color-planning)
+    );
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -191,7 +257,9 @@ End-to-end tests verifying the API and UI work together.
     color: var(--color-error);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: background 150ms, color 150ms;
+    transition:
+      background 150ms,
+      color 150ms;
     flex-shrink: 0;
   }
 
@@ -227,6 +295,15 @@ End-to-end tests verifying the API and UI work together.
   .try-example-sub {
     font-size: 0.8rem;
     color: var(--text-dimmed);
+  }
+
+  .plan-ai {
+    border-color: var(--color-planning);
+    color: var(--color-planning);
+  }
+
+  .plan-ai:hover {
+    background: rgba(167, 139, 250, 0.1);
   }
 
   /* error-shake animation handled by global app.css */

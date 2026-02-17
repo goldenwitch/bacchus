@@ -14,16 +14,16 @@ The package ships **two things**:
 
 ### Design Decisions
 
-| Decision               | Choice                            | Rationale                                                                                                          |
-| ---------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Framework              | **Svelte 5 (runes)**              | Built-in spring/tween primitives; tiny bundle; direct DOM works with D3.                    |
-| D3 usage               | **Layout math only**              | D3 computes positions; Svelte owns DOM — no conflicts.                                      |
-| Rendering surface      | **SVG**                           | Svelte transitions on graph elements; CSS styling; easy hit-testing.                        |
-| Sound approach         | **Web Audio API (synthesis)**     | Synthesized tones — zero audio assets, infinitely tweakable.                                |
-| Reactive state         | **`$state` / `$derived` runes**   | Svelte 5 runes replace stores — no external state library needed.                           |
-| Root identification    | **Last task in file order**       | Matches `@bacchus/core` `getRoot()` convention.                                             |
-| Input modes            | **File picker + URL parameter**   | Local files via drag-and-drop; shareable links via `?file=<url>`.                           |
-| Packaging              | **Component + App**               | `<GraphView>` is embeddable; the app is a thin shell for standalone use.                    |
+| Decision            | Choice                          | Rationale                                                                |
+| ------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| Framework           | **Svelte 5 (runes)**            | Built-in spring/tween primitives; tiny bundle; direct DOM works with D3. |
+| D3 usage            | **Layout math only**            | D3 computes positions; Svelte owns DOM — no conflicts.                   |
+| Rendering surface   | **SVG**                         | Svelte transitions on graph elements; CSS styling; easy hit-testing.     |
+| Sound approach      | **Web Audio API (synthesis)**   | Synthesized tones — zero audio assets, infinitely tweakable.             |
+| Reactive state      | **`$state` / `$derived` runes** | Svelte 5 runes replace stores — no external state library needed.        |
+| Root identification | **Last task in file order**     | Matches `@bacchus/core` `getRoot()` convention.                          |
+| Input modes         | **File picker + URL parameter** | Local files via drag-and-drop; shareable links via `?file=<url>`.        |
+| Packaging           | **Component + App**             | `<GraphView>` is embeddable; the app is a thin shell for standalone use. |
 
 ---
 
@@ -33,8 +33,8 @@ The package ships **two things**:
 
 Each `Status` maps to a color, emoji, and CSS class:
 
-| Status       | Color (hex) | Emoji | CSS Class        | Meaning                        |
-| ------------ | ----------- | ----- | ---------------- | ------------------------------ |
+| Status       | Color (hex) | Emoji | CSS Class            | Meaning                        |
+| ------------ | ----------- | ----- | -------------------- | ------------------------------ |
 | `complete`   | `#4ade80`   | 🌿    | `.status-complete`   | Finished — lush, alive         |
 | `started`    | `#facc15`   | 🔨    | `.status-started`    | In progress — active, working  |
 | `notstarted` | `#94a3b8`   | 📋    | `.status-notstarted` | Ready — neutral, waiting       |
@@ -85,22 +85,22 @@ D3-force simulation computes node positions. Svelte reads the simulation's `node
 
 ### Force Configuration
 
-| Force           | D3 Function        | Parameters                                                                                        |
-| --------------- | ------------------- | ------------------------------------------------------------------------------------------------- |
-| Link            | `forceLink`         | `distance`: 120, `strength`: 0.8, links from `task.dependencies`                                 |
-| Charge          | `forceManyBody`     | `strength`: -300, `distanceMax`: 500                                                              |
-| Center          | `forceCenter`       | `x`: viewport center X, `y`: viewport center Y                                                   |
-| Collide         | `forceCollide`      | `radius`: node radius + 16px padding, `strength`: 0.9                                            |
-| Radial          | `forceRadial`       | `radius`: depth × 150, `strength`: 0.05, centered on root — arranges depth rings outward        |
+| Force   | D3 Function     | Parameters                                                                               |
+| ------- | --------------- | ---------------------------------------------------------------------------------------- |
+| Link    | `forceLink`     | `distance`: 120, `strength`: 0.8, links from `task.dependencies`                         |
+| Charge  | `forceManyBody` | `strength`: -300, `distanceMax`: 500                                                     |
+| Center  | `forceCenter`   | `x`: viewport center X, `y`: viewport center Y                                           |
+| Collide | `forceCollide`  | `radius`: node radius + 16px padding, `strength`: 0.9                                    |
+| Radial  | `forceRadial`   | `radius`: depth × 150, `strength`: 0.05, centered on root — arranges depth rings outward |
 
 ### Simulation Tuning
 
-| Parameter       | Value   | Effect                                                   |
-| --------------- | ------- | -------------------------------------------------------- |
-| `alpha`         | 1       | Starting energy — simulation begins fully active         |
-| `alphaDecay`    | 0.015   | Slow decay — longer settle time for bouncy feel          |
-| `alphaMin`      | 0.001   | Simulation freezes when below this threshold             |
-| `velocityDecay` | 0.3     | Low friction — nodes coast and overshoot for game feel   |
+| Parameter       | Value | Effect                                                 |
+| --------------- | ----- | ------------------------------------------------------ |
+| `alpha`         | 1     | Starting energy — simulation begins fully active       |
+| `alphaDecay`    | 0.015 | Slow decay — longer settle time for bouncy feel        |
+| `alphaMin`      | 0.001 | Simulation freezes when below this threshold           |
+| `velocityDecay` | 0.3   | Low friction — nodes coast and overshoot for game feel |
 
 ### Root Positioning
 
@@ -118,10 +118,10 @@ BFS outward from root: root = depth 0, root's direct dependencies = depth 1, the
 
 Both handled by `d3-zoom` on the root `<svg>` element, updating a reactive `$state` transform `{ x, y, k }`.
 
-| Parameter     | Value                            | Notes                                           |
-| ------------- | -------------------------------- | ----------------------------------------------- |
-| `scaleExtent` | [0.25, 4.0]                      | Clamp zoom range                                |
-| `filter`      | `event.ctrlKey` for wheel events | Ctrl+scroll to zoom; unmodified drag to pan      |
+| Parameter     | Value                            | Notes                                       |
+| ------------- | -------------------------------- | ------------------------------------------- |
+| `scaleExtent` | [0.25, 4.0]                      | Clamp zoom range                            |
+| `filter`      | `event.ctrlKey` for wheel events | Ctrl+scroll to zoom; unmodified drag to pan |
 
 Combined into a single SVG `transform`: `translate(x, y) scale(k)`.
 
@@ -188,10 +188,10 @@ When a task is focused, the camera smoothly reframes to show the task in context
 
 The viewport transform animates from its current value to the computed frame using Svelte `tweened()`:
 
-| Property       | Value                                   |
-| -------------- | --------------------------------------- |
-| Duration       | 600ms                                   |
-| Easing         | `cubicOut` (fast start, smooth settle)  |
+| Property | Value                                  |
+| -------- | -------------------------------------- |
+| Duration | 600ms                                  |
+| Easing   | `cubicOut` (fast start, smooth settle) |
 
 ### Dimming
 
@@ -235,16 +235,16 @@ A slide-out panel displaying full details of the focused task.
 
 ### Behavior
 
-| Property           | Value                                                                 |
-| ------------------ | --------------------------------------------------------------------- |
-| Width              | 360px                                                                 |
-| Position           | Fixed, right edge of viewport                                         |
-| Background         | Semi-transparent dark (`rgba(15, 23, 42, 0.92)`)                     |
-| Open transition    | Svelte `fly` from right, 300ms, `quintOut` easing                    |
-| Close transition   | Svelte `fly` to right, 200ms, `quintIn` easing                       |
-| Content binding    | Reactive — reads `getTask(graph, focusedTaskId)` via `$derived`      |
-| Id watermark       | `task.id` in bottom-right, `opacity: 0.15`, `font-size: 0.75rem`    |
-| Close trigger      | Background click (no explicit close button) clears focus                  |
+| Property         | Value                                                            |
+| ---------------- | ---------------------------------------------------------------- |
+| Width            | 360px                                                            |
+| Position         | Fixed, right edge of viewport                                    |
+| Background       | Semi-transparent dark (`rgba(15, 23, 42, 0.92)`)                 |
+| Open transition  | Svelte `fly` from right, 300ms, `quintOut` easing                |
+| Close transition | Svelte `fly` to right, 200ms, `quintIn` easing                   |
+| Content binding  | Reactive — reads `getTask(graph, focusedTaskId)` via `$derived`  |
+| Id watermark     | `task.id` in bottom-right, `opacity: 0.15`, `font-size: 0.75rem` |
+| Close trigger    | Background click (no explicit close button) clears focus         |
 
 ### Sections
 
@@ -264,11 +264,11 @@ The animation system prioritizes **satisfying feedback** — every state change 
 
 Named spring presets used throughout the application:
 
-| Name       | Stiffness | Damping | Purpose                                        |
-| ---------- | --------- | ------- | ---------------------------------------------- |
-| `popIn`    | 0.15      | 0.5     | Entry animations — bouncy overshoot            |
-| `smooth`   | 0.2       | 0.9     | Subtle UI transitions — no overshoot           |
-| `bounce`   | 0.3       | 0.4     | Interaction feedback — fast, exaggerated bounce |
+| Name     | Stiffness | Damping | Purpose                                         |
+| -------- | --------- | ------- | ----------------------------------------------- |
+| `popIn`  | 0.15      | 0.5     | Entry animations — bouncy overshoot             |
+| `smooth` | 0.2       | 0.9     | Subtle UI transitions — no overshoot            |
+| `bounce` | 0.3       | 0.4     | Interaction feedback — fast, exaggerated bounce |
 
 ### Entry Animation
 
@@ -284,25 +284,25 @@ When a graph first loads, nodes appear one-by-one in **dependency order** (leave
 
 Always-running ambient animations that make the graph feel alive:
 
-| Animation          | Target                  | Effect                                                                     |
-| ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| Label bob          | All node labels         | Gentle vertical oscillation, ±2px, 3s cycle, CSS `@keyframes`             |
-| Glow pulse         | `started` nodes         | Outer ring opacity oscillates 0.4 → 0.8, 2s cycle                         |
-| Completion shimmer | `complete` nodes        | Subtle radial gradient rotation, 6s cycle, gives a "polished gem" effect   |
-| Edge flow          | All edges               | `stroke-dashoffset` animation, 30px/s, produces moving-dot flow direction  |
+| Animation          | Target           | Effect                                                                    |
+| ------------------ | ---------------- | ------------------------------------------------------------------------- |
+| Label bob          | All node labels  | Gentle vertical oscillation, ±2px, 3s cycle, CSS `@keyframes`             |
+| Glow pulse         | `started` nodes  | Outer ring opacity oscillates 0.4 → 0.8, 2s cycle                         |
+| Completion shimmer | `complete` nodes | Subtle radial gradient rotation, 6s cycle, gives a "polished gem" effect  |
+| Edge flow          | All edges        | `stroke-dashoffset` animation, 30px/s, produces moving-dot flow direction |
 
 ### Interaction Feedback
 
-| Trigger          | Animation                                                              | Sound    |
-| ---------------- | ---------------------------------------------------------------------- | -------- |
-| Hover enter      | Scale 1.0 → 1.08 via `bounce` spring                                  | `hover`  |
-| Hover leave      | Scale → 1.0 via `smooth` spring                                       | —        |
-| Click (focus)    | Quick squish: scale 1.0 → 0.9 → 1.1 → 1.0 via `bounce` spring       | `pop`    |
-| Unfocus          | —                                                                      | `whoosh` |
-| Sidebar open     | `fly` transition from right                                            | `whoosh` |
-| Sidebar close    | `fly` transition to right                                              | —        |
-| Graph load       | Staggered `popIn` entry (see above)                                    | `pop` ×N |
-| Error displayed  | Shake animation (±4px horizontal, 3 cycles, 300ms)                     | —        |
+| Trigger         | Animation                                                     | Sound    |
+| --------------- | ------------------------------------------------------------- | -------- |
+| Hover enter     | Scale 1.0 → 1.08 via `bounce` spring                          | `hover`  |
+| Hover leave     | Scale → 1.0 via `smooth` spring                               | —        |
+| Click (focus)   | Quick squish: scale 1.0 → 0.9 → 1.1 → 1.0 via `bounce` spring | `pop`    |
+| Unfocus         | —                                                             | `whoosh` |
+| Sidebar open    | `fly` transition from right                                   | `whoosh` |
+| Sidebar close   | `fly` transition to right                                     | —        |
+| Graph load      | Staggered `popIn` entry (see above)                           | `pop` ×N |
+| Error displayed | Shake animation (±4px horizontal, 3 cycles, 300ms)            | —        |
 
 ---
 
@@ -316,21 +316,21 @@ A singleton `SoundEngine` module that lazily creates an `AudioContext` on the fi
 
 ```ts
 // Public API of src/lib/sound.ts
-function initAudio(): void;          // Call on first click/keypress
-function playPop(): void;            // Bubble appear / click
-function playHover(): void;          // Hover blip
-function playWhoosh(): void;         // Camera / sidebar transition
+function initAudio(): void; // Call on first click/keypress
+function playPop(): void; // Bubble appear / click
+function playHover(): void; // Hover blip
+function playWhoosh(): void; // Camera / sidebar transition
 function setMuted(muted: boolean): void;
 function isMuted(): boolean;
 ```
 
 ### Sound Palette
 
-| Sound    | Oscillator Type | Frequency       | Envelope (attack / decay) | Character                        |
-| -------- | --------------- | --------------- | ------------------------- | -------------------------------- |
-| `pop`    | Sine            | 600 → 200 Hz sweep | 5ms / 150ms              | Short, satisfying bubble pop     |
-| `hover`  | Sine            | 880 Hz (fixed)  | 3ms / 60ms               | Quiet, high-pitched blip         |
-| `whoosh` | White noise     | Bandpass 200–800 Hz | 10ms / 300ms             | Soft rush, filtered noise sweep  |
+| Sound    | Oscillator Type | Frequency           | Envelope (attack / decay) | Character                       |
+| -------- | --------------- | ------------------- | ------------------------- | ------------------------------- |
+| `pop`    | Sine            | 600 → 200 Hz sweep  | 5ms / 150ms               | Short, satisfying bubble pop    |
+| `hover`  | Sine            | 880 Hz (fixed)      | 3ms / 60ms                | Quiet, high-pitched blip        |
+| `whoosh` | White noise     | Bandpass 200–800 Hz | 10ms / 300ms              | Soft rush, filtered noise sweep |
 
 ### Gain & Mute
 
@@ -370,11 +370,11 @@ Set $state vineGraph   ← triggers reactive graph rendering
 
 If `parse()` throws, the error is caught and displayed as a styled error card on the landing screen:
 
-| Error Type             | Display                                                                 |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `VineParseError`       | "Parse error on line {line}: {message}" with the offending line highlighted |
-| `VineValidationError`  | "Validation error: {constraint}" with details (cycle path, island ids, etc.) |
-| Fetch failure          | "Failed to load file: {status} {statusText}" or "Network error"          |
+| Error Type            | Display                                                                      |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `VineParseError`      | "Parse error on line {line}: {message}" with the offending line highlighted  |
+| `VineValidationError` | "Validation error: {constraint}" with details (cycle path, island ids, etc.) |
+| Fetch failure         | "Failed to load file: {status} {statusText}" or "Network error"              |
 
 Errors include a "Dismiss" button that returns to the clean landing screen.
 
@@ -426,14 +426,14 @@ All graph data originates from `@bacchus/core` and flows one-way into the UI. Th
 
 ### Derived values (all via `$derived`)
 
-| Value            | Source                                                                                            |
-| ---------------- | ------------------------------------------------------------------------------------------------- |
-| `nodes`          | `vineGraph.order.map(id => getTask(vineGraph, id))` — ordered `Task[]`                            |
-| `links`          | `nodes.flatMap(t => t.dependencies.map(depId => ({ source: t.id, target: depId })))` — ID pairs for D3 |
-| `root`           | `getRoot(vineGraph)`                                                                              |
-| `focusedTask`    | `getTask(vineGraph, focusedTaskId)` when focused                                                  |
-| `dependants`     | `getDependants(vineGraph, focusedTaskId)` — `Task[]`, used for focus framing top row              |
-| `dependencies`   | `getDependencies(vineGraph, focusedTaskId)` — `Task[]`, used for focus framing bottom row         |
+| Value          | Source                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| `nodes`        | `vineGraph.order.map(id => getTask(vineGraph, id))` — ordered `Task[]`                                 |
+| `links`        | `nodes.flatMap(t => t.dependencies.map(depId => ({ source: t.id, target: depId })))` — ID pairs for D3 |
+| `root`         | `getRoot(vineGraph)`                                                                                   |
+| `focusedTask`  | `getTask(vineGraph, focusedTaskId)` when focused                                                       |
+| `dependants`   | `getDependants(vineGraph, focusedTaskId)` — `Task[]`, used for focus framing top row                   |
+| `dependencies` | `getDependencies(vineGraph, focusedTaskId)` — `Task[]`, used for focus framing bottom row              |
 
 > `links` reads raw `task.dependencies` (string IDs) because D3 links only need ID pairs. Focus queries use `getDependencies()` / `getDependants()` to get full `Task` objects.
 
@@ -483,14 +483,14 @@ packages/ui/
 
 ## Dependencies
 
-| Package                         | Version | Purpose                                  |
-| ------------------------------- | ------- | ---------------------------------------- |
-| `svelte`                        | ^5.0    | UI framework — runes, transitions, springs |
-| `@sveltejs/vite-plugin-svelte`  | ^5.0    | Vite integration for Svelte compilation  |
-| `d3-force`                      | ^3.0    | Force-directed graph layout simulation   |
-| `d3-selection`                  | ^3.0    | SVG element selection (zoom setup)       |
-| `d3-zoom`                       | ^3.0    | Pan + ctrl+scroll zoom                   |
-| `@bacchus/core`                 | `workspace:*` | Vine parser, validator, graph queries |
+| Package                        | Version       | Purpose                                    |
+| ------------------------------ | ------------- | ------------------------------------------ |
+| `svelte`                       | ^5.0          | UI framework — runes, transitions, springs |
+| `@sveltejs/vite-plugin-svelte` | ^5.0          | Vite integration for Svelte compilation    |
+| `d3-force`                     | ^3.0          | Force-directed graph layout simulation     |
+| `d3-selection`                 | ^3.0          | SVG element selection (zoom setup)         |
+| `d3-zoom`                      | ^3.0          | Pan + ctrl+scroll zoom                     |
+| `@bacchus/core`                | `workspace:*` | Vine parser, validator, graph queries      |
 
 Dev dependencies inherit from the workspace root (`typescript`, `vitest`, `eslint`, `prettier`).
 
@@ -503,12 +503,12 @@ Dev dependencies inherit from the workspace root (`typescript`, `vitest`, `eslin
 
 ### Test Suites
 
-| Suite              | Focus                                                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `layout.test.ts`   | D3 simulation produces valid positions; root is near center; no overlapping nodes after settle; depth ring ordering holds. |
-| `camera.test.ts`   | Bounding box computation for focus framing; scale/translate fits all nodes; edge case: root focused (no dependants). |
-| `sound.test.ts`    | `AudioContext` mock — `playPop`/`playHover`/`playWhoosh` create correct oscillator configs; mute state persists; graceful no-op when unavailable. |
-| `status.test.ts`   | Every `Status` value has a mapped color, emoji, and CSS class; no missing entries; exhaustive switch coverage.  |
+| Suite            | Focus                                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout.test.ts` | D3 simulation produces valid positions; root is near center; no overlapping nodes after settle; depth ring ordering holds.                        |
+| `camera.test.ts` | Bounding box computation for focus framing; scale/translate fits all nodes; edge case: root focused (no dependants).                              |
+| `sound.test.ts`  | `AudioContext` mock — `playPop`/`playHover`/`playWhoosh` create correct oscillator configs; mute state persists; graceful no-op when unavailable. |
+| `status.test.ts` | Every `Status` value has a mapped color, emoji, and CSS class; no missing entries; exhaustive switch coverage.                                    |
 
 ### Visual / E2E Testing
 

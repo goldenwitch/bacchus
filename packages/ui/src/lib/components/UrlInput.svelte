@@ -1,13 +1,20 @@
 <script lang="ts">
-  let { onload, onerror }: { onload: (text: string) => void; onerror: (message: string) => void } = $props();
+  let {
+    onload,
+    onerror,
+  }: { onload: (text: string) => void; onerror: (message: string) => void } =
+    $props();
   let url = $state('');
   let loading = $state(false);
 
   // Responsive placeholder — shorter on narrow viewports
-  const isNarrow = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(max-width: 480px)').matches
-    : false;
-  const placeholder = isNarrow ? 'Paste URL…' : 'https://example.com/project.vine';
+  const isNarrow =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 480px)').matches
+      : false;
+  const placeholder = isNarrow
+    ? 'Paste URL…'
+    : 'https://example.com/project.vine';
 
   async function loadUrl() {
     if (!url.trim()) return;
@@ -15,7 +22,9 @@
     try {
       const response = await fetch(url.trim());
       if (!response.ok) {
-        onerror(`Failed to load file: ${response.status} ${response.statusText}`);
+        onerror(
+          `Failed to load file: ${response.status} ${response.statusText}`,
+        );
         return;
       }
       const text = await response.text();
@@ -36,7 +45,7 @@
   <input
     type="text"
     bind:value={url}
-    placeholder={placeholder}
+    {placeholder}
     onkeydown={handleKeydown}
     disabled={loading}
   />
@@ -111,6 +120,8 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

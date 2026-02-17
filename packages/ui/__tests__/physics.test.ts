@@ -6,6 +6,9 @@ import {
   saveOverrides,
   clearOverrides,
   resolveConfig,
+  DEFAULT_STRATA_LINES,
+  loadStrataOverride,
+  saveStrataOverride,
 } from '../src/lib/physics.js';
 
 // ---------------------------------------------------------------------------
@@ -24,7 +27,14 @@ describe('PHYSICS_SLIDER_DEFS', () => {
   it('contains all six groups', () => {
     const groups = new Set(PHYSICS_SLIDER_DEFS.map((d) => d.group));
     expect(groups).toEqual(
-      new Set(['Repulsion', 'Links', 'Collisions', 'Layout', 'Centering', 'Damping']),
+      new Set([
+        'Repulsion',
+        'Links',
+        'Collisions',
+        'Layout',
+        'Centering',
+        'Damping',
+      ]),
     );
   });
 });
@@ -35,16 +45,16 @@ describe('PHYSICS_SLIDER_DEFS', () => {
 describe('getDefaults', () => {
   it('returns correct defaults', () => {
     const cfg = getDefaults(4);
-    expect(cfg.chargeStrength).toBe(-1200);
-    expect(cfg.chargeDistanceMax).toBe(1500);
-    expect(cfg.linkStrength).toBe(0.05);
-    expect(cfg.minEdgeGap).toBe(200);
+    expect(cfg.chargeStrength).toBe(-10);
+    expect(cfg.chargeDistanceMax).toBe(10);
+    expect(cfg.linkStrength).toBe(0.01);
+    expect(cfg.minEdgeGap).toBe(2);
     expect(cfg.collidePadding).toBe(40);
-    expect(cfg.collideStrength).toBe(1.00);
-    expect(cfg.layerSpacing).toBe(400);
-    expect(cfg.layerStrength).toBe(0.50);
-    expect(cfg.layerExponent).toBe(1.0);
-    expect(cfg.clusterStrength).toBe(0.50);
+    expect(cfg.collideStrength).toBe(1.0);
+    expect(cfg.layerSpacing).toBe(118);
+    expect(cfg.layerStrength).toBe(5.0);
+    expect(cfg.layerExponent).toBe(0.9);
+    expect(cfg.clusterStrength).toBe(0.0);
     expect(cfg.velocityDecay).toBe(0.25);
   });
 
@@ -81,7 +91,10 @@ describe('loadOverrides', () => {
       'bacchus-physics',
       JSON.stringify({ chargeStrength: -500, linkStrength: 0.3 }),
     );
-    expect(loadOverrides()).toEqual({ chargeStrength: -500, linkStrength: 0.3 });
+    expect(loadOverrides()).toEqual({
+      chargeStrength: -500,
+      linkStrength: 0.3,
+    });
   });
 
   it('ignores invalid keys', () => {
@@ -144,7 +157,31 @@ describe('saveOverrides', () => {
   });
 
   it('removes key when overrides is empty', () => {
-    localStorage.setItem('bacchus-physics', JSON.stringify({ linkStrength: 0.5 }));
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ linkStrength: 0.5 }),
+    );
+    saveOverrides({});
+    vi.advanceTimersByTime(200);
+    expect(localStorage.getItem('bacchus-physics')).toBeNull();
+  });
+
+  it('preserves non-physics keys when saving overrides', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ showStrataLines: false }),
+    );
+    saveOverrides({ chargeStrength: -500 });
+    vi.advanceTimersByTime(200);
+    const stored = JSON.parse(localStorage.getItem('bacchus-physics')!);
+    expect(stored).toEqual({ showStrataLines: false, chargeStrength: -500 });
+  });
+
+  it('removes key when overrides empty and no non-physics keys', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ linkStrength: 0.5 }),
+    );
     saveOverrides({});
     vi.advanceTimersByTime(200);
     expect(localStorage.getItem('bacchus-physics')).toBeNull();
@@ -178,7 +215,10 @@ describe('clearOverrides', () => {
   });
 
   it('removes localStorage key', () => {
-    localStorage.setItem('bacchus-physics', JSON.stringify({ linkStrength: 0.5 }));
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ linkStrength: 0.5 }),
+    );
     clearOverrides();
     expect(localStorage.getItem('bacchus-physics')).toBeNull();
   });
@@ -213,5 +253,101 @@ describe('resolveConfig', () => {
     expect(cfg.chargeStrength).toBe(defaults.chargeStrength);
     expect(cfg.layerSpacing).toBe(defaults.layerSpacing);
     expect(cfg.velocityDecay).toBe(defaults.velocityDecay);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DEFAULT_STRATA_LINES
+// ---------------------------------------------------------------------------
+describe('DEFAULT_STRATA_LINES', () => {
+  it('is true', () => {
+    expect(DEFAULT_STRATA_LINES).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadStrataOverride
+// ---------------------------------------------------------------------------
+describe('loadStrataOverride', () => {
+  beforeEach(() => {
+    localStorage.removeItem('bacchus-physics');
+  });
+
+  it('returns default when nothing stored', () => {
+    expect(loadStrataOverride()).toBe(DEFAULT_STRATA_LINES);
+  });
+
+  it('returns stored boolean value', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ showStrataLines: false }),
+    );
+    expect(loadStrataOverride()).toBe(false);
+  });
+
+  it('returns default when stored value is not a boolean', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ showStrataLines: 42 }),
+    );
+    expect(loadStrataOverride()).toBe(DEFAULT_STRATA_LINES);
+  });
+
+  it('returns default when stored JSON is invalid', () => {
+    localStorage.setItem('bacchus-physics', '{bad json');
+    expect(loadStrataOverride()).toBe(DEFAULT_STRATA_LINES);
+  });
+
+  it('coexists with physics overrides', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ chargeStrength: -500, showStrataLines: false }),
+    );
+    expect(loadStrataOverride()).toBe(false);
+    expect(loadOverrides()).toEqual({ chargeStrength: -500 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveStrataOverride
+// ---------------------------------------------------------------------------
+describe('saveStrataOverride', () => {
+  beforeEach(() => {
+    localStorage.removeItem('bacchus-physics');
+  });
+
+  it('stores non-default value', () => {
+    saveStrataOverride(false);
+    const stored = JSON.parse(localStorage.getItem('bacchus-physics')!);
+    expect(stored.showStrataLines).toBe(false);
+  });
+
+  it('removes key when value matches default and no other data exists', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ showStrataLines: false }),
+    );
+    saveStrataOverride(DEFAULT_STRATA_LINES);
+    expect(localStorage.getItem('bacchus-physics')).toBeNull();
+  });
+
+  it('preserves physics overrides when saving strata', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ chargeStrength: -500 }),
+    );
+    saveStrataOverride(false);
+    const stored = JSON.parse(localStorage.getItem('bacchus-physics')!);
+    expect(stored).toEqual({ chargeStrength: -500, showStrataLines: false });
+  });
+
+  it('removes only strata key when resetting to default', () => {
+    localStorage.setItem(
+      'bacchus-physics',
+      JSON.stringify({ chargeStrength: -500, showStrataLines: false }),
+    );
+    saveStrataOverride(DEFAULT_STRATA_LINES);
+    const stored = JSON.parse(localStorage.getItem('bacchus-physics')!);
+    expect(stored).toEqual({ chargeStrength: -500 });
   });
 });

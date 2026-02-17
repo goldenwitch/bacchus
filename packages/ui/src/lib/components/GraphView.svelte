@@ -1,18 +1,37 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import type { VineGraph } from '@bacchus/core';
-  import { getTask, getDependants, getDependencies, getRoot } from '@bacchus/core';
+  import {
+    getTask,
+    getDependants,
+    getDependencies,
+    getRoot,
+  } from '@bacchus/core';
   import type { Simulation } from 'd3-force';
   import { zoom, zoomIdentity } from 'd3-zoom';
   import { select } from 'd3-selection';
   import 'd3-transition';
   import type { SimNode, SimLink, ViewportTransform } from '../types.js';
   import { computeNodeRadius } from '../types.js';
-  import { createSimulation, computeDepths, computeFocusBandPositions, applyPhysicsConfig } from '../layout.js';
+  import {
+    createSimulation,
+    computeDepths,
+    computeFocusBandPositions,
+    applyPhysicsConfig,
+  } from '../layout.js';
   import { computeFocusFrame } from '../camera.js';
   import { getStatusColor } from '../status.js';
   import type { PhysicsConfig, PhysicsParamKey } from '../physics.js';
-  import { loadOverrides, saveOverrides, clearOverrides, resolveConfig } from '../physics.js';
+  import {
+    loadOverrides,
+    saveOverrides,
+    clearOverrides,
+    resolveConfig,
+    loadStrataOverride,
+    saveStrataOverride,
+    DEFAULT_STRATA_LINES,
+  } from '../physics.js';
   import GraphNode from './GraphNode.svelte';
   import GraphEdge from './GraphEdge.svelte';
   import { playWhoosh, playPop } from '../sound.js';
@@ -21,8 +40,26 @@
   import Toolbar from './Toolbar.svelte';
   import Legend from './Legend.svelte';
   import PhysicsPanel from './PhysicsPanel.svelte';
+  import ChatPanel from './ChatPanel.svelte';
+  import type { ChatSession } from '../chat/session.js';
 
-  let { graph, graphTitle, onreset }: { graph: VineGraph; graphTitle?: string; onreset?: () => void } = $props();
+  let {
+    graph,
+    graphTitle,
+    onreset,
+    onupdate,
+    chatOpen,
+    chatSession,
+    ontoggle,
+  }: {
+    graph: VineGraph;
+    graphTitle?: string;
+    onreset?: () => void;
+    onupdate?: (graph: VineGraph) => void;
+    chatOpen: boolean;
+    chatSession: ChatSession;
+    ontoggle: () => void;
+  } = $props();
 
   // Viewport dimensions — bound to the wrapper div
   let width = $state(800);
@@ -63,7 +100,8 @@
   }
 
   // Store d3-zoom behavior so we can programmatically set transforms
-  let zoomBehavior: ReturnType<typeof zoom<SVGSVGElement, unknown>> | null = null;
+  let zoomBehavior: ReturnType<typeof zoom<SVGSVGElement, unknown>> | null =
+    null;
 
   // Tick counter — mutations here trigger Svelte re-renders
   let tick = $state(0);
@@ -81,11 +119,12 @@
   // Physics controls state
   let physicsOverrides: Partial<PhysicsConfig> = $state(loadOverrides());
   let physicsConfig: PhysicsConfig = $state(resolveConfig(0, physicsOverrides));
-  let showStrataLines = $state(false);
+  let showStrataLines = $state(loadStrataOverride());
 
-  const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
+  const prefersReducedMotion =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
 
   const visibleNodeSet = $derived.by(() => {
     if (entryComplete) return null; // null = all visible
@@ -140,7 +179,9 @@
     // Entry animation — stagger node visibility (leaves first, root last)
     entryComplete = false;
     visibleCount = 0;
-    const sorted = [...graph.order].sort((a, b) => (depths.get(b) ?? 0) - (depths.get(a) ?? 0));
+    const sorted = [...graph.order].sort(
+      (a, b) => (depths.get(b) ?? 0) - (depths.get(a) ?? 0),
+    );
     entryOrder = sorted;
 
     const entryTimeouts: ReturnType<typeof setTimeout>[] = [];
@@ -164,7 +205,10 @@
     return () => {
       simulation?.stop();
       entryTimeouts.forEach(clearTimeout);
-      if (hintsTimer) { clearTimeout(hintsTimer); hintsTimer = null; }
+      if (hintsTimer) {
+        clearTimeout(hintsTimer);
+        hintsTimer = null;
+      }
     };
   });
 
@@ -174,8 +218,11 @@
     return simNodes.map((n) => ({ ...n }));
   });
 
-  // Compute strata line Y-positions from unique depth values + current config
+  // Compute strata line Y-positions from unique depth values + current config.
+  // `simNodes` is not reactive ($state), so subscribe to `tick` to re-derive
+  // once the simulation has populated node data.
   const strataLinePositions = $derived.by(() => {
+    void tick; // re-derive when simulation ticks (simNodes is not $state)
     const depths = new Set(simNodes.map((n) => n.depth));
     return [...depths]
       .sort((a, b) => a - b)
@@ -195,7 +242,11 @@
         return true;
       })
       .on('zoom', (event) => {
-        transform = { x: event.transform.x, y: event.transform.y, k: event.transform.k };
+        transform = {
+          x: event.transform.x,
+          y: event.transform.y,
+          k: event.transform.k,
+        };
         dismissHints();
       });
 
@@ -209,8 +260,8 @@
 
   // Derived focus/dimming state
   const connectedIds = $derived.by(() => {
-    if (!focusedTaskId) return new Set<string>();
-    const ids = new Set<string>([focusedTaskId]);
+    if (!focusedTaskId) return new SvelteSet<string>();
+    const ids = new SvelteSet<string>([focusedTaskId]);
     for (const t of getDependants(graph, focusedTaskId)) ids.add(t.id);
     for (const t of getDependencies(graph, focusedTaskId)) ids.add(t.id);
     return ids;
@@ -223,8 +274,12 @@
   });
 
   // Derived focused and hovered tasks
-  const focusedTask = $derived(focusedTaskId ? getTask(graph, focusedTaskId) : null);
-  const hoveredTask = $derived(hoveredTaskId ? getTask(graph, hoveredTaskId) : null);
+  const focusedTask = $derived(
+    focusedTaskId ? getTask(graph, focusedTaskId) : null,
+  );
+  const hoveredTask = $derived(
+    hoveredTaskId ? getTask(graph, hoveredTaskId) : null,
+  );
 
   // Focus camera framing + band layout animation
   // Only re-run when focusedTaskId changes — use untrack for all other reads.
@@ -234,13 +289,18 @@
       if (fid) {
         playWhoosh();
         // Cancel any running band animation
-        if (bandAnimFrame) { cancelAnimationFrame(bandAnimFrame); bandAnimFrame = null; }
+        if (bandAnimFrame) {
+          cancelAnimationFrame(bandAnimFrame);
+          bandAnimFrame = null;
+        }
 
         // Save current camera position
         savedTransform = { x: transform.x, y: transform.y, k: transform.k };
 
         // Save current node positions
-        savedPositions = new Map(simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]));
+        savedPositions = new Map(
+          simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]),
+        );
 
         // Pause simulation so D3 doesn't fight our animation
         simulation?.stop();
@@ -261,7 +321,9 @@
         const targetMap = new Map(bandTargets.map((b) => [b.id, b]));
 
         // Capture start positions for lerp
-        const starts = new Map(simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]));
+        const starts = new Map(
+          simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]),
+        );
         const duration = prefersReducedMotion ? 0 : 500;
         const t0 = performance.now();
 
@@ -293,7 +355,10 @@
         } else {
           for (const node of simNodes) {
             const target = targetMap.get(node.id);
-            if (target) { node.x = target.x; node.y = target.y; }
+            if (target) {
+              node.x = target.x;
+              node.y = target.y;
+            }
           }
           tick++;
         }
@@ -317,20 +382,28 @@
             h,
           );
           if (svgEl && zoomBehavior) {
-            select(svgEl).transition().duration(600).call(
-              zoomBehavior.transform,
-              zoomIdentity.translate(camT.x, camT.y).scale(camT.k),
-            );
+            select(svgEl)
+              .transition()
+              .duration(600)
+              .call(
+                zoomBehavior.transform,
+                zoomIdentity.translate(camT.x, camT.y).scale(camT.k),
+              );
           }
         }
       } else if (savedTransform) {
         playWhoosh();
         // Cancel any running band animation
-        if (bandAnimFrame) { cancelAnimationFrame(bandAnimFrame); bandAnimFrame = null; }
+        if (bandAnimFrame) {
+          cancelAnimationFrame(bandAnimFrame);
+          bandAnimFrame = null;
+        }
 
         // Restore pre-focus node positions
         if (savedPositions) {
-          const starts = new Map(simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]));
+          const starts = new Map(
+            simNodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]),
+          );
           const targets = savedPositions;
           savedPositions = null;
           const duration = prefersReducedMotion ? 0 : 500;
@@ -364,7 +437,10 @@
           } else {
             for (const node of simNodes) {
               const target = targets.get(node.id);
-              if (target) { node.x = target.x; node.y = target.y; }
+              if (target) {
+                node.x = target.x;
+                node.y = target.y;
+              }
             }
             tick++;
             simulation?.alpha(0.3).restart();
@@ -375,10 +451,13 @@
         const camT = savedTransform;
         savedTransform = null;
         if (svgEl && zoomBehavior) {
-          select(svgEl).transition().duration(600).call(
-            zoomBehavior.transform,
-            zoomIdentity.translate(camT.x, camT.y).scale(camT.k),
-          );
+          select(svgEl)
+            .transition()
+            .duration(600)
+            .call(
+              zoomBehavior.transform,
+              zoomIdentity.translate(camT.x, camT.y).scale(camT.k),
+            );
         }
       }
     });
@@ -392,7 +471,10 @@
 
   function handleZoomOut() {
     if (svgEl && zoomBehavior) {
-      select(svgEl).transition().duration(200).call(zoomBehavior.scaleBy, 1 / 1.4);
+      select(svgEl)
+        .transition()
+        .duration(200)
+        .call(zoomBehavior.scaleBy, 1 / 1.4);
     }
   }
 
@@ -408,6 +490,7 @@
   function handlePhysicsReset() {
     physicsOverrides = {};
     physicsConfig = resolveConfig(graph.order.length, {});
+    showStrataLines = DEFAULT_STRATA_LINES;
     clearOverrides();
     if (simulation && !focusedTaskId) {
       applyPhysicsConfig(simulation, physicsConfig, width, height);
@@ -419,7 +502,10 @@
     const w = svgEl.clientWidth;
     const h = svgEl.clientHeight;
 
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     for (const n of displayNodes) {
       const r = computeNodeRadius(n.task.shortName.length);
       if (n.x! - r < minX) minX = n.x! - r;
@@ -434,7 +520,7 @@
     const scale = Math.min(
       (w - padding * 2) / graphWidth,
       (h - padding * 2) / graphHeight,
-      4
+      4,
     );
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
@@ -451,8 +537,8 @@
     return simLinks.map((l) => {
       const src = typeof l.source === 'object' ? (l.source as SimNode) : null;
       const tgt = typeof l.target === 'object' ? (l.target as SimNode) : null;
-      const srcId = src ? src.id : (l.source as string);
-      const tgtId = tgt ? tgt.id : (l.target as string);
+      const srcId = src ? src.id : l.source;
+      const tgtId = tgt ? tgt.id : l.target;
       const sx = src?.x ?? 0;
       const sy = src?.y ?? 0;
       const tx = tgt?.x ?? 0;
@@ -479,18 +565,27 @@
   });
 </script>
 
-<div bind:clientWidth={width} bind:clientHeight={height} style="width: 100%; height: 100%;">
+<div
+  bind:clientWidth={width}
+  bind:clientHeight={height}
+  style="width: 100%; height: 100%;"
+>
   <svg
     bind:this={svgEl}
     role="group"
     aria-label="Task dependency graph for {getRoot(graph).shortName}"
     style="width: 100%; height: 100%; display: block; background: var(--bg-primary); touch-action: none;"
-    onclick={() => { focusedTaskId = null; dismissHints(); }}
-    onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') focusedTaskId = null; }}
+    onclick={() => {
+      focusedTaskId = null;
+      dismissHints();
+    }}
+    onkeydown={(e: KeyboardEvent) => {
+      if (e.key === 'Escape') focusedTaskId = null;
+    }}
   >
     <g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
       {#if showStrataLines}
-        {#each strataLinePositions as strataY}
+        {#each strataLinePositions as strataY (strataY)}
           <line
             x1={-50000}
             x2={50000}
@@ -513,10 +608,19 @@
             targetY={link.targetY}
             sourceId={link.sourceId}
             targetId={link.targetId}
-            highlighted={focusedTaskId !== null && (link.sourceId === focusedTaskId || link.targetId === focusedTaskId)}
-            dimmed={focusedTaskId !== null && link.sourceId !== focusedTaskId && link.targetId !== focusedTaskId}
-            color={focusedTaskId !== null && (link.sourceId === focusedTaskId || link.targetId === focusedTaskId) ? focusedStatusColor : 'var(--color-vine)'}
-            visible={visibleNodeSet === null || (visibleNodeSet.has(link.sourceId) && visibleNodeSet.has(link.targetId))}
+            highlighted={focusedTaskId !== null &&
+              (link.sourceId === focusedTaskId ||
+                link.targetId === focusedTaskId)}
+            dimmed={focusedTaskId !== null &&
+              link.sourceId !== focusedTaskId &&
+              link.targetId !== focusedTaskId}
+            color={focusedTaskId !== null &&
+            (link.sourceId === focusedTaskId || link.targetId === focusedTaskId)
+              ? focusedStatusColor
+              : 'var(--color-vine)'}
+            visible={visibleNodeSet === null ||
+              (visibleNodeSet.has(link.sourceId) &&
+                visibleNodeSet.has(link.targetId))}
           />
         {/each}
       </g>
@@ -528,25 +632,76 @@
           dimmed={focusedTaskId !== null && !connectedIds.has(node.id)}
           isRoot={node.id === graph.order[graph.order.length - 1]}
           visible={visibleNodeSet === null || visibleNodeSet.has(node.id)}
-          onfocus={(id) => { focusedTaskId = id; }}
-          onhoverstart={(id, event) => { hoveredTaskId = id; mouseX = event.clientX; mouseY = event.clientY; }}
-          onhoverend={() => { hoveredTaskId = null; }}
+          onfocus={(id) => {
+            focusedTaskId = id;
+          }}
+          onhoverstart={(id, event) => {
+            hoveredTaskId = id;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+          }}
+          onhoverend={() => {
+            hoveredTaskId = null;
+          }}
         />
       {/each}
     </g>
   </svg>
   {#if showHints}
-    <div class="hints-pill" class:hints-fade-out={hintsFading}>Scroll to zoom &bull; Drag to pan</div>
+    <div class="hints-pill" class:hints-fade-out={hintsFading}>
+      Scroll to zoom &bull; Drag to pan
+    </div>
   {/if}
   {#if graph.order.length === 1}
     <div class="single-task-hint">
       This graph has a single task — add more tasks to see connections!
     </div>
   {/if}
-  <Sidebar task={focusedTask} {graph} onclose={() => focusedTaskId = null} onfocus={(taskId) => focusedTaskId = taskId} />
-  <Tooltip task={hoveredTask && !focusedTaskId ? hoveredTask : null} x={mouseX} y={mouseY} />
-  <Toolbar {onreset} {graphTitle} onzoomin={handleZoomIn} onzoomout={handleZoomOut} onfitview={handleFitView} zoomLevel={transform.k} svgElement={svgEl} />
-  <PhysicsPanel config={physicsConfig} onchange={handlePhysicsChange} onreset={handlePhysicsReset} {showStrataLines} ontogglestrata={(show) => { showStrataLines = show; }} />
+  <Sidebar
+    task={focusedTask}
+    {graph}
+    onclose={() => (focusedTaskId = null)}
+    onfocus={(taskId) => (focusedTaskId = taskId)}
+  />
+  <Tooltip
+    task={hoveredTask && !focusedTaskId ? hoveredTask : null}
+    x={mouseX}
+    y={mouseY}
+  />
+  <Toolbar
+    {onreset}
+    {graphTitle}
+    onzoomin={handleZoomIn}
+    onzoomout={handleZoomOut}
+    onfitview={handleFitView}
+    zoomLevel={transform.k}
+    svgElement={svgEl}
+    onchat={() => {
+      ontoggle();
+    }}
+    {chatOpen}
+  />
+  <PhysicsPanel
+    config={physicsConfig}
+    onchange={handlePhysicsChange}
+    onreset={handlePhysicsReset}
+    {showStrataLines}
+    ontogglestrata={(show) => {
+      showStrataLines = show;
+      saveStrataOverride(show);
+    }}
+  />
+  {#if onupdate}
+    <ChatPanel
+      {graph}
+      {onupdate}
+      onclose={() => {
+        ontoggle();
+      }}
+      session={chatSession}
+      expanded={chatOpen}
+    />
+  {/if}
   <Legend />
 </div>
 

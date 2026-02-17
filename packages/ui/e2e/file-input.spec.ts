@@ -1,19 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
-const fixturesDir = join(__dirname, 'fixtures');
-
-function loadFixture(name: string): string {
-  return readFileSync(join(fixturesDir, name), 'utf-8');
-}
+import { loadFixture, loadGraph } from './helpers/e2e-helpers.js';
 
 async function loadGraphViaUrl(page: Page, fixtureName: string) {
-  const content = loadFixture(fixtureName);
-  await page.route('**/fixtures/' + fixtureName, route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
-  );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/' + fixtureName));
+  await loadGraph(page, fixtureName, { skipWait: true });
 }
 
 test('file drop loads graph', async ({ page }) => {
@@ -47,10 +36,13 @@ test('url parameter auto-loads', async ({ page }) => {
 
 test('parse error shows error card', async ({ page }) => {
   const content = loadFixture('invalid-syntax.vine');
-  await page.route('**/fixtures/invalid-syntax.vine', route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
+  await page.route('**/fixtures/invalid-syntax.vine', (route) =>
+    route.fulfill({ body: content, contentType: 'text/plain' }),
   );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/invalid-syntax.vine'));
+  await page.goto(
+    '/?file=' +
+      encodeURIComponent('http://localhost:5173/fixtures/invalid-syntax.vine'),
+  );
 
   // Should show auto-error card with parse error message
   await expect(page.locator('.auto-error')).toBeVisible({ timeout: 5000 });
@@ -59,30 +51,41 @@ test('parse error shows error card', async ({ page }) => {
 
 test('validation error (cycle) shows error card', async ({ page }) => {
   const content = loadFixture('invalid-cycle.vine');
-  await page.route('**/fixtures/invalid-cycle.vine', route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
+  await page.route('**/fixtures/invalid-cycle.vine', (route) =>
+    route.fulfill({ body: content, contentType: 'text/plain' }),
   );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/invalid-cycle.vine'));
+  await page.goto(
+    '/?file=' +
+      encodeURIComponent('http://localhost:5173/fixtures/invalid-cycle.vine'),
+  );
 
   await expect(page.locator('.auto-error')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('.auto-error p')).toContainText('Validation error');
 });
 
 test('url fetch 404 shows error card', async ({ page }) => {
-  await page.route('**/fixtures/missing.vine', route =>
-    route.fulfill({ status: 404, body: '' })
+  await page.route('**/fixtures/missing.vine', (route) =>
+    route.fulfill({ status: 404, body: '' }),
   );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/missing.vine'));
+  await page.goto(
+    '/?file=' +
+      encodeURIComponent('http://localhost:5173/fixtures/missing.vine'),
+  );
 
   await expect(page.locator('.auto-error')).toBeVisible({ timeout: 5000 });
-  await expect(page.locator('.auto-error p')).toContainText('Failed to load file: 404');
+  await expect(page.locator('.auto-error p')).toContainText(
+    'Failed to load file: 404',
+  );
 });
 
 test('error dismiss clears error', async ({ page }) => {
-  await page.route('**/fixtures/missing.vine', route =>
-    route.fulfill({ status: 404, body: '' })
+  await page.route('**/fixtures/missing.vine', (route) =>
+    route.fulfill({ status: 404, body: '' }),
   );
-  await page.goto('/?file=' + encodeURIComponent('http://localhost:5173/fixtures/missing.vine'));
+  await page.goto(
+    '/?file=' +
+      encodeURIComponent('http://localhost:5173/fixtures/missing.vine'),
+  );
 
   await expect(page.locator('.auto-error')).toBeVisible({ timeout: 5000 });
   await page.locator('.auto-error button').click();
@@ -91,8 +94,8 @@ test('error dismiss clears error', async ({ page }) => {
 
 test('url input load button fetches and renders graph', async ({ page }) => {
   const content = loadFixture('simple.vine');
-  await page.route('**/test-url/simple.vine', route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
+  await page.route('**/test-url/simple.vine', (route) =>
+    route.fulfill({ body: content, contentType: 'text/plain' }),
   );
 
   await page.goto('/');
@@ -112,8 +115,8 @@ test('url input load button fetches and renders graph', async ({ page }) => {
 
 test('url input Enter key triggers load', async ({ page }) => {
   const content = loadFixture('simple.vine');
-  await page.route('**/test-url/simple.vine', route =>
-    route.fulfill({ body: content, contentType: 'text/plain' })
+  await page.route('**/test-url/simple.vine', (route) =>
+    route.fulfill({ body: content, contentType: 'text/plain' }),
   );
 
   await page.goto('/');

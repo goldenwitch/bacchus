@@ -292,6 +292,8 @@ packages/core/
 | `serializer.test.ts` | Output matches expected `.vine` format. Field ordering (description → deps → decisions). Trailing newline.                                                    |
 | `graph.test.ts`      | Each query helper returns correct results for the VINE.md example graph.                                                                                      |
 | `roundtrip.test.ts`  | `parse(serialize(graph))` deep-equals original for the VINE.md example and generated graphs.                                                                  |
+| `mutations.test.ts`  | Each mutation validates inputs, returns new graph, and throws on invalid operations (missing tasks, cycles, etc.).                                            |
+| `search.test.ts`     | Filter/search/query helpers return correct results and maintain graph order.                                                                                  |
 
 ### Verification Commands
 
@@ -301,3 +303,46 @@ packages/core/
 yarn vitest run --coverage        # all tests pass, >90% coverage
 yarn typecheck                    # zero type errors under strictest settings
 ```
+
+---
+
+## Mutations Module (`mutations.ts`)
+
+Provides validated graph mutation operations that maintain VINE invariants:
+
+```typescript
+function addTask(graph: VineGraph, task: Task, parent: string): VineGraph;
+function removeTask(graph: VineGraph, id: string): VineGraph;
+function setStatus(graph: VineGraph, id: string, status: Status): VineGraph;
+function updateTask(
+  graph: VineGraph,
+  id: string,
+  updates: Partial<Pick<Task, 'shortName' | 'description' | 'decisions'>>,
+): VineGraph;
+function addDependency(
+  graph: VineGraph,
+  taskId: string,
+  depId: string,
+): VineGraph;
+function removeDependency(
+  graph: VineGraph,
+  taskId: string,
+  depId: string,
+): VineGraph;
+```
+
+All functions return a new `VineGraph` instance (immutable operations). They validate inputs (task existence, cycle detection, etc.) and throw `VineError` on invalid operations.
+
+## Search Module (`search.ts`)
+
+Provides graph querying and analysis functions:
+
+```typescript
+function filterByStatus(graph: VineGraph, status: Status): Task[];
+function searchTasks(graph: VineGraph, query: string): Task[];
+function getLeaves(graph: VineGraph): Task[];
+function getDescendants(graph: VineGraph, id: string): Task[];
+function getSummary(graph: VineGraph): GraphSummary;
+```
+
+`GraphSummary` includes `total`, `byStatus` (count per status), `rootId`, `rootName`, and `leafCount`. All query functions return results in graph order.

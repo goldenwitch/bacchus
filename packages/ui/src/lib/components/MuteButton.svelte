@@ -23,17 +23,26 @@
   }
 
   function handleMouseEnter() {
-    if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
     showSlider = true;
   }
 
   function handleMouseLeave() {
-    hideTimeout = setTimeout(() => { showSlider = false; }, 300);
+    hideTimeout = setTimeout(() => {
+      showSlider = false;
+    }, 300);
   }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="mute-wrapper" onmouseenter={handleMouseEnter} onmouseleave={handleMouseLeave}>
+<div
+  class="mute-wrapper"
+  onmouseenter={handleMouseEnter}
+  onmouseleave={handleMouseLeave}
+>
   {#if showSlider}
     <div class="volume-popup">
       <input

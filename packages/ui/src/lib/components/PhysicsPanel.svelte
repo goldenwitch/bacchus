@@ -1,8 +1,19 @@
 <script lang="ts">
-  import { slide } from 'svelte/transition';
-  import { PHYSICS_SLIDER_DEFS, type PhysicsConfig, type PhysicsParamKey } from '../physics.js';
+  import GlassAccordion from './GlassAccordion.svelte';
+  import { SvelteSet } from 'svelte/reactivity';
+  import {
+    PHYSICS_SLIDER_DEFS,
+    type PhysicsConfig,
+    type PhysicsParamKey,
+  } from '../physics.js';
 
-  let { config, onchange, onreset, showStrataLines = false, ontogglestrata }: {
+  let {
+    config,
+    onchange,
+    onreset,
+    showStrataLines = false,
+    ontogglestrata,
+  }: {
     config: PhysicsConfig;
     onchange: (key: PhysicsParamKey, value: number) => void;
     onreset: () => void;
@@ -13,15 +24,22 @@
   let expanded = $state(false);
 
   const groups = $derived.by(() => {
-    const seen = new Set<string>();
+    const seen = new SvelteSet<string>();
     const result: string[] = [];
     for (const def of PHYSICS_SLIDER_DEFS) {
-      if (!seen.has(def.group)) { seen.add(def.group); result.push(def.group); }
+      if (!seen.has(def.group)) {
+        seen.add(def.group);
+        result.push(def.group);
+      }
     }
     return result;
   });
 
-  function formatValue(key: PhysicsParamKey, value: number, step: number): string {
+  function formatValue(
+    key: PhysicsParamKey,
+    value: number,
+    step: number,
+  ): string {
     const precision = step < 0.1 ? 2 : step < 1 ? 1 : 0;
     if (key === 'chargeStrength') {
       return '-' + Math.abs(value).toFixed(precision);
@@ -31,26 +49,22 @@
 </script>
 
 <div class="physics-panel">
-  <button
-    class="physics-toggle"
-    onclick={() => { expanded = !expanded; }}
-    aria-expanded={expanded}
-    aria-label="Toggle physics controls"
+  <GlassAccordion
+    icon="🎛️"
+    title="Physics"
+    bind:expanded
+    ariaLabel="Toggle physics controls"
   >
-    <span class="physics-icon">🎛️</span>
-    <span class="physics-title">Physics</span>
-    <span class="physics-chevron" class:physics-chevron-open={expanded}>▸</span>
-  </button>
-
-  {#if expanded}
-    <div class="physics-body" transition:slide={{ duration: 200 }}>
-      {#each groups as group}
+    <div class="physics-body">
+      {#each groups as group (group)}
         <div class="physics-group-header">{group}</div>
-        {#each PHYSICS_SLIDER_DEFS.filter(d => d.group === group) as def}
+        {#each PHYSICS_SLIDER_DEFS.filter((d) => d.group === group) as def (def.key)}
           <div class="physics-slider">
             <div class="physics-slider-row">
               <span class="physics-slider-label">{def.label}</span>
-              <span class="physics-slider-value">{formatValue(def.key, config[def.key], def.step)}</span>
+              <span class="physics-slider-value"
+                >{formatValue(def.key, config[def.key], def.step)}</span
+              >
             </div>
             <input
               type="range"
@@ -60,7 +74,11 @@
               step={def.step}
               value={config[def.key]}
               aria-label={def.label}
-              oninput={(e: Event) => onchange(def.key, parseFloat((e.currentTarget as HTMLInputElement).value))}
+              oninput={(e: Event) =>
+                onchange(
+                  def.key,
+                  parseFloat((e.currentTarget as HTMLInputElement).value),
+                )}
             />
           </div>
         {/each}
@@ -80,7 +98,7 @@
         Reset Defaults
       </button>
     </div>
-  {/if}
+  </GlassAccordion>
 </div>
 
 <style>
@@ -89,52 +107,6 @@
     left: 16px;
     top: 60px;
     z-index: 135;
-    background: var(--toolbar-bg);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    min-width: 160px;
-    user-select: none;
-  }
-
-  .physics-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-    padding: 8px 12px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    border-radius: 12px;
-  }
-
-  .physics-toggle:hover {
-    background: var(--hover-bg);
-  }
-
-  .physics-icon {
-    font-size: 1rem;
-  }
-
-  .physics-title {
-    flex: 1;
-    text-align: left;
-    font-weight: 500;
-  }
-
-  .physics-chevron {
-    display: inline-block;
-    transition: transform 0.2s ease;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-  }
-
-  .physics-chevron-open {
-    transform: rotate(90deg);
   }
 
   .physics-body {
@@ -205,7 +177,7 @@
     cursor: pointer;
   }
 
-  .physics-checkbox input[type="checkbox"] {
+  .physics-checkbox input[type='checkbox'] {
     accent-color: var(--focus-ring);
     width: 14px;
     height: 14px;

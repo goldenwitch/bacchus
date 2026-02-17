@@ -65,7 +65,11 @@ describe('Tooltip', () => {
   });
 
   it('shows correct info for each status', async () => {
-    const statusExpected: Array<{ status: Task['status']; emoji: string; label: string }> = [
+    const statusExpected: Array<{
+      status: Task['status'];
+      emoji: string;
+      label: string;
+    }> = [
       { status: 'complete', emoji: '🌿', label: 'Complete' },
       { status: 'started', emoji: '🔨', label: 'Started' },
       { status: 'notstarted', emoji: '📋', label: 'Not Started' },
