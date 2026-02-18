@@ -43,7 +43,7 @@ API. These are **skipped by default** when no API key is present.
 To enable them locally:
 
 ```powershell
-./setup.ps1 -Integration
+./setup.ps1 -Key "sk-ant-your-key-here"
 ```
 
 This prompts for your Anthropic API key and stores it in a `.env` file
@@ -86,7 +86,7 @@ Anthropic API from the browser and use generous timeouts (60–180 s).
 
 **Where does the secret come from?**
 
-- **Locally**: Store in a `.env` file via `./setup.ps1 -Integration`, or set
+- **Locally**: Store in a `.env` file via `./setup.ps1 -Key "sk-ant-..."`, or set
   the `ANTHROPIC_API_KEY` environment variable in your shell.
 - **CI**: Set as a GitHub Actions **repository secret** named
   `ANTHROPIC_API_KEY`. The live-agent tests and Vitest integration tests both

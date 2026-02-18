@@ -15,19 +15,19 @@
       - Yarn SDK for VS Code (PnP support)
       - Husky Git hooks
 
-    Use the -Integration switch to configure an Anthropic API key for
+    Use the -Key parameter to provide an Anthropic API key for
     running chat integration tests against the live Claude API.
 
     Exit codes:
       0 — success
       1 — a prerequisite is missing or a step failed
-.PARAMETER Integration
-    Prompt for an Anthropic API key and store it in a .env file so that
-    integration tests can call the live Claude API.
+.PARAMETER Key
+    Provide an Anthropic API key (must start with sk-ant-). The script will
+    write it to a .env file and exit immediately — no other setup steps run.
 #>
 
 param(
-    [switch]$Integration
+    [string]$Key
 )
 
 Set-StrictMode -Version Latest
@@ -37,6 +37,40 @@ function Write-Step { param([string]$Message) Write-Host "`n▸ $Message" -Foreg
 function Write-Ok   { param([string]$Message) Write-Host "  ✓ $Message" -ForegroundColor Green }
 function Write-Skip { param([string]$Message) Write-Host "  – $Message (already done)" -ForegroundColor DarkGray }
 function Write-Fail { param([string]$Message) Write-Host "  ✗ $Message" -ForegroundColor Red }
+
+# ---------------------------------------------------------------------------
+# Fast path: -Key writes .env and exits (no other setup steps)
+# ---------------------------------------------------------------------------
+if ($Key) {
+    if ($Key -notmatch '^sk-ant-') {
+        Write-Fail "Invalid API key — must start with 'sk-ant-'. Got: $($Key.Substring(0, [Math]::Min(10, $Key.Length)))..."
+        exit 1
+    }
+
+    $envFile = Join-Path $PSScriptRoot '.env'
+    if (Test-Path $envFile) {
+        $lines = Get-Content $envFile
+        $found = $false
+        $newLines = $lines | ForEach-Object {
+            if ($_ -match '^ANTHROPIC_API_KEY=') {
+                $found = $true
+                "ANTHROPIC_API_KEY=$Key"
+            } else {
+                $_
+            }
+        }
+        if (-not $found) {
+            $newLines += "ANTHROPIC_API_KEY=$Key"
+        }
+        $newLines | Set-Content $envFile
+    } else {
+        "ANTHROPIC_API_KEY=$Key" | Set-Content $envFile
+    }
+
+    $masked = $Key.Substring(0, [Math]::Min(12, $Key.Length)) + '...'
+    Write-Ok "API key ($masked) saved to .env"
+    exit 0
+}
 
 # ---------------------------------------------------------------------------
 # 1. Node.js
@@ -186,63 +220,6 @@ try {
 }
 
 # ---------------------------------------------------------------------------
-# 8. Integration test configuration (optional)
-# ---------------------------------------------------------------------------
-if ($Integration) {
-    Write-Step 'Configuring Anthropic API key for integration tests'
-
-    $envFile = Join-Path $PSScriptRoot '.env'
-    $existingKey = $null
-
-    if (Test-Path $envFile) {
-        $match = Select-String -Path $envFile -Pattern '^ANTHROPIC_API_KEY=' -ErrorAction SilentlyContinue
-        if ($match) {
-            $existingKey = ($match.Line -split '=', 2)[1]
-        }
-    }
-
-    if ($existingKey) {
-        $masked = $existingKey.Substring(0, [Math]::Min(8, $existingKey.Length)) + '...' 
-        Write-Host "  Existing key found: $masked" -ForegroundColor Yellow
-        $overwrite = Read-Host '  Overwrite? (y/N)'
-        if ($overwrite -ne 'y') {
-            Write-Skip 'Keeping existing API key'
-        } else {
-            $existingKey = $null  # Force re-prompt below
-        }
-    }
-
-    if (-not $existingKey) {
-        $key = Read-Host '  Enter your Anthropic API key (sk-ant-...)'
-        if (-not $key) {
-            Write-Fail 'No API key provided — skipping integration setup.'
-        } else {
-            # Write or replace the key in the .env file
-            if (Test-Path $envFile) {
-                $lines = Get-Content $envFile
-                $found = $false
-                $newLines = $lines | ForEach-Object {
-                    if ($_ -match '^ANTHROPIC_API_KEY=') {
-                        $found = $true
-                        "ANTHROPIC_API_KEY=$key"
-                    } else {
-                        $_
-                    }
-                }
-                if (-not $found) {
-                    $newLines += "ANTHROPIC_API_KEY=$key"
-                }
-                $newLines | Set-Content $envFile
-            } else {
-                "ANTHROPIC_API_KEY=$key" | Set-Content $envFile
-            }
-            Write-Ok 'API key saved to .env (git-ignored)'
-            Write-Host '  Integration tests will now run when you execute: yarn test' -ForegroundColor DarkCyan
-        }
-    }
-}
-
-# ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 Write-Host "`n✅ Setup complete. You're ready to develop." -ForegroundColor Green
@@ -258,10 +235,8 @@ Write-Host @"
     yarn e2e:chat:live         Run chat e2e tests (live API)
 "@
 
-if (-not $Integration) {
-    Write-Host @"
+Write-Host @"
 
-  To enable integration tests (requires an Anthropic API key):
-    ./setup.ps1 -Integration
+  To configure an Anthropic API key for integration tests:
+    ./setup.ps1 -Key "sk-ant-your-key-here"
 "@
-}

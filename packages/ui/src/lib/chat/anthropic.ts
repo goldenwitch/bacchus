@@ -49,8 +49,22 @@ export class AnthropicChatService implements ChatService {
 
     if (!response.ok) {
       const errorText = await response.text();
+      let detail = errorText;
+      try {
+        const parsed = JSON.parse(errorText) as { error?: { message?: string } };
+        if (parsed.error?.message) {
+          detail = parsed.error.message;
+        }
+      } catch {
+        // Not JSON — use raw text
+      }
+      if (response.status === 401) {
+        throw new Error(
+          `Authentication failed — ${detail}. Check that your API key is valid.`,
+        );
+      }
       throw new Error(
-        `Anthropic API error ${String(response.status)}: ${errorText}`,
+        `Anthropic API error ${String(response.status)}: ${detail}`,
       );
     }
 

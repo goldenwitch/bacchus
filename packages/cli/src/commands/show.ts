@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { readGraph } from '../io.js';
-import { getSummary } from '@bacchus/core';
+import { handleCommandError } from '../errors.js';
+import { getSummary, VALID_STATUSES } from '@bacchus/core';
 import type { Status } from '@bacchus/core';
 
 /** Human-readable status labels. */
@@ -16,26 +17,23 @@ export const showCommand = new Command('show')
   .description('Display a summary of a .vine task graph')
   .argument('<file>', 'path to .vine file')
   .action((file: string) => {
-    const graph = readGraph(file);
-    const summary = getSummary(graph);
+    try {
+      const graph = readGraph(file);
+      const summary = getSummary(graph);
 
-    console.log(`Root:   ${summary.rootName} (${summary.rootId})`);
-    console.log(`Tasks:  ${String(summary.total)}`);
-    console.log(`Leaves: ${String(summary.leafCount)}`);
-    console.log('');
-    console.log('Status breakdown:');
+      console.log(`Root:   ${summary.rootName} (${summary.rootId})`);
+      console.log(`Tasks:  ${String(summary.total)}`);
+      console.log(`Leaves: ${String(summary.leafCount)}`);
+      console.log('');
+      console.log('Status breakdown:');
 
-    const statuses: Status[] = [
-      'complete',
-      'started',
-      'planning',
-      'notstarted',
-      'blocked',
-    ];
-    for (const s of statuses) {
-      const count = summary.byStatus[s];
-      if (count > 0) {
-        console.log(`  ${STATUS_LABELS[s]}: ${String(count)}`);
+      for (const s of VALID_STATUSES) {
+        const count = summary.byStatus[s];
+        if (count > 0) {
+          console.log(`  ${STATUS_LABELS[s]}: ${String(count)}`);
+        }
       }
+    } catch (error: unknown) {
+      handleCommandError(error, file);
     }
   });

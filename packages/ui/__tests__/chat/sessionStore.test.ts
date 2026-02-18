@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import 'fake-indexeddb/auto';
 import {
   saveSession,
   loadSession,
@@ -8,8 +9,6 @@ import {
 import type { DisplayMessage } from '../../src/lib/chat/types.js';
 import type { ChatMessage } from '../../src/lib/chat/types.js';
 
-const STORAGE_KEY = 'bacchus:chat-sessions';
-
 function makeDisplay(text: string): DisplayMessage {
   return { type: 'user', content: text };
 }
@@ -18,85 +17,55 @@ function makeChat(text: string): ChatMessage {
   return { role: 'user', content: text };
 }
 
+// Use unique vineIds per test to avoid cross-test interference in shared IDB
+
 describe('sessionStore', () => {
-  beforeEach(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('saves and loads a session', () => {
-    saveSession('root-1', [makeDisplay('hello')], [makeChat('hello')]);
-    const loaded = loadSession('root-1');
+  it('saves and loads a session', async () => {
+    await saveSession('ss-save-1', [makeDisplay('hello')], [makeChat('hello')]);
+    const loaded = await loadSession('ss-save-1');
     expect(loaded).not.toBeNull();
-    expect(loaded?.vineId).toBe('root-1');
+    expect(loaded?.vineId).toBe('ss-save-1');
     expect(loaded?.displayMessages).toHaveLength(1);
     expect(loaded?.chatMessages).toHaveLength(1);
     expect(loaded?.savedAt).toBeGreaterThan(0);
   });
 
-  it('returns null for unknown vineId', () => {
-    expect(loadSession('nonexistent')).toBeNull();
+  it('returns null for unknown vineId', async () => {
+    expect(await loadSession('ss-nonexistent')).toBeNull();
   });
 
-  it('upserts existing sessions', () => {
-    saveSession('root-1', [makeDisplay('first')], [makeChat('first')]);
-    saveSession('root-1', [makeDisplay('second')], [makeChat('second')]);
+  it('upserts existing sessions', async () => {
+    await saveSession('ss-upsert-1', [makeDisplay('first')], [makeChat('first')]);
+    await saveSession('ss-upsert-1', [makeDisplay('second')], [makeChat('second')]);
 
-    const sessions = listSessions();
-    expect(sessions).toHaveLength(1);
-    expect(sessions[0]?.displayMessages[0]).toEqual(makeDisplay('second'));
+    const loaded = await loadSession('ss-upsert-1');
+    expect(loaded?.displayMessages[0]).toEqual(makeDisplay('second'));
   });
 
-  it('evicts oldest sessions beyond the limit of 5', () => {
-    for (let i = 0; i < 7; i++) {
-      vi.advanceTimersByTime(1000);
-      saveSession(`vine-${String(i)}`, [makeDisplay(`msg-${String(i)}`)], []);
-    }
+  it('lists sessions sorted by most recent first', async () => {
+    // Small delays to get distinct savedAt timestamps
+    await saveSession('ss-sort-a', [makeDisplay('a')], []);
+    await new Promise((r) => setTimeout(r, 15));
+    await saveSession('ss-sort-b', [makeDisplay('b')], []);
+    await new Promise((r) => setTimeout(r, 15));
+    await saveSession('ss-sort-c', [makeDisplay('c')], []);
 
-    const sessions = listSessions();
-    expect(sessions.length).toBeLessThanOrEqual(5);
-
-    // The two oldest (vine-0, vine-1) should have been evicted
-    expect(loadSession('vine-0')).toBeNull();
-    expect(loadSession('vine-1')).toBeNull();
-    // The most recent should still exist
-    expect(loadSession('vine-6')).not.toBeNull();
-  });
-
-  it('lists sessions sorted by most recent first', () => {
-    saveSession('a', [makeDisplay('a')], []);
-    vi.advanceTimersByTime(1000);
-    saveSession('b', [makeDisplay('b')], []);
-    vi.advanceTimersByTime(1000);
-    saveSession('c', [makeDisplay('c')], []);
-
-    const sessions = listSessions();
-    expect(sessions).toHaveLength(3);
+    const sessions = await listSessions();
+    const ours = sessions.filter((s) => s.vineId.startsWith('ss-sort-'));
+    expect(ours).toHaveLength(3);
     // Most recently saved should be first
-    expect(sessions[0]?.vineId).toBe('c');
+    expect(ours[0]?.vineId).toBe('ss-sort-c');
   });
 
-  it('deletes a session', () => {
-    saveSession('root-1', [makeDisplay('hello')], []);
-    expect(loadSession('root-1')).not.toBeNull();
+  it('deletes a session', async () => {
+    await saveSession('ss-del-1', [makeDisplay('hello')], []);
+    expect(await loadSession('ss-del-1')).not.toBeNull();
 
-    deleteSession('root-1');
-    expect(loadSession('root-1')).toBeNull();
+    await deleteSession('ss-del-1');
+    expect(await loadSession('ss-del-1')).toBeNull();
   });
 
-  it('handles corrupt localStorage gracefully', () => {
-    localStorage.setItem(STORAGE_KEY, 'not valid json');
-    expect(loadSession('any')).toBeNull();
-    expect(listSessions()).toEqual([]);
-  });
-
-  it('handles empty localStorage', () => {
-    expect(listSessions()).toEqual([]);
-    expect(loadSession('any')).toBeNull();
+  it('handles empty store for unknown key', async () => {
+    expect(await loadSession('ss-empty-unknown')).toBeNull();
   });
 });

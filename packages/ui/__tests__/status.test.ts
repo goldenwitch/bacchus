@@ -41,11 +41,11 @@ describe('STATUS_MAP', () => {
   );
 
   it('colors match the spec values', () => {
-    expect(STATUS_MAP.complete.color).toBe('#4ade80');
-    expect(STATUS_MAP.started.color).toBe('#facc15');
-    expect(STATUS_MAP.notstarted.color).toBe('#94a3b8');
-    expect(STATUS_MAP.planning.color).toBe('#a78bfa');
-    expect(STATUS_MAP.blocked.color).toBe('#f87171');
+    expect(STATUS_MAP.complete.color).toBe('#50C878');
+    expect(STATUS_MAP.started.color).toBe('#E2B93B');
+    expect(STATUS_MAP.notstarted.color).toBe('#A0A8B4');
+    expect(STATUS_MAP.planning.color).toBe('#9B72CF');
+    expect(STATUS_MAP.blocked.color).toBe('#DC3F52');
   });
 });
 

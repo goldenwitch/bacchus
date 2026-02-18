@@ -1,16 +1,14 @@
 import { Command } from 'commander';
 import { readGraph } from '../io.js';
-import { filterByStatus, searchTasks, getTask } from '@bacchus/core';
-import type { Status, Task } from '@bacchus/core';
-
-/** Valid status keywords for the --status flag. */
-const VALID_STATUSES: readonly Status[] = [
-  'complete',
-  'started',
-  'planning',
-  'notstarted',
-  'blocked',
-];
+import { handleCommandError } from '../errors.js';
+import {
+  filterByStatus,
+  searchTasks,
+  getTask,
+  VALID_STATUSES,
+  isValidStatus,
+} from '@bacchus/core';
+import type { Task } from '@bacchus/core';
 
 function printTaskTable(tasks: Task[]): void {
   if (tasks.length === 0) {
@@ -40,26 +38,35 @@ export const listCommand = new Command('list')
   .option('-s, --status <status>', 'filter by status')
   .option('-q, --search <query>', 'search by text')
   .action((file: string, opts: { status?: string; search?: string }) => {
-    const graph = readGraph(file);
-
-    let tasks: Task[];
-
-    if (opts.status !== undefined) {
-      const status = opts.status as Status;
-      if (!VALID_STATUSES.includes(status)) {
-        console.error(
-          `Invalid status "${opts.status}". Valid: ${VALID_STATUSES.join(', ')}`,
-        );
-        process.exitCode = 1;
-        return;
-      }
-      tasks = filterByStatus(graph, status);
-    } else if (opts.search !== undefined) {
-      tasks = searchTasks(graph, opts.search);
-    } else {
-      // Default: all tasks in order.
-      tasks = graph.order.map((id) => getTask(graph, id));
+    if (opts.status !== undefined && opts.search !== undefined) {
+      console.error(
+        'Warning: --status and --search are mutually exclusive; using --status.',
+      );
     }
 
-    printTaskTable(tasks);
+    try {
+      const graph = readGraph(file);
+
+      let tasks: Task[];
+
+      if (opts.status !== undefined) {
+        if (!isValidStatus(opts.status)) {
+          console.error(
+            `Invalid status "${opts.status}". Valid: ${VALID_STATUSES.join(', ')}`,
+          );
+          process.exitCode = 1;
+          return;
+        }
+        tasks = filterByStatus(graph, opts.status);
+      } else if (opts.search !== undefined) {
+        tasks = searchTasks(graph, opts.search);
+      } else {
+        // Default: all tasks in order.
+        tasks = graph.order.map((id) => getTask(graph, id));
+      }
+
+      printTaskTable(tasks);
+    } catch (error: unknown) {
+      handleCommandError(error, file);
+    }
   });

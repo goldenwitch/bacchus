@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { VineGraph } from '@bacchus/core';
   import GlassAccordion from './GlassAccordion.svelte';
+  import MarkdownMessage from './MarkdownMessage.svelte';
   import type { DisplayMessage } from '../chat/types.js';
   import { ChatSession } from '../chat/session.js';
   import ToolFeedbackCard from './ToolFeedbackCard.svelte';
@@ -171,7 +172,21 @@
               </div>
             {:else if msg.type === 'assistant'}
               <div class="msg msg-assistant">
-                <p>{msg.content}</p>
+                <MarkdownMessage content={msg.content} />
+                <button
+                  class="msg-copy-btn"
+                  aria-label="Copy message"
+                  onclick={() => {
+                    navigator.clipboard.writeText(msg.content).catch(() => {});
+                  }}
+                  title="Copy message"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
               </div>
             {:else if msg.type === 'tool'}
               <div
@@ -329,6 +344,7 @@
     gap: 8px;
     min-height: 200px;
     max-height: calc(100vh - 280px);
+    user-select: text;
   }
 
   .chat-empty {
@@ -467,6 +483,35 @@
   .send-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+
+  .msg-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: inherit;
+    border-radius: 4px;
+    padding: 3px 5px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+  }
+
+  .msg.msg-assistant {
+    position: relative;
+  }
+
+  .msg.msg-assistant:hover .msg-copy-btn {
+    opacity: 0.7;
+  }
+
+  .msg-copy-btn:hover {
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.2);
   }
 
   @media (max-width: 639px) {

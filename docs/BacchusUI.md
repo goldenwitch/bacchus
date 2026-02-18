@@ -31,15 +31,15 @@ The package ships **two things**:
 
 ### Status Palette
 
-Each `Status` maps to a color, emoji, and CSS class:
+Each `Status` maps to a color, emoji, and CSS class. The palette uses luxury material tones — crimson, emerald, gold, silver, and royal purple:
 
-| Status       | Color (hex) | Emoji | CSS Class            | Meaning                        |
-| ------------ | ----------- | ----- | -------------------- | ------------------------------ |
-| `complete`   | `#4ade80`   | 🌿    | `.status-complete`   | Finished — lush, alive         |
-| `started`    | `#facc15`   | 🔨    | `.status-started`    | In progress — active, working  |
-| `notstarted` | `#94a3b8`   | 📋    | `.status-notstarted` | Ready — neutral, waiting       |
-| `planning`   | `#a78bfa`   | 💭    | `.status-planning`   | Thinking — imaginative, misty  |
-| `blocked`    | `#f87171`   | 🚧    | `.status-blocked`    | Stuck — alert, needs attention |
+| Status       | Color (hex) | Emoji | CSS Class            | Meaning                                |
+| ------------ | ----------- | ----- | -------------------- | -------------------------------------- |
+| `complete`   | `#50C878`   | 🌿    | `.status-complete`   | Finished — rich emerald, lush            |
+| `started`    | `#E2B93B`   | 🔨    | `.status-started`    | In progress — antique gold, active       |
+| `notstarted` | `#A0A8B4`   | 📋    | `.status-notstarted` | Ready — polished silver, waiting         |
+| `planning`   | `#9B72CF`   | 💭    | `.status-planning`   | Thinking — royal purple, imaginative     |
+| `blocked`    | `#DC3F52`   | 🚧    | `.status-blocked`    | Stuck — crimson, needs attention         |
 
 Colors are defined as CSS custom properties on `:root` for easy theming.
 
@@ -72,7 +72,7 @@ Each task is rendered as a circular SVG `<g>` group:
 Dependency edges connect a task to each of its dependencies:
 
 - **Path**: SVG `<path>` using a quadratic Bézier curve for a soft, organic look.
-- **Color**: Muted gray (`#475569`) at default. When either endpoint is focused, the edge transitions to the focused node's status color.
+- **Color**: Muted gray (`#475569`) at default. When either endpoint is focused, the edge transitions to the focused node’s status color.
 - **Arrow**: Small arrowhead marker at the dependency end, indicating direction (task → dependency).
 - **Flow animation**: Animated `stroke-dashoffset` producing a gentle flowing-dot effect along the edge direction. Speed: 30px/s.
 - **Opacity**: 0.6 at rest, 1.0 when connected to a focused node, 0.15 when dimmed.

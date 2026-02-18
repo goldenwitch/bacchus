@@ -56,7 +56,7 @@ describe('Sidebar', () => {
     expect(pill).not.toBeNull();
     // jsdom normalises hex to rgb, so accept either form
     const bg = pill.style.background || pill.getAttribute('style') || '';
-    expect(bg).toMatch(/facc15|rgb\(250,\s*204,\s*21\)/);
+    expect(bg).toMatch(/E2B93B|e2b93b|rgb\(226,\s*185,\s*59\)/);
   });
 
   it('renders shortName as heading', () => {

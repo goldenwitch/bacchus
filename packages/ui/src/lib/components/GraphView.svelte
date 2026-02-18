@@ -48,6 +48,8 @@
     graphTitle,
     onreset,
     onupdate,
+    oncamerachange,
+    initialCamera,
     chatOpen,
     chatSession,
     ontoggle,
@@ -56,6 +58,8 @@
     graphTitle?: string;
     onreset?: () => void;
     onupdate?: (graph: VineGraph) => void;
+    oncamerachange?: (t: { x: number; y: number; k: number }) => void;
+    initialCamera?: { x: number; y: number; k: number };
     chatOpen: boolean;
     chatSession: ChatSession;
     ontoggle: () => void;
@@ -68,6 +72,15 @@
   // Pan / zoom state
   let transform: ViewportTransform = $state({ x: 0, y: 0, k: 1 });
   let svgEl: SVGSVGElement | undefined = $state(undefined);
+
+  // Restore camera from persisted state (runs once)
+  let cameraRestored = false;
+  $effect(() => {
+    if (initialCamera && !cameraRestored && (initialCamera.k !== 1 || initialCamera.x !== 0 || initialCamera.y !== 0)) {
+      transform = { x: initialCamera.x, y: initialCamera.y, k: initialCamera.k };
+      cameraRestored = true;
+    }
+  });
 
   // Focus state
   let focusedTaskId: string | null = $state(null);
@@ -118,7 +131,7 @@
 
   // Physics controls state
   let physicsOverrides: Partial<PhysicsConfig> = $state(loadOverrides());
-  let physicsConfig: PhysicsConfig = $state(resolveConfig(0, physicsOverrides));
+  let physicsConfig: PhysicsConfig = $state(resolveConfig(physicsOverrides));
   let showStrataLines = $state(loadStrataOverride());
 
   const prefersReducedMotion =
@@ -140,7 +153,7 @@
     // Use a local variable to avoid reading $state back inside this effect
     // (reading + writing the same $state in one effect causes infinite loops).
     const overrides = untrack(() => physicsOverrides);
-    const cfg = resolveConfig(graph.order.length, overrides);
+    const cfg = resolveConfig(overrides);
     physicsConfig = cfg;
 
     simNodes = graph.order.map((id) => {
@@ -247,10 +260,21 @@
           y: event.transform.y,
           k: event.transform.k,
         };
+        oncamerachange?.({ x: event.transform.x, y: event.transform.y, k: event.transform.k });
         dismissHints();
       });
 
     select(svgEl).call(zoomBehavior);
+
+    // Apply persisted camera transform to d3-zoom so it stays in sync.
+    // Use untrack: initialCamera is a one-time seed, not a reactive dependency.
+    // Without untrack, the oncamerachange → cameraTransform → initialCamera
+    // round-trip causes an infinite $effect loop (effect_update_depth_exceeded).
+    const cam = untrack(() => initialCamera);
+    if (cam && (cam.k !== 1 || cam.x !== 0 || cam.y !== 0)) {
+      const t = zoomIdentity.translate(cam.x, cam.y).scale(cam.k);
+      select(svgEl).call(zoomBehavior.transform, t);
+    }
 
     return () => {
       select(svgEl).on('.zoom', null);
@@ -480,7 +504,7 @@
 
   function handlePhysicsChange(key: PhysicsParamKey, value: number) {
     physicsOverrides = { ...physicsOverrides, [key]: value };
-    physicsConfig = resolveConfig(graph.order.length, physicsOverrides);
+    physicsConfig = resolveConfig(physicsOverrides);
     saveOverrides(physicsOverrides);
     if (simulation && !focusedTaskId) {
       applyPhysicsConfig(simulation, physicsConfig, width, height);
@@ -489,7 +513,7 @@
 
   function handlePhysicsReset() {
     physicsOverrides = {};
-    physicsConfig = resolveConfig(graph.order.length, {});
+    physicsConfig = resolveConfig({});
     showStrataLines = DEFAULT_STRATA_LINES;
     clearOverrides();
     if (simulation && !focusedTaskId) {
@@ -675,7 +699,7 @@
     onzoomout={handleZoomOut}
     onfitview={handleFitView}
     zoomLevel={transform.k}
-    svgElement={svgEl}
+    {graph}
     onchat={() => {
       ontoggle();
     }}

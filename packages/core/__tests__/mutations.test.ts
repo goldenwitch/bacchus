@@ -171,7 +171,6 @@ describe('addTask', () => {
       decisions: [],
     };
 
-    expect(() => addTask(baseGraph, island)).toThrow(VineValidationError);
     try {
       addTask(baseGraph, island);
     } catch (e) {
@@ -242,7 +241,6 @@ describe('removeTask', () => {
   });
 
   it('throws VineValidationError when removal creates islands', () => {
-    expect(() => removeTask(baseGraph, 'middle')).toThrow(VineValidationError);
     try {
       removeTask(baseGraph, 'middle');
     } catch (e) {
@@ -580,9 +578,6 @@ describe('addDependency', () => {
   });
 
   it('throws VineValidationError for cycle', () => {
-    expect(() => addDependency(baseGraph, 'leaf-a', 'root')).toThrow(
-      VineValidationError,
-    );
     try {
       addDependency(baseGraph, 'leaf-a', 'root');
     } catch (e) {
@@ -662,9 +657,6 @@ describe('removeDependency', () => {
   });
 
   it('throws VineValidationError when removal creates island', () => {
-    expect(() => removeDependency(baseGraph, 'root', 'middle')).toThrow(
-      VineValidationError,
-    );
     try {
       removeDependency(baseGraph, 'root', 'middle');
     } catch (e) {

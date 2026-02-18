@@ -35,32 +35,99 @@
   const filterId = $derived(`glow-${node.id}`);
   const glassGradId = $derived(`glassGrad-${node.id}`);
 
-  // Glass effect: lighten the status fill for the gradient highlight
+  // Glass effect: lighten/darken the status fill for the gradient
   function adjustColor(hex: string, amount: number): string {
-    const r = Math.min(
-      255,
-      Math.max(0, parseInt(hex.slice(1, 3), 16) + amount),
-    );
-    const g = Math.min(
-      255,
-      Math.max(0, parseInt(hex.slice(3, 5), 16) + amount),
-    );
-    const b = Math.min(
-      255,
-      Math.max(0, parseInt(hex.slice(5, 7), 16) + amount),
-    );
+    const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amount));
+    const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amount));
+    const b = Math.min(255, Math.max(0, parseInt(hex.slice(5, 7), 16) + amount));
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
 
-  const lightenedColor = $derived(adjustColor(statusInfo.darkColor, 40));
+  // Convert hex → rgba with alpha for translucent bubble effect
+  function hexToRGBA(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  const lightenedColor = $derived(adjustColor(statusInfo.darkColor, nodeGlassLighten));
   const darkenedColor = $derived(adjustColor(statusInfo.darkColor, -20));
+
+  // Read CSS vars for node text controls (see app.css :root)
+  function getCSSVar(name: string, fallback: number): number {
+    if (typeof document === 'undefined') return fallback;
+    const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return val ? Number(val) : fallback;
+  }
+
+  const nodeFontSize = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-font-size', 14);
+  });
+  const nodeFontWeight = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-font-weight', 400);
+  });
+  const nodeTextStrokeWidth = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-text-stroke-width', 0.5);
+  });
+  const nodeTextGlowRadius = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-text-glow-radius', 2);
+  });
+  const nodeTextGlowOpacity = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-text-glow-opacity', 0.7);
+  });
+  const nodeGradientMidAlpha = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-gradient-mid-alpha', 0.85);
+  });
+  const nodeGradientEdgeAlpha = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-gradient-edge-alpha', 0.75);
+  });
+  const nodeSpecularOpacity = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-specular-opacity', 0.35);
+  });
+  const nodeSpecularRadius = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-specular-radius', 25);
+  });
+  const nodeSpecularCx = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-specular-cx', 35);
+  });
+  const nodeSpecularCy = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-specular-cy', 22);
+  });
+  const nodeGlassCx = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-glass-cx', 38);
+  });
+  const nodeGlassCy = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-glass-cy', 25);
+  });
+  const nodeGlassLighten = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-glass-lighten', 35);
+  });
+  const nodeInnerShadowStart = $derived.by(() => {
+    void themeVersion();
+    return getCSSVar('--node-inner-shadow-start', 70);
+  });
 
   // Step 1: Wrap & truncate label text to fit inside the circle
   const textLines = $derived.by(() => {
     const name = node.task.shortName;
-    const charWidth = 7.0; // approx px per char at font-size 12, weight 600
-    const padding = 12; // horizontal margin from circle edge
-    const lineHeight = 15; // vertical distance between line centres
+    const charWidth = 8.5; // approx px per char at font-size 14, weight 400 (Fredoka)
+    const padding = 14; // horizontal margin from circle edge
+    const lineHeight = 17; // vertical distance between line centres
 
     // Horizontal chord at vertical offset y from circle centre
     const chordWidth = (y: number) =>
@@ -134,11 +201,8 @@
       : 'var(--color-node-text-light)',
   );
 
-  // Stronger outline on dark fills so light text stays crisp
-  const textStrokeColor = $derived(
-    fillLuminance > 0.4 ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.85)',
-  );
-  const textStrokeWidth = $derived(fillLuminance > 0.4 ? 1.5 : 2.5);
+  // Colour-matched stroke (using darkened node colour instead of harsh black)
+  const textStrokeColor = $derived(darkenedColor);
 
   // Scale animation state
   let nodeScale = $state(visible ? 1 : 0);
@@ -254,12 +318,39 @@
         <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" />
       </filter>
 
-      <!-- Radial gradient: subtle lighter center → base → slightly darker edge -->
-      <radialGradient id={glassGradId} cx="45%" cy="40%" r="60%">
+      <!-- Radial gradient: lighter center biased top-left → translucent base → translucent edge -->
+      <radialGradient id={glassGradId} cx="{nodeGlassCx}%" cy="{nodeGlassCy}%" r="60%">
         <stop offset="0%" stop-color={lightenedColor} />
-        <stop offset="60%" stop-color={statusInfo.darkColor} />
-        <stop offset="100%" stop-color={darkenedColor} />
+        <stop offset="60%" stop-color={hexToRGBA(statusInfo.darkColor, nodeGradientMidAlpha)} />
+        <stop offset="100%" stop-color={hexToRGBA(darkenedColor, nodeGradientEdgeAlpha)} />
       </radialGradient>
+
+      <!-- Specular highlight — bright white crescent near top-left -->
+      <radialGradient id="specular-{node.id}" cx="{nodeSpecularCx}%" cy="{nodeSpecularCy}%" r="{nodeSpecularRadius}%">
+        <stop offset="0%" stop-color="rgba(255,255,255,{nodeSpecularOpacity})" />
+        <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+      </radialGradient>
+
+      <!-- Inner shadow — subtle darkening at bottom edge -->
+      <radialGradient id="innerShadow-{node.id}" cx="50%" cy="75%" r="50%">
+        <stop offset="0%" stop-color="rgba(0,0,0,0)" />
+        <stop offset="{nodeInnerShadowStart}%" stop-color="rgba(0,0,0,0)" />
+        <stop offset="100%" stop-color="rgba(0,0,0,0.28)" />
+      </radialGradient>
+
+      <!-- Iridescent rainbow rim gradient -->
+      <linearGradient id="iridescentRim-{node.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="rgba(255,180,200,0.35)" />
+        <stop offset="25%" stop-color="rgba(180,160,255,0.35)" />
+        <stop offset="50%" stop-color="rgba(140,220,255,0.35)" />
+        <stop offset="75%" stop-color="rgba(160,255,200,0.35)" />
+        <stop offset="100%" stop-color="rgba(255,180,200,0.35)" />
+      </linearGradient>
+
+      <!-- Text glow: soft coloured halo behind label for contrast -->
+      <filter id="textGlow-{node.id}" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="0" stdDeviation={nodeTextGlowRadius} flood-color={darkenedColor} flood-opacity={nodeTextGlowOpacity} />
+      </filter>
     </defs>
 
     <!-- Root node gold outer ring -->
@@ -289,8 +380,31 @@
       r={radius}
       fill="url(#{glassGradId})"
       stroke={statusInfo.color}
-      stroke-width="1.5"
+      stroke-width="1"
       class={node.task.status === 'complete' ? 'anim-completion-shimmer' : ''}
+    />
+
+    <!-- Specular highlight overlay -->
+    <circle
+      r={radius}
+      fill="url(#specular-{node.id})"
+      style="pointer-events: none;"
+    />
+
+    <!-- Inner shadow overlay -->
+    <circle
+      r={radius}
+      fill="url(#innerShadow-{node.id})"
+      style="pointer-events: none;"
+    />
+
+    <!-- Iridescent rainbow rim -->
+    <circle
+      r={radius}
+      fill="none"
+      stroke="url(#iridescentRim-{node.id})"
+      stroke-width="2"
+      style="pointer-events: none;"
     />
 
     <!-- Keyboard focus ring -->
@@ -321,15 +435,17 @@
       style="pointer-events: none;">{isRoot ? '👑' : statusInfo.emoji}</text
     >
 
-    <!-- Floating label with adaptive stroke for readability -->
+    <!-- Floating label with soft glow halo for readability -->
     <text
       fill={textColor}
-      font-size="12"
-      font-weight="600"
+      font-family="var(--font-bubble)"
+      font-size={nodeFontSize}
+      font-weight={nodeFontWeight}
       text-anchor="middle"
       stroke={textStrokeColor}
-      stroke-width={textStrokeWidth}
+      stroke-width={nodeTextStrokeWidth}
       paint-order="stroke fill"
+      filter="url(#textGlow-{node.id})"
       class="anim-label-bob"
       style="pointer-events: none;"
       >{#each textLines as line, i (i)}<tspan

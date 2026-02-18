@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 
 export default defineConfig(({ mode }) => {
-  // Load the root .env so ANTHROPIC_API_KEY (written by setup.ps1 -Integration)
+  // Load the root .env so ANTHROPIC_API_KEY (written by setup.ps1 -Key)
   // is available to the browser bundle as import.meta.env.VITE_ANTHROPIC_API_KEY.
   const env = loadEnv(mode, resolve(__dirname, '..', '..'), '');
 
@@ -24,9 +24,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [svelte()],
     define: {
-      'import.meta.env.VITE_ANTHROPIC_API_KEY': JSON.stringify(
-        env.ANTHROPIC_API_KEY ?? '',
-      ),
+      'import.meta.env.VITE_ANTHROPIC_API_KEY': env.ANTHROPIC_API_KEY
+        ? JSON.stringify(env.ANTHROPIC_API_KEY)
+        : 'undefined',
       __APP_VERSION__: JSON.stringify(version),
       __APP_COMMIT__: JSON.stringify(gitSha),
     },

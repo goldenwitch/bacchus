@@ -5,7 +5,7 @@
  * `ANTHROPIC_API_KEY` environment variable is not set.
  *
  * Enable locally:
- *   ./setup.ps1 -Integration      (saves key to .env)
+ *   ./setup.ps1 -Key "sk-ant-..."      (saves key to .env)
  *
  * Enable in CI:
  *   Set the ANTHROPIC_API_KEY repository secret (runs on push-to-main only).

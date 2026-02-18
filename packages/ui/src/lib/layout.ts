@@ -331,6 +331,14 @@ export function createSimulation(
   return sim;
 }
 
+/** Typed interface for the custom layer force's fluent API. */
+interface LayerForce {
+  y(fn: (d: SimNode) => number): LayerForce;
+  strength(v: number): LayerForce;
+  exponent(v: number): LayerForce;
+  layerSpacing(v: number): LayerForce;
+}
+
 /**
  * Patch a running simulation with updated physics parameters and reheat it.
  * Called when the user adjusts a slider in the physics panel.
@@ -387,15 +395,13 @@ export function applyPhysicsConfig(
   }
 
   // Patch layer force
-  const layerForce = sim.force('layer') as ReturnType<typeof forceLayer> | null;
+  const layerForce = sim.force('layer') as LayerForce | null;
   if (layerForce) {
-    /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
     layerForce
       .y((d: SimNode) => height * 0.1 + d.depth * config.layerSpacing)
       .strength(config.layerStrength)
       .exponent(config.layerExponent)
       .layerSpacing(config.layerSpacing);
-    /* eslint-enable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   }
 
   // Patch cluster force

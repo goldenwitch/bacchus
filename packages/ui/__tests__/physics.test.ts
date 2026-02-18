@@ -237,18 +237,18 @@ describe('clearOverrides', () => {
 // ---------------------------------------------------------------------------
 describe('resolveConfig', () => {
   it('returns defaults when no overrides', () => {
-    const cfg = resolveConfig(4, {});
-    expect(cfg).toEqual(getDefaults(4));
+    const cfg = resolveConfig({});
+    expect(cfg).toEqual(getDefaults());
   });
 
   it('overrides take precedence over defaults', () => {
-    const cfg = resolveConfig(4, { chargeStrength: -999 });
+    const cfg = resolveConfig({ chargeStrength: -999 });
     expect(cfg.chargeStrength).toBe(-999);
   });
 
   it('partial overrides keep other defaults', () => {
-    const defaults = getDefaults(4);
-    const cfg = resolveConfig(4, { linkStrength: 0.1 });
+    const defaults = getDefaults();
+    const cfg = resolveConfig({ linkStrength: 0.1 });
     expect(cfg.linkStrength).toBe(0.1);
     expect(cfg.chargeStrength).toBe(defaults.chargeStrength);
     expect(cfg.layerSpacing).toBe(defaults.layerSpacing);

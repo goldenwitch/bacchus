@@ -15,17 +15,14 @@ The following features are currently available:
 - **Chat Planner** (`@bacchus/ui`): AI-powered chat panel for creating and editing task graphs through natural conversation. Uses Anthropic Claude with structured tool-use to call validated graph mutations. Includes API key management (localStorage), streaming responses, and a toggleable left-side chat panel.
 - **Chat Planner Enhancements** (`@bacchus/ui`): Persistent chat state across views (landing ↔ graph), session persistence across refreshes per `.vine` file (localStorage circular buffer, max 5 sessions), URL routing (`/bacchus/{vineId}`), and structured tool feedback cards showing rich detail for each graph mutation.
 - **Chat E2E Test Suite** (`@bacchus/ui`): Comprehensive Playwright e2e tests for all conversational flows. Includes 16 deterministic mocked tests (SSE interception via `page.route`) and 6 live-agent tests against the real Anthropic API. Shared helper layer for SSE response construction, API key seeding, and chat interactions.
-
-## Preview Release (v0.1.0)
-
-Polish pass preparing the first preview cut:
-
-- **Shared GlassAccordion Component**: Extracted common accordion + glassmorphism pattern used by Physics, Legend, and Chat panels into a reusable `GlassAccordion.svelte` component
-- **Chat Panel Accordion**: Converted the Chat Planner from a floating window to the same collapsible accordion pattern used by Physics and Legend, with consistent glassmorphism styling
-- **Dead Code Removal**: Removed unused `chat/index.ts` barrel file, unused `clearApiKey` export, unused `getAncestors` graph query, and aspirational `07-browser-bridge.vine` example
-- **E2E Test Fixes**: Fixed API key entry flow tests that failed when `VITE_ANTHROPIC_API_KEY` was set via `.env`, by adding `clearApiKey` e2e helper to neutralize env-injected keys
-- **Version Alignment**: All packages (`@bacchus/core`, `@bacchus/cli`, `@bacchus/ui`) aligned to v0.1.0
-- **Documentation Refresh**: Updated stale design docs (PhysicsPanel.md params, VINE-TS.md mutations/search modules, docs README index), added end-user guide with annotated screenshots
+- **Shared GlassAccordion Component** (v0.1.0): Extracted common accordion + glassmorphism pattern used by Physics, Legend, and Chat panels into a reusable `GlassAccordion.svelte` component
+- **Chat Panel Accordion** (v0.1.0): Converted the Chat Planner from a floating window to the same collapsible accordion pattern used by Physics and Legend, with consistent glassmorphism styling
+- **Dead Code Removal** (v0.1.0): Removed unused `chat/index.ts` barrel file, unused `clearApiKey` export, unused `getAncestors` graph query, and aspirational `07-browser-bridge.vine` example
+- **E2E Test Fixes** (v0.1.0): Fixed API key entry flow tests that failed when `VITE_ANTHROPIC_API_KEY` was set via `.env`, by adding `clearApiKey` e2e helper to neutralize env-injected keys
+- **Version Alignment** (v0.1.0): All packages (`@bacchus/core`, `@bacchus/cli`, `@bacchus/ui`) aligned to v0.1.0
+- **Documentation Refresh** (v0.1.0): Updated stale design docs (PhysicsPanel.md params, VINE-TS.md mutations/search modules, docs README index), added end-user guide with annotated screenshots
+- **Luxury Color Palette**: Replaced the default Tailwind-derived status colors with a polychromatic luxury palette — emerald (complete), antique gold (started), polished silver (not started), royal purple (planning), and crimson (blocked). Sapphire for focus rings, gold for root-task highlight. Light theme uses a seafoam background instead of white.
+- **UX Fixes**: Volume slider now drops down below the toolbar instead of popping up off-screen. Resolved all ESLint strict-mode errors (10 lint issues across anthropic.ts, MarkdownMessage.svelte, Toolbar.svelte, and persistence.ts).
 
 ## Exploring
 

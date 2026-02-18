@@ -124,7 +124,7 @@ The panel is accessible from:
 The API key is resolved in order:
 
 1. **localStorage** — set via the Chat Panel's key-entry UI (persists across sessions)
-2. **Build-time env var** — `ANTHROPIC_API_KEY` from the root `.env` file, injected by Vite as `import.meta.env.VITE_ANTHROPIC_API_KEY`. Run `./setup.ps1 -Integration` to configure.
+2. **Build-time env var** — `ANTHROPIC_API_KEY` from the root `.env` file, injected by Vite as `import.meta.env.VITE_ANTHROPIC_API_KEY`. Run `./setup.ps1 -Key "sk-ant-..."` to configure.
 3. If neither source provides a key, the Chat Panel displays a key-entry prompt.
 
 ## Testing
@@ -144,7 +144,7 @@ Live in `packages/ui/__tests__/chat/`. Always run with `yarn test`.
 
 `packages/ui/__tests__/chat/integration.test.ts` — calls the real Anthropic API.
 Skipped when `ANTHROPIC_API_KEY` is not set. Enable locally via
-`./setup.ps1 -Integration` or set the env var.
+`./setup.ps1 -Key "sk-ant-..."` or set the env var.
 
 ### E2E browser tests (Playwright)
 
@@ -170,5 +170,5 @@ yarn workspace @bacchus/ui e2e:chat:live  # live-agent tests (needs ANTHROPIC_AP
 
 ### API key for tests
 
-- **Locally**: `./setup.ps1 -Integration` stores the key in `.env` (git-ignored).
+- **Locally**: `./setup.ps1 -Key "sk-ant-..."` stores the key in `.env` (git-ignored).
 - **CI**: Set as a GitHub Actions **repository secret** named `ANTHROPIC_API_KEY`. Live-agent tests and Vitest integration tests both read this variable. CI only runs them on push to `main`.

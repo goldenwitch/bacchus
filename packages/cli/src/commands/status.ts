@@ -1,15 +1,7 @@
 import { Command } from 'commander';
 import { readGraph, writeGraph } from '../io.js';
-import { setStatus, getTask } from '@bacchus/core';
-import type { Status } from '@bacchus/core';
-
-const VALID_STATUSES: readonly Status[] = [
-  'complete',
-  'started',
-  'planning',
-  'notstarted',
-  'blocked',
-];
+import { handleCommandError } from '../errors.js';
+import { setStatus, getTask, VALID_STATUSES, isValidStatus } from '@bacchus/core';
 
 export const statusCommand = new Command('status')
   .description('Update the status of a task')
@@ -20,8 +12,7 @@ export const statusCommand = new Command('status')
     `new status (${['complete', 'started', 'planning', 'notstarted', 'blocked'].join(', ')})`,
   )
   .action((file: string, id: string, statusArg: string) => {
-    const status = statusArg as Status;
-    if (!VALID_STATUSES.includes(status)) {
+    if (!isValidStatus(statusArg)) {
       console.error(
         `Invalid status "${statusArg}". Valid: ${VALID_STATUSES.join(', ')}`,
       );
@@ -29,11 +20,15 @@ export const statusCommand = new Command('status')
       return;
     }
 
-    let graph = readGraph(file);
-    const task = getTask(graph, id);
-    const oldStatus = task.status;
-    graph = setStatus(graph, id, status);
-    writeGraph(file, graph);
+    try {
+      let graph = readGraph(file);
+      const task = getTask(graph, id);
+      const oldStatus = task.status;
+      graph = setStatus(graph, id, statusArg);
+      writeGraph(file, graph);
 
-    console.log(`✓ ${id}: ${oldStatus} → ${status}`);
+      console.log(`✓ ${id}: ${oldStatus} → ${statusArg}`);
+    } catch (error: unknown) {
+      handleCommandError(error, file);
+    }
   });
