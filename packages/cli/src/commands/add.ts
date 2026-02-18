@@ -1,13 +1,7 @@
 import { Command } from 'commander';
 import { readGraph, writeGraph } from '../io.js';
-import {
-  addTask,
-  VALID_STATUSES,
-  isValidStatus,
-  VineParseError,
-  VineValidationError,
-  VineError,
-} from '@bacchus/core';
+import { handleCommandError } from '../errors.js';
+import { addTask, VALID_STATUSES, isValidStatus } from '@bacchus/core';
 import type { Task } from '@bacchus/core';
 
 export const addCommand = new Command('add')
@@ -61,26 +55,7 @@ export const addCommand = new Command('add')
 
         console.log(`✓ Added task "${opts.id}" to ${file}`);
       } catch (error: unknown) {
-        if (error instanceof VineParseError) {
-          console.error(
-            `Parse error (line ${String(error.line)}): ${error.message}`,
-          );
-          process.exitCode = 1;
-        } else if (error instanceof VineValidationError) {
-          console.error(
-            `Validation error [${error.constraint}]: ${error.message}`,
-          );
-          process.exitCode = 1;
-        } else if (error instanceof VineError) {
-          console.error(error.message);
-          process.exitCode = 1;
-        } else if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          console.error(`File not found: ${file}`);
-          process.exitCode = 1;
-        } else if ((error as NodeJS.ErrnoException).code === 'EACCES') {
-          console.error(`Permission denied: ${file}`);
-          process.exitCode = 1;
-        }
+        handleCommandError(error, file);
       }
     },
   );
