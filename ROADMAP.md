@@ -21,6 +21,8 @@ The following features are currently available:
 - **E2E Test Fixes** (v0.1.0): Fixed API key entry flow tests that failed when `VITE_ANTHROPIC_API_KEY` was set via `.env`, by adding `clearApiKey` e2e helper to neutralize env-injected keys
 - **Version Alignment** (v0.1.0): All packages (`@bacchus/core`, `@bacchus/cli`, `@bacchus/ui`) aligned to v0.1.0
 - **Documentation Refresh** (v0.1.0): Updated stale design docs (PhysicsPanel.md params, VINE-TS.md mutations/search modules, docs README index), added end-user guide with annotated screenshots
+- **Luxury Color Palette**: Replaced the default Tailwind-derived status colors with a polychromatic luxury palette — emerald (complete), antique gold (started), polished silver (not started), royal purple (planning), and crimson (blocked). Sapphire for focus rings, gold for root-task highlight. Light theme uses a seafoam background instead of white.
+- **UX Fixes**: Volume slider now drops down below the toolbar instead of popping up off-screen. Resolved all ESLint strict-mode errors (10 lint issues across anthropic.ts, MarkdownMessage.svelte, Toolbar.svelte, and persistence.ts).
 
 ## Exploring
 

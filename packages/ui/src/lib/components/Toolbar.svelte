@@ -30,7 +30,7 @@
     if (!graph) return;
     try {
       const text = serialize(graph);
-      const safeName = (graphTitle ?? 'graph').replace(/[\/\\:*?"<>|]/g, '_');
+      const safeName = (graphTitle ?? 'graph').replace(/[/\\:*?"<>|]/g, '_');
       const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

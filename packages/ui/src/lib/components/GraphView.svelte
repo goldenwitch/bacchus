@@ -266,9 +266,13 @@
 
     select(svgEl).call(zoomBehavior);
 
-    // Apply persisted camera transform to d3-zoom so it stays in sync
-    if (initialCamera && (initialCamera.k !== 1 || initialCamera.x !== 0 || initialCamera.y !== 0)) {
-      const t = zoomIdentity.translate(initialCamera.x, initialCamera.y).scale(initialCamera.k);
+    // Apply persisted camera transform to d3-zoom so it stays in sync.
+    // Use untrack: initialCamera is a one-time seed, not a reactive dependency.
+    // Without untrack, the oncamerachange → cameraTransform → initialCamera
+    // round-trip causes an infinite $effect loop (effect_update_depth_exceeded).
+    const cam = untrack(() => initialCamera);
+    if (cam && (cam.k !== 1 || cam.x !== 0 || cam.y !== 0)) {
+      const t = zoomIdentity.translate(cam.x, cam.y).scale(cam.k);
       select(svgEl).call(zoomBehavior.transform, t);
     }
 

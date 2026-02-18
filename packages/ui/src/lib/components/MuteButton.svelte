@@ -43,6 +43,9 @@
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
 >
+  <button class="mute-btn" onclick={toggle} title={muted ? 'Unmute' : 'Mute'}>
+    {muted ? '🔇' : '🔊'}
+  </button>
   {#if showSlider}
     <div class="volume-popup">
       <input
@@ -57,9 +60,6 @@
       />
     </div>
   {/if}
-  <button class="mute-btn" onclick={toggle} title={muted ? 'Unmute' : 'Mute'}>
-    {muted ? '🔇' : '🔊'}
-  </button>
 </div>
 
 <style>
@@ -85,7 +85,7 @@
 
   .volume-popup {
     position: absolute;
-    bottom: 100%;
+    top: 100%;
     left: 50%;
     transform: translateX(-50%);
     background: var(--toolbar-bg);
@@ -94,7 +94,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 12px 8px;
-    margin-bottom: 6px;
+    margin-top: 6px;
     display: flex;
     align-items: center;
     justify-content: center;

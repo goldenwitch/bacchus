@@ -52,7 +52,7 @@ export class AnthropicChatService implements ChatService {
       let detail = errorText;
       try {
         const parsed = JSON.parse(errorText) as { error?: { message?: string } };
-        if (parsed?.error?.message) {
+        if (parsed.error?.message) {
           detail = parsed.error.message;
         }
       } catch {

@@ -31,7 +31,7 @@ After loading a `.vine` file (via drop, URL, or demo), Bacchus transitions to th
 
 **What you see:**
 
-- **Task nodes** — colored circles representing each task. Colors reflect status: 🟢 complete, 🟡 started, 🔵 planning, ⚪ not started, 🔴 blocked
+- **Task nodes** — colored circles representing each task. Colors reflect status: 💎 complete (emerald), 🪙 started (gold), 🪩 planning (purple), ⚪ not started (silver), 🔴 blocked (crimson)
 - **Dependency edges** — curved arrows showing task relationships (arrow points from dependent → dependency)
 - **Status emoji badges** — small emoji icons on each node (🌿 complete, 🔨 started, 📋 not started, etc.)
 - **Strata lines** — dashed horizontal lines grouping tasks by depth level

@@ -27,8 +27,8 @@ export interface StatusInfo {
  */
 export const STATUS_MAP: Record<Status, StatusInfo> = {
   complete: {
-    color: '#4ade80',
-    darkColor: '#2d8f53',
+    color: '#50C878',
+    darkColor: '#1E6B3E',
     emoji: '🌿',
     cssClass: 'status-complete',
     label: 'Complete',
@@ -36,8 +36,8 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
     cssDarkColorVar: '--color-complete-dark',
   },
   started: {
-    color: '#facc15',
-    darkColor: '#b8930e',
+    color: '#E2B93B',
+    darkColor: '#A68520',
     emoji: '🔨',
     cssClass: 'status-started',
     label: 'Started',
@@ -45,8 +45,8 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
     cssDarkColorVar: '--color-started-dark',
   },
   notstarted: {
-    color: '#94a3b8',
-    darkColor: '#3d4a5c',
+    color: '#A0A8B4',
+    darkColor: '#4A5058',
     emoji: '📋',
     cssClass: 'status-notstarted',
     label: 'Not Started',
@@ -54,8 +54,8 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
     cssDarkColorVar: '--color-notstarted-dark',
   },
   planning: {
-    color: '#a78bfa',
-    darkColor: '#856fc8',
+    color: '#9B72CF',
+    darkColor: '#5E3D8F',
     emoji: '💭',
     cssClass: 'status-planning',
     label: 'Planning',
@@ -63,8 +63,8 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
     cssDarkColorVar: '--color-planning-dark',
   },
   blocked: {
-    color: '#f87171',
-    darkColor: '#c65a5a',
+    color: '#DC3F52',
+    darkColor: '#8F2233',
     emoji: '🚧',
     cssClass: 'status-blocked',
     label: 'Blocked',

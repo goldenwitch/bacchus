@@ -46,7 +46,8 @@ function getDb(): Promise<IDBPDatabase> {
       },
     });
   }
-  return dbPromise!;
+  // dbPromise is guaranteed non-null here — assigned in the if-block above
+  return dbPromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,7 @@ export async function saveAppState(state: PersistedAppState): Promise<void> {
 export async function loadAppState(vineId: string): Promise<PersistedAppState | undefined> {
   try {
     const db = await getDb();
-    return await db.get('appState', vineId);
+    return (await db.get('appState', vineId)) as PersistedAppState | undefined;
   } catch {
     return undefined;
   }
@@ -77,10 +78,10 @@ export async function loadAppState(vineId: string): Promise<PersistedAppState | 
 export async function loadLatestAppState(): Promise<PersistedAppState | undefined> {
   try {
     const db = await getDb();
-    const all: PersistedAppState[] = await db.getAll('appState');
+    const all = (await db.getAll('appState')) as PersistedAppState[];
     if (all.length === 0) return undefined;
     all.sort((a: PersistedAppState, b: PersistedAppState) => b.savedAt - a.savedAt);
-    return all[0] as PersistedAppState;
+    return all[0];
   } catch {
     return undefined;
   }
@@ -121,7 +122,7 @@ export async function saveSession(
 export async function loadSession(vineId: string): Promise<PersistedSession | undefined> {
   try {
     const db = await getDb();
-    return await db.get('sessions', vineId);
+    return (await db.get('sessions', vineId)) as PersistedSession | undefined;
   } catch {
     return undefined;
   }

@@ -11,7 +11,7 @@
   });
 
   let rendered = $derived.by(() => {
-    const raw = marked.parse(content, { async: false }) as string;
+    const raw = marked.parse(content, { async: false });
     return DOMPurify.sanitize(raw);
   });
 
@@ -25,7 +25,7 @@
 
     // Wait for DOM update
     requestAnimationFrame(() => {
-      const blocks = containerEl!.querySelectorAll('pre');
+      const blocks = containerEl.querySelectorAll('pre');
       for (const block of blocks) {
         if (block.querySelector('.code-copy-btn')) continue;
         const btn = document.createElement('button');
@@ -48,6 +48,7 @@
 </script>
 
 <div class="markdown-body" bind:this={containerEl}>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized via DOMPurify -->
   {@html rendered}
 </div>
 
