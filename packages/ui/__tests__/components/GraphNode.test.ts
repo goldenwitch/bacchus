@@ -67,7 +67,8 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { status: 'started' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // circles[0]=outer glow, circles[1]=inner fill, circles[2]=emoji badge
+    // circles[0]=outer glow, circles[1]=inner fill, circles[2]=specular,
+    // circles[3]=shadow, circles[4]=iridescent rim, circles[5]=emoji badge
     const outerCircle = circles[0];
     expect(outerCircle).toBeDefined();
     expect(outerCircle.getAttribute('stroke')).toBe(STATUS_MAP.started.color);
@@ -77,7 +78,7 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { status: 'started' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // circles[0]=outer glow, circles[1]=inner fill
+    // circles[1]=inner fill
     const innerCircle = circles[1];
     expect(innerCircle).toBeDefined();
     const fill = innerCircle.getAttribute('fill') ?? '';
@@ -109,14 +110,15 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { shortName: 'Hi' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // circles[0]=outer glow, circles[1]=inner fill, circles[2]=emoji badge
+    // circles[0]=outer glow, circles[1]=inner fill, circles[2]=specular,
+    // circles[3]=shadow, circles[4]=iridescent rim, circles[5]=emoji badge
     const outerR = Number(circles[0].getAttribute('r'));
     expect(outerR).toBeGreaterThanOrEqual(36);
     expect(outerR).toBeLessThanOrEqual(66);
     const innerR = Number(circles[1].getAttribute('r'));
     expect(innerR).toBeGreaterThanOrEqual(30);
     expect(innerR).toBeLessThanOrEqual(60);
-    const badgeR = Number(circles[2].getAttribute('r'));
+    const badgeR = Number(circles[5].getAttribute('r'));
     expect(badgeR).toBe(12);
   });
 
@@ -169,6 +171,20 @@ describe('GraphNode', () => {
     expect(gElement!.getAttribute('opacity')).toBe('1');
   });
 
+  it('renders specular highlight and inner shadow overlays', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const circles = container.querySelectorAll('circle');
+    // circles[2]=specular, circles[3]=shadow
+    const specularFill = circles[2].getAttribute('fill') ?? '';
+    expect(specularFill).toContain('url(#specular-');
+    const shadowFill = circles[3].getAttribute('fill') ?? '';
+    expect(shadowFill).toContain('url(#innerShadow-');
+    // circles[4]=iridescent rim
+    const rimStroke = circles[4].getAttribute('stroke') ?? '';
+    expect(rimStroke).toContain('url(#iridescentRim-');
+  });
+
   it('started nodes have glow pulse animation', () => {
     const node = makeSimNode({ task: { status: 'started' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
@@ -182,7 +198,7 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { status: 'complete' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // circles[1] is the inner fill circle
+    // circles[1] is the inner fill circle (same index for all bubble configs)
     const innerCircle = circles[1];
     expect(innerCircle.classList.contains('anim-completion-shimmer')).toBe(
       true,
@@ -192,10 +208,29 @@ describe('GraphNode', () => {
   it('renders radial gradient defs for glass effect', () => {
     const node = makeSimNode();
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
-    const grad = container.querySelector('radialGradient');
-    expect(grad).not.toBeNull();
-    expect(grad!.id).toContain('glassGrad');
-    expect(grad!.querySelectorAll('stop').length).toBe(3);
+    const radialGrads = container.querySelectorAll('radialGradient');
+    // glassGrad, specular, innerShadow
+    expect(radialGrads.length).toBe(3);
+    const glassGrad = Array.from(radialGrads).find((g) =>
+      g.id.includes('glassGrad'),
+    );
+    expect(glassGrad).toBeDefined();
+    expect(glassGrad!.querySelectorAll('stop').length).toBe(3);
+    // textGlow filter in defs
+    const textGlowFilter = container.querySelector('filter[id^="textGlow-"]');
+    expect(textGlowFilter).not.toBeNull();
+    // feDropShadow is an SVG element; jsdom may not expose it via querySelector,
+    // so verify the filter has child content instead.
+    expect(textGlowFilter!.innerHTML).toContain('fedropshadow');
+  });
+
+  it('renders iridescent rim linear gradient', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const linearGrad = container.querySelector('linearGradient');
+    expect(linearGrad).not.toBeNull();
+    expect(linearGrad!.id).toContain('iridescentRim');
+    expect(linearGrad!.querySelectorAll('stop').length).toBe(5);
   });
 
   it('inner fill circle uses radial gradient', () => {
@@ -205,6 +240,19 @@ describe('GraphNode', () => {
     // circles[1] is the inner fill circle
     const fillAttr = circles[1].getAttribute('fill') ?? '';
     expect(fillAttr).toContain('url(#glassGrad');
+  });
+
+  it('label text uses Fredoka bubble font', () => {
+    const node = makeSimNode();
+    const { container } = render(GraphNode, { props: defaultProps({ node }) });
+    const label = container.querySelector('.anim-label-bob');
+    expect(label).not.toBeNull();
+    expect(label!.getAttribute('font-family')).toBe('var(--font-bubble)');
+    // Dynamic font-size and font-weight from CSS vars (jsdom defaults)
+    expect(label!.getAttribute('font-size')).toBe('14');
+    expect(label!.getAttribute('font-weight')).toBe('400');
+    // Text glow filter attribute
+    expect(label!.getAttribute('filter')).toContain('textGlow');
   });
 
   it('all labels have bob animation', () => {
