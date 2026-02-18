@@ -54,9 +54,9 @@ export async function seedApiKey(
 export async function clearApiKey(page: Page): Promise<void> {
   await page.addInitScript(() => {
     localStorage.removeItem('bacchus:anthropic-key');
-    // Neutralize the Vite build-time env var so getApiKey() returns null
-    (import.meta.env as Record<string, unknown>).VITE_ANTHROPIC_API_KEY =
-      undefined;
+    // Neutralize the Vite build-time env var so getApiKey() returns null.
+    // Must delete (not set to undefined) because the resolution checks truthiness.
+    delete (import.meta.env as Record<string, unknown>).VITE_ANTHROPIC_API_KEY;
   });
 }
 

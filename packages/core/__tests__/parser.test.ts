@@ -1,36 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '../src/parser.js';
 import { VineParseError, VineValidationError } from '../src/errors.js';
+import { VINE_EXAMPLE } from './fixtures/vine-example.js';
 
 describe('parse', () => {
   it('parses the VINE.md example correctly', () => {
-    const input = [
-      '[vine-format] Define VINE Format (complete)',
-      'Specify the .vine file format.',
-      '> Keep it line-oriented, no nesting.',
-      '',
-      '[vine-ts] VINE TypeScript Library (started)',
-      'Parse and validate .vine files.',
-      '-> vine-format',
-      '',
-      '[build-ui] Build Graph Visualizer (notstarted)',
-      'Render the task graph with d3-force.',
-      '-> vine-ts',
-      '',
-      '[graph-cli] Graph Interface (planning)',
-      'CLI for pulling, creating, and updating work.',
-      '-> vine-ts',
-      '-> build-ui',
-      '',
-      '[root] Project Bacchus (started)',
-      'Build a graph of tasks and visualize them as a vine.',
-      '-> vine-format',
-      '-> vine-ts',
-      '-> build-ui',
-      '-> graph-cli',
-    ].join('\n');
-
-    const graph = parse(input);
+    const graph = parse(VINE_EXAMPLE);
 
     expect(graph.tasks.size).toBe(5);
     expect(graph.order).toEqual([

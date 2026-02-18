@@ -1,5 +1,6 @@
 import type { Status, Task, VineGraph } from './types.js';
 import { getTask, getDependants } from './graph.js';
+import { VineError } from './errors.js';
 
 /**
  * Aggregate summary of a VineGraph.
@@ -118,7 +119,7 @@ export function getSummary(graph: VineGraph): GraphSummary {
 
   const rootId = graph.order[graph.order.length - 1];
   if (rootId === undefined) {
-    throw new Error('Cannot get summary: order is empty');
+    throw new VineError('Cannot get summary: order is empty');
   }
   const root = getTask(graph, rootId);
 

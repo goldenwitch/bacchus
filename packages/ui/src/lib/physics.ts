@@ -291,16 +291,13 @@ export function clearOverrides(): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Merge defaults (based on `nodeCount`) with explicit user overrides.
+ * Merge defaults with explicit user overrides.
  *
  * Overrides take precedence; any key not present in `overrides` falls back to
  * the default value.
  */
 export function resolveConfig(
-  nodeCount: number,
   overrides: Partial<PhysicsConfig>,
 ): PhysicsConfig {
-  // nodeCount reserved for future tuning
-  void nodeCount;
   return { ...getDefaults(), ...overrides };
 }

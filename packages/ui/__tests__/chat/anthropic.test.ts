@@ -322,7 +322,7 @@ describe('AnthropicChatService', () => {
   // Error handling
   // -----------------------------------------------------------------------
 
-  it('throws on non-OK response', async () => {
+  it('throws on non-OK response with plain text body', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: false,
       status: 429,
@@ -333,6 +333,42 @@ describe('AnthropicChatService', () => {
     await expect(
       collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
     ).rejects.toThrow('Anthropic API error 429: Rate limited');
+  });
+
+  it('parses JSON error body and extracts message', async () => {
+    const errorJson = JSON.stringify({
+      type: 'error',
+      error: { type: 'rate_limit_error', message: 'Too many requests' },
+    });
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve(errorJson),
+    } as unknown as Response);
+
+    const service = new AnthropicChatService({ apiKey: 'sk-test' });
+    await expect(
+      collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
+    ).rejects.toThrow('Anthropic API error 429: Too many requests');
+  });
+
+  it('throws a friendly message on 401 authentication error', async () => {
+    const errorJson = JSON.stringify({
+      type: 'error',
+      error: { type: 'authentication_error', message: 'invalid x-api-key' },
+    });
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: () => Promise.resolve(errorJson),
+    } as unknown as Response);
+
+    const service = new AnthropicChatService({ apiKey: 'sk-test' });
+    await expect(
+      collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
+    ).rejects.toThrow(
+      'Authentication failed — invalid x-api-key. Check that your API key is valid.',
+    );
   });
 
   it('throws when response body is null', async () => {

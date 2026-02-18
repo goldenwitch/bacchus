@@ -45,7 +45,7 @@
 
   function copyId() {
     if (!task) return;
-    navigator.clipboard.writeText(task.id);
+    navigator.clipboard.writeText(task.id).catch(() => {});
     copied = true;
     setTimeout(() => {
       copied = false;

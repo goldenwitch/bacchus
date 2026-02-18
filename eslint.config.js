@@ -81,9 +81,9 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
-      // Svelte best practices — warn for now, tighten later.
-      'svelte/require-each-key': 'warn',
-      'svelte/prefer-svelte-reactivity': 'warn',
+      // Svelte best practices.
+      'svelte/require-each-key': 'error',
+      'svelte/prefer-svelte-reactivity': 'error',
     },
   },
   {

@@ -1,6 +1,8 @@
 <script lang="ts">
   import MuteButton from './MuteButton.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
+  import { serialize } from '@bacchus/core';
+  import type { VineGraph } from '@bacchus/core';
 
   let {
     onreset,
@@ -9,7 +11,7 @@
     onzoomout,
     onfitview,
     zoomLevel,
-    svgElement,
+    graph,
     onchat,
     chatOpen,
   }: {
@@ -19,68 +21,28 @@
     onzoomout?: () => void;
     onfitview?: () => void;
     zoomLevel?: number;
-    svgElement?: SVGSVGElement;
+    graph?: VineGraph;
     onchat?: () => void;
     chatOpen?: boolean;
   } = $props();
 
-  function resolveVarReferences(el: Element): void {
-    // Resolve CSS var() in presentation attributes
-    const attrs = el.attributes;
-    const style = getComputedStyle(document.documentElement);
-    for (let i = 0; i < attrs.length; i++) {
-      const attr = attrs[i];
-      if (attr.value.includes('var(')) {
-        const resolved = attr.value.replace(/var\(--[\w-]+\)/g, (match) => {
-          const prop = match.slice(4, -1); // extract --prop-name
-          return style.getPropertyValue(prop).trim() || match;
-        });
-        el.setAttribute(attr.name, resolved);
-      }
+  function exportVine() {
+    if (!graph) return;
+    try {
+      const text = serialize(graph);
+      const safeName = (graphTitle ?? 'graph').replace(/[\/\\:*?"<>|]/g, '_');
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.vine`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      if (import.meta.env.DEV) console.error('Failed to export .vine file:', e);
     }
-    // Also resolve inline style var() references
-    const inlineStyle = el.getAttribute('style');
-    if (inlineStyle?.includes('var(')) {
-      const resolved = inlineStyle.replace(/var\(--[\w-]+\)/g, (match) => {
-        const prop = match.slice(4, -1);
-        return style.getPropertyValue(prop).trim() || match;
-      });
-      el.setAttribute('style', resolved);
-    }
-    for (const child of el.children) {
-      resolveVarReferences(child);
-    }
-  }
-
-  function exportSVG() {
-    if (!svgElement) return;
-    const clone = svgElement.cloneNode(true) as SVGSVGElement;
-    // Resolve all CSS var() references so the SVG is portable
-    resolveVarReferences(clone);
-    const bgRect = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'rect',
-    );
-    bgRect.setAttribute('width', '100%');
-    bgRect.setAttribute('height', '100%');
-    bgRect.setAttribute(
-      'fill',
-      getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg-primary')
-        .trim(),
-    );
-    clone.insertBefore(bgRect, clone.firstChild);
-    const serializer = new XMLSerializer();
-    const svgStr = serializer.serializeToString(clone);
-    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'graph.svg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
 </script>
 
@@ -188,17 +150,17 @@
       </svg>
     </button>
   {/if}
-  {#if svgElement}
+  {#if graph}
     <button
       class="home-btn"
-      onclick={exportSVG}
-      aria-label="Export graph as SVG"
-      title="Export as SVG"
+      onclick={exportVine}
+      aria-label="Download .vine"
+      title="Download .vine"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"

@@ -1,5 +1,6 @@
 // Types
 export type { Status, Task, VineGraph } from './types.js';
+export { VALID_STATUSES, isValidStatus } from './types.js';
 
 // Errors
 export { VineError, VineParseError, VineValidationError } from './errors.js';

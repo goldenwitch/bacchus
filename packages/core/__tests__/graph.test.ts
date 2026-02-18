@@ -7,32 +7,7 @@ import {
   getDependants,
 } from '../src/graph.js';
 import { VineError } from '../src/errors.js';
-
-const VINE_EXAMPLE = [
-  '[vine-format] Define VINE Format (complete)',
-  'Specify the .vine file format.',
-  '> Keep it line-oriented, no nesting.',
-  '',
-  '[vine-ts] VINE TypeScript Library (started)',
-  'Parse and validate .vine files.',
-  '-> vine-format',
-  '',
-  '[build-ui] Build Graph Visualizer (notstarted)',
-  'Render the task graph with d3-force.',
-  '-> vine-ts',
-  '',
-  '[graph-cli] Graph Interface (planning)',
-  'CLI for pulling, creating, and updating work.',
-  '-> vine-ts',
-  '-> build-ui',
-  '',
-  '[root] Project Bacchus (started)',
-  'Build a graph of tasks and visualize them as a vine.',
-  '-> vine-format',
-  '-> vine-ts',
-  '-> build-ui',
-  '-> graph-cli',
-].join('\n');
+import { VINE_EXAMPLE } from './fixtures/vine-example.js';
 
 const graph = parse(VINE_EXAMPLE);
 

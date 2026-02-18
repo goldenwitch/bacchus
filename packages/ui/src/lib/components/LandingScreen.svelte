@@ -83,9 +83,13 @@ End-to-end tests verifying the API and UI work together.
     const poll = setInterval(() => {
       if (!chatSession.isLoading) {
         clearInterval(poll);
+        clearTimeout(pollTimeout);
         onload(graph);
       }
     }, 50);
+    const pollTimeout = setTimeout(() => {
+      clearInterval(poll);
+    }, 30_000);
   }
 
   function formatDetails(details: ValidationDetails): string {

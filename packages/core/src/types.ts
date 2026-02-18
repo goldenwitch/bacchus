@@ -31,3 +31,21 @@ export interface VineGraph {
   readonly tasks: ReadonlyMap<string, Task>;
   readonly order: readonly string[];
 }
+
+/**
+ * All valid status values as a runtime-accessible tuple.
+ */
+export const VALID_STATUSES: readonly Status[] = [
+  'complete',
+  'started',
+  'planning',
+  'notstarted',
+  'blocked',
+];
+
+/**
+ * Type guard: returns true when `value` is a valid {@link Status}.
+ */
+export function isValidStatus(value: string): value is Status {
+  return VALID_STATUSES.includes(value as Status);
+}

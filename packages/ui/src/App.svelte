@@ -2,6 +2,7 @@
   import type { VineGraph } from '@bacchus/core';
   import {
     parse,
+    serialize,
     getRoot,
     VineParseError,
     VineValidationError,
@@ -11,10 +12,19 @@
   import { initAudio } from './lib/sound.js';
   import { ChatSession } from './lib/chat/session.js';
   import { saveSession, loadSession } from './lib/chat/sessionStore.js';
+  import {
+    saveAppState,
+    loadLatestAppState,
+    migrateFromLocalStorage,
+  } from './lib/persistence.js';
 
   let vineGraph: VineGraph | null = $state(null);
   const chatSession = new ChatSession();
   let chatOpen = $state(false);
+
+  // Camera state — updated from GraphView
+  let cameraTransform: { x: number; y: number; k: number } = $state({ x: 0, y: 0, k: 1 });
+  let focusedTaskId: string | null = $state(null);
 
   // Keep the session's graph in sync with the app graph
   $effect(() => {
@@ -30,27 +40,28 @@
       if (rootId !== vineId) {
         // Save previous session before switching
         if (vineId && chatSession.displayMessages.length > 0) {
-          saveSession(vineId, chatSession.displayMessages, [
+          void saveSession(vineId, chatSession.displayMessages, [
             ...chatSession.getChatMessages(),
-          ]);
+          ]).catch(() => {});
         }
         vineId = rootId;
         chatSession.vineId = rootId;
 
         // Try to restore a previous session for the new vineId
-        const saved = loadSession(rootId);
-        if (saved && saved.displayMessages.length > 0) {
-          chatSession.displayMessages = [...saved.displayMessages];
-          chatSession.initOrchestrator(vineGraph);
-          chatSession.setChatMessages([...saved.chatMessages]);
-        }
+        void loadSession(rootId).then((saved) => {
+          if (saved && saved.displayMessages.length > 0) {
+            chatSession.displayMessages = [...saved.displayMessages];
+            chatSession.initOrchestrator(vineGraph);
+            chatSession.setChatMessages([...saved.chatMessages]);
+          }
+        }).catch(() => {});
       }
     } else {
       // Leaving graph view — save current session
       if (vineId && chatSession.displayMessages.length > 0) {
-        saveSession(vineId, chatSession.displayMessages, [
+        void saveSession(vineId, chatSession.displayMessages, [
           ...chatSession.getChatMessages(),
-        ]);
+        ]).catch(() => {});
       }
       vineId = null;
       chatSession.vineId = null;
@@ -66,10 +77,64 @@
       chatSession.displayMessages.length > 0 &&
       !chatSession.isLoading
     ) {
-      saveSession(vineId, chatSession.displayMessages, [
+      void saveSession(vineId, chatSession.displayMessages, [
         ...chatSession.getChatMessages(),
-      ]);
+      ]).catch(() => {});
     }
+  });
+
+  // Debounced persistence of full app state to IndexedDB
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function debouncedSaveState() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (!vineGraph || !vineId) return;
+      const vineText = serialize(vineGraph);
+      void saveAppState({
+        vineId,
+        vineText,
+        camera: { x: cameraTransform.x, y: cameraTransform.y, k: cameraTransform.k },
+        focusedTaskId,
+        chatOpen,
+        inputDraft: chatSession.inputDraft,
+        savedAt: Date.now(),
+      });
+    }, 500);
+  }
+
+  $effect(() => {
+    // Track state changes that should trigger persistence
+    void vineGraph;
+    void cameraTransform;
+    void focusedTaskId;
+    void chatOpen;
+    if (vineGraph && vineId) {
+      debouncedSaveState();
+    }
+  });
+
+  // Save state eagerly on tab close
+  $effect(() => {
+    const handler = () => {
+      if (!vineGraph || !vineId) return;
+      try {
+        const vineText = serialize(vineGraph);
+        void saveAppState({
+          vineId,
+          vineText,
+          camera: { x: cameraTransform.x, y: cameraTransform.y, k: cameraTransform.k },
+          focusedTaskId,
+          chatOpen,
+          inputDraft: chatSession.inputDraft,
+          savedAt: Date.now(),
+        });
+      } catch {
+        // Best-effort on unload
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
   });
 
   let autoLoading = $state(false);
@@ -132,22 +197,45 @@
       return;
     }
 
+    // Run one-time migration from localStorage to IndexedDB
+    migrateFromLocalStorage();
+
     // Check for /bacchus/{vineId} route — try restoring from session store
     const match = /^\/bacchus\/([^/]+)$/.exec(window.location.pathname);
     if (match) {
       const routeVineId = decodeURIComponent(match[1]);
-      const saved = loadSession(routeVineId);
-      if (saved) {
-        // We have a saved session — restore chat history.
-        // We can't restore the graph itself (not stored), so show the
-        // landing page with chat context pre-loaded.
-        chatSession.displayMessages = [...saved.displayMessages];
-        chatSession.vineId = routeVineId;
-        chatSession.initOrchestrator(null);
-        chatSession.setChatMessages([...saved.chatMessages]);
-        chatOpen = true;
-      }
-      // If no saved session, fall through to landing screen
+      autoLoading = true;
+      migrateFromLocalStorage().then(async () => {
+        try {
+          // Try to restore the graph from IndexedDB
+          const appState = await loadLatestAppState();
+          if (appState && appState.vineId === routeVineId) {
+            try {
+              vineGraph = parse(appState.vineText);
+              vineId = routeVineId;
+              document.title = `${getRoot(vineGraph).shortName} — Bacchus`;
+              cameraTransform = appState.camera;
+              focusedTaskId = appState.focusedTaskId;
+              chatOpen = appState.chatOpen;
+              chatSession.inputDraft = appState.inputDraft;
+            } catch {
+              // Parse failed — fall through to show landing with chat
+            }
+          }
+          // Restore chat session regardless
+          const savedChat = await loadSession(routeVineId);
+          if (savedChat && savedChat.displayMessages.length > 0) {
+            chatSession.displayMessages = [...savedChat.displayMessages];
+            chatSession.vineId = routeVineId;
+            chatSession.initOrchestrator(vineGraph);
+            chatSession.setChatMessages([...savedChat.chatMessages]);
+            if (!vineGraph) chatOpen = true;
+          }
+        } finally {
+          autoLoading = false;
+        }
+      });
+      return;
     }
 
     // Handle browser back/forward navigation
@@ -157,7 +245,10 @@
         // Already on graphs view — check if we need to switch
         const popVineId = decodeURIComponent(popMatch[1]);
         if (popVineId !== vineId) {
-          // Different vine — try to restore. For now, just stay.
+          vineGraph = null;
+          vineId = null;
+          chatSession.vineId = null;
+          window.history.replaceState(null, '', '/');
         }
       } else if (!popMatch && vineGraph) {
         // Navigated back to landing
@@ -193,6 +284,10 @@
     vineGraph = updated;
     document.title = `${getRoot(updated).shortName} — Bacchus`;
   }
+
+  function handleCameraChange(t: { x: number; y: number; k: number }) {
+    cameraTransform = t;
+  }
 </script>
 
 <main>
@@ -202,6 +297,8 @@
       graphTitle={getRoot(vineGraph).shortName}
       onreset={handleReset}
       onupdate={handleGraphUpdate}
+      oncamerachange={handleCameraChange}
+      initialCamera={cameraTransform}
       {chatOpen}
       {chatSession}
       ontoggle={() => {

@@ -8,6 +8,7 @@ import {
   removeDependency,
   parse,
   serialize,
+  isValidStatus,
 } from '@bacchus/core';
 import type { ToolCall, ToolDefinition } from './types.js';
 
@@ -227,9 +228,12 @@ export function executeToolCall(
           };
         }
         const input = call.input;
+        if (typeof input.id !== 'string' || typeof input.shortName !== 'string') {
+          return { graph, result: 'Invalid input: "id" and "shortName" must be strings.', isError: true };
+        }
         const task: Task = {
-          id: input.id as string,
-          shortName: input.shortName as string,
+          id: input.id,
+          shortName: input.shortName,
           status:
             typeof input.status === 'string'
               ? (input.status as Status)
@@ -277,7 +281,10 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        const id = call.input.id as string;
+        if (typeof call.input.id !== 'string') {
+          return { graph, result: 'Invalid input: "id" must be a string.', isError: true };
+        }
+        const id = call.input.id;
         const updated = removeTask(graph, id);
         return {
           graph: updated,
@@ -290,8 +297,14 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        const id = call.input.id as string;
-        const status = call.input.status as Status;
+        if (typeof call.input.id !== 'string') {
+          return { graph, result: 'Invalid input: "id" must be a string.', isError: true };
+        }
+        if (typeof call.input.status !== 'string' || !isValidStatus(call.input.status)) {
+          return { graph, result: 'Invalid input: "status" must be a valid status.', isError: true };
+        }
+        const id = call.input.id;
+        const status = call.input.status;
         const updated = setStatus(graph, id, status);
         return {
           graph: updated,
@@ -304,7 +317,10 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        const id = call.input.id as string;
+        if (typeof call.input.id !== 'string') {
+          return { graph, result: 'Invalid input: "id" must be a string.', isError: true };
+        }
+        const id = call.input.id;
         const fields: {
           shortName?: string;
           description?: string;
@@ -328,8 +344,11 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        const taskId = call.input.taskId as string;
-        const depId = call.input.dependencyId as string;
+        if (typeof call.input.taskId !== 'string' || typeof call.input.dependencyId !== 'string') {
+          return { graph, result: 'Invalid input: "taskId" and "dependencyId" must be strings.', isError: true };
+        }
+        const taskId = call.input.taskId;
+        const depId = call.input.dependencyId;
         const updated = addDependency(graph, taskId, depId);
         return {
           graph: updated,
@@ -342,8 +361,11 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        const taskId = call.input.taskId as string;
-        const depId = call.input.dependencyId as string;
+        if (typeof call.input.taskId !== 'string' || typeof call.input.dependencyId !== 'string') {
+          return { graph, result: 'Invalid input: "taskId" and "dependencyId" must be strings.', isError: true };
+        }
+        const taskId = call.input.taskId;
+        const depId = call.input.dependencyId;
         const updated = removeDependency(graph, taskId, depId);
         return {
           graph: updated,
@@ -353,7 +375,10 @@ export function executeToolCall(
       }
 
       case 'replace_graph': {
-        const vineText = call.input.vineText as string;
+        if (typeof call.input.vineText !== 'string') {
+          return { graph, result: 'Invalid input: "vineText" must be a string.', isError: true };
+        }
+        const vineText = call.input.vineText;
         const newGraph = parse(vineText);
         return {
           graph: newGraph,
