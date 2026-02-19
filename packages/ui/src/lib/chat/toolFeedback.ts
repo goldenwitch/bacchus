@@ -40,6 +40,8 @@ export type ToolFeedbackDetail =
       readonly kind: 'replace_graph';
       readonly taskCount: number;
     }
+  | { readonly kind: 'add_attachment'; readonly taskId: string; readonly attachmentClass: string; readonly mimeType: string; readonly uri: string }
+  | { readonly kind: 'remove_attachment'; readonly taskId: string; readonly uri: string }
   | { readonly kind: 'unknown'; readonly toolName: string };
 
 // ---------------------------------------------------------------------------
@@ -131,6 +133,20 @@ export function buildToolFeedback(
       };
     }
 
+    case 'add_attachment': {
+      const { taskId, attachmentClass, mimeType, uri } = call.input as {
+        taskId: string;
+        attachmentClass: string;
+        mimeType: string;
+        uri: string;
+      };
+      return { kind: 'add_attachment', taskId, attachmentClass, mimeType, uri };
+    }
+    case 'remove_attachment': {
+      const { taskId, uri } = call.input as { taskId: string; uri: string };
+      return { kind: 'remove_attachment', taskId, uri };
+    }
+
     default:
       return { kind: 'unknown', toolName: call.name };
   }
@@ -151,6 +167,7 @@ const VALID_STATUSES: ReadonlySet<string> = new Set([
   'planning',
   'blocked',
   'started',
+  'reviewing',
 ]);
 
 function isValidStatus(value: unknown): value is Status {

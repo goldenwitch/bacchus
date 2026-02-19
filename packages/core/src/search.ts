@@ -111,13 +111,14 @@ export function getSummary(graph: VineGraph): GraphSummary {
     planning: 0,
     blocked: 0,
     started: 0,
+    reviewing: 0,
   };
 
   for (const task of graph.tasks.values()) {
     byStatus[task.status] += 1;
   }
 
-  const rootId = graph.order[graph.order.length - 1];
+  const rootId = graph.order[0];
   if (rootId === undefined) {
     throw new VineError('Cannot get summary: order is empty');
   }

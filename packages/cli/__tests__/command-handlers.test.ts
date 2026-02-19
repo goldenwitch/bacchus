@@ -12,20 +12,22 @@ import { Command } from 'commander';
 import { VineParseError, VineValidationError } from '@bacchus/core';
 
 const SAMPLE_VINE = `\
-[setup] Environment Setup (complete)
-Install dependencies and configure the build system.
-
-[auth] Authentication Module (started)
-Implement user login and session management.
--> setup
-
-[dashboard] Dashboard UI (notstarted)
-Build the main dashboard interface.
--> auth
-
+vine 1.0.0
+---
 [root] Web Application (planning)
 The full web application project.
 -> dashboard
+---
+[dashboard] Dashboard UI (notstarted)
+Build the main dashboard interface.
+-> auth
+---
+[auth] Authentication Module (started)
+Implement user login and session management.
+-> setup
+---
+[setup] Environment Setup (complete)
+Install dependencies and configure the build system.
 `;
 
 const INVALID_SYNTAX = `\

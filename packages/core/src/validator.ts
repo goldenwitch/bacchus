@@ -115,15 +115,15 @@ function checkNoCycles(graph: VineGraph): void {
 /**
  * 4. No islands — every task must be reachable from the root.
  *
- * The root is defined as the last id in `graph.order`.  We perform a BFS from
+ * The root is defined as the first id in `graph.order`.  We perform a BFS from
  * the root following **forward dependency edges** (root → root's deps → their
  * deps → …).  Because the root transitively depends on every task in a valid
  * graph, this traversal visits all tasks.  Any task not visited is an island —
  * it has no transitive dependency path connecting it to the root.
  */
 function checkNoIslands(graph: VineGraph): void {
-  // The root is the last element in graph.order.
-  const rootId = graph.order[graph.order.length - 1];
+  // The root is the first element in graph.order.
+  const rootId = graph.order[0];
   // rootId may be undefined per noUncheckedIndexedAccess, but the
   // at-least-one-task check guarantees order is non-empty at this point.
   if (rootId === undefined) {

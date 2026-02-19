@@ -14,15 +14,18 @@ describe('serialize', () => {
     expect(output).toBe(expected);
   });
 
-  it('field ordering: description before deps before decisions', () => {
+  it('field ordering: description before deps before decisions before attachments', () => {
     const input = [
-      '[leaf] Leaf Task (complete)',
-      '',
+      'vine 1.0.0',
+      '---',
       '[task-a] Task A (started)',
       'Some description text.',
       '-> leaf',
       '> Decision one.',
       '> Decision two.',
+      '@artifact text/html https://example.com/demo.html',
+      '---',
+      '[leaf] Leaf Task (complete)',
     ].join('\n');
 
     const graph = parse(input);
@@ -32,20 +35,29 @@ describe('serialize', () => {
     const descIdx = lines.indexOf('Some description text.');
     const depIdx = lines.indexOf('-> leaf');
     const decIdx = lines.indexOf('> Decision one.');
+    const attIdx = lines.indexOf('@artifact text/html https://example.com/demo.html');
 
     expect(descIdx).toBeGreaterThan(-1);
     expect(depIdx).toBeGreaterThan(descIdx);
     expect(decIdx).toBeGreaterThan(depIdx);
+    expect(attIdx).toBeGreaterThan(decIdx);
   });
 
-  it('separates blocks with a single blank line', () => {
+  it('separates blocks with delimiter line', () => {
     const graph = parse(VINE_EXAMPLE);
     const output = serialize(graph);
 
-    // Blocks are separated by exactly one blank line (\n\n between blocks).
-    expect(output).toContain('\n\n');
-    // No triple newlines (which would mean double blank lines).
-    expect(output).not.toContain('\n\n\n');
+    // Blocks separated by the delimiter (---), not blank lines
+    expect(output).toContain('\n---\n');
+  });
+
+  it('emits preamble with magic line and terminator', () => {
+    const graph = parse(VINE_EXAMPLE);
+    const output = serialize(graph);
+
+    expect(output.startsWith('vine 1.0.0\n')).toBe(true);
+    // Preamble includes title metadata
+    expect(output).toContain('title: Project Bacchus\n');
   });
 
   it('ends with trailing newline', () => {
@@ -53,20 +65,117 @@ describe('serialize', () => {
     const output = serialize(graph);
 
     expect(output.endsWith('\n')).toBe(true);
-    expect(output.endsWith('\n\n')).toBe(false);
+    // No trailing delimiter — last line ends the final task block
+    expect(output.endsWith('---\n')).toBe(false);
   });
 
   it('omits description line when empty', () => {
-    const input = '[root] Root Task (complete)';
+    const input = 'vine 1.0.0\n---\n[root] Root Task (complete)';
     const graph = parse(input);
     const output = serialize(graph);
 
-    // Should be just the header + trailing newline, no blank description line.
-    expect(output).toBe('[root] Root Task (complete)\n');
+    expect(output).toBe('vine 1.0.0\n---\n[root] Root Task (complete)\n');
+  });
+
+  it('sorts dependencies alphabetically', () => {
+    const input = [
+      'vine 1.0.0',
+      '---',
+      '[root] Root (started)',
+      '-> charlie',
+      '-> alpha',
+      '-> bravo',
+      '---',
+      '[alpha] Alpha (complete)',
+      '---',
+      '[bravo] Bravo (complete)',
+      '---',
+      '[charlie] Charlie (complete)',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+    const lines = output.split('\n');
+
+    const alphaIdx = lines.indexOf('-> alpha');
+    const bravoIdx = lines.indexOf('-> bravo');
+    const charlieIdx = lines.indexOf('-> charlie');
+
+    expect(alphaIdx).toBeGreaterThan(-1);
+    expect(bravoIdx).toBeGreaterThan(alphaIdx);
+    expect(charlieIdx).toBeGreaterThan(bravoIdx);
+  });
+
+  it('groups attachments by class: artifact → guidance → file', () => {
+    const input = [
+      'vine 1.0.0',
+      '---',
+      '[root] Root (complete)',
+      '@file image/png https://example.com/a.png',
+      '@artifact text/html https://example.com/b.html',
+      '@guidance text/markdown https://example.com/c.md',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+    const lines = output.split('\n');
+
+    const artifactIdx = lines.findIndex((l) => l.startsWith('@artifact'));
+    const guidanceIdx = lines.findIndex((l) => l.startsWith('@guidance'));
+    const fileIdx = lines.findIndex((l) => l.startsWith('@file'));
+
+    expect(artifactIdx).toBeGreaterThan(-1);
+    expect(guidanceIdx).toBeGreaterThan(artifactIdx);
+    expect(fileIdx).toBeGreaterThan(guidanceIdx);
+  });
+
+  it('emits multi-line descriptions as separate lines', () => {
+    const input = [
+      'vine 1.0.0',
+      '---',
+      '[root] Root (complete)',
+      'First line.',
+      '',
+      'Third line.',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+
+    expect(output).toContain('First line.\n\nThird line.');
+  });
+
+  it('emits custom delimiter in metadata and between blocks', () => {
+    const input = [
+      'vine 1.0.0',
+      'delimiter: ===',
+      '---',
+      '[root] Root (started)',
+      '-> child',
+      '===',
+      '[child] Child (complete)',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+
+    expect(output).toContain('delimiter: ===\n');
+    expect(output).toContain('\n===\n');
+  });
+
+  it('omits delimiter metadata when it is the default ---', () => {
+    const input = 'vine 1.0.0\n---\n[root] Root (complete)';
+    const graph = parse(input);
+    const output = serialize(graph);
+
+    expect(output).not.toContain('delimiter:');
   });
 
   it('throws VineError when order references a missing task', () => {
     const graph: VineGraph = {
+      version: '1.0.0',
+      title: undefined,
+      delimiter: '---',
       tasks: new Map(),
       order: ['ghost'],
     };

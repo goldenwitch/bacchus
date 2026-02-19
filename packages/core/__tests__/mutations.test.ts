@@ -17,21 +17,22 @@ import type { Task, VineGraph } from '../src/types.js';
 // ---------------------------------------------------------------------------
 
 const baseVine = [
-  '[leaf-a] Leaf A (complete)',
-  'A simple leaf task.',
-  '',
-  '[leaf-b] Leaf B (started)',
-  'Another leaf task.',
-  '',
+  'vine 1.0.0',
+  '---',
+  '[root] Root Project (started)',
+  'The root task.',
+  '-> middle',
+  '---',
   '[middle] Middle Task (planning)',
   'Depends on both leaves.',
   '-> leaf-a',
   '-> leaf-b',
-  '',
-  '[root] Root Project (started)',
-  'The root task.',
-  '-> middle',
-  '',
+  '---',
+  '[leaf-a] Leaf A (complete)',
+  'A simple leaf task.',
+  '---',
+  '[leaf-b] Leaf B (started)',
+  'Another leaf task.',
 ].join('\n');
 
 const baseGraph: VineGraph = parse(baseVine);
@@ -45,15 +46,38 @@ const baseGraph: VineGraph = parse(baseVine);
  * This does NOT run validate — it is only used to prepare input for addTask.
  */
 function patchRootDeps(graph: VineGraph, depId: string): VineGraph {
-  const rootId = graph.order[graph.order.length - 1];
-  const root = graph.tasks.get(rootId)!;
+  const rootId = graph.order[0];
+  const root = graph.tasks.get(rootId!)!;
   const updatedRoot: Task = {
     ...root,
     dependencies: [...root.dependencies, depId],
   };
   const newTasks = new Map(graph.tasks);
-  newTasks.set(rootId, updatedRoot);
-  return { tasks: newTasks, order: graph.order };
+  newTasks.set(rootId!, updatedRoot);
+  return { ...graph, tasks: newTasks };
+}
+
+/** Build the expected serialized output for the base graph (with optional overrides). */
+function baseOutput(): string {
+  return [
+    'vine 1.0.0',
+    '---',
+    '[root] Root Project (started)',
+    'The root task.',
+    '-> middle',
+    '---',
+    '[middle] Middle Task (planning)',
+    'Depends on both leaves.',
+    '-> leaf-a',
+    '-> leaf-b',
+    '---',
+    '[leaf-a] Leaf A (complete)',
+    'A simple leaf task.',
+    '---',
+    '[leaf-b] Leaf B (started)',
+    'Another leaf task.',
+    '',
+  ].join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -70,30 +94,33 @@ describe('addTask', () => {
       status: 'notstarted',
       dependencies: ['leaf-a'],
       decisions: [],
+      attachments: [],
     };
     const result = addTask(patched, newTask);
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
-        '[middle] Middle Task (planning)',
-        'Depends on both leaves.',
-        '-> leaf-a',
-        '-> leaf-b',
-        '',
-        '[new-task] New Task (notstarted)',
-        'Brand new.',
-        '-> leaf-a',
-        '',
+        'vine 1.0.0',
+        '---',
         '[root] Root Project (started)',
         'The root task.',
         '-> middle',
         '-> new-task',
+        '---',
+        '[middle] Middle Task (planning)',
+        'Depends on both leaves.',
+        '-> leaf-a',
+        '-> leaf-b',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
+        '---',
+        '[new-task] New Task (notstarted)',
+        'Brand new.',
+        '-> leaf-a',
         '',
       ].join('\n'),
     );
@@ -108,6 +135,7 @@ describe('addTask', () => {
       status: 'notstarted',
       dependencies: ['leaf-a'],
       decisions: [],
+      attachments: [],
     };
     const result = addTask(patched, newTask);
 
@@ -127,6 +155,7 @@ describe('addTask', () => {
       status: 'notstarted',
       dependencies: ['leaf-a'],
       decisions: [],
+      attachments: [],
     };
     addTask(patched, newTask);
 
@@ -142,6 +171,7 @@ describe('addTask', () => {
       status: 'notstarted',
       dependencies: [],
       decisions: [],
+      attachments: [],
     };
 
     expect(() => addTask(baseGraph, dup)).toThrow(VineError);
@@ -156,6 +186,7 @@ describe('addTask', () => {
       status: 'notstarted',
       dependencies: ['does-not-exist'],
       decisions: [],
+      attachments: [],
     };
 
     expect(() => addTask(patched, badTask)).toThrow(VineValidationError);
@@ -169,6 +200,7 @@ describe('addTask', () => {
       status: 'notstarted',
       dependencies: [],
       decisions: [],
+      attachments: [],
     };
 
     try {
@@ -190,16 +222,18 @@ describe('removeTask', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[middle] Middle Task (planning)',
-        'Depends on both leaves.',
-        '-> leaf-a',
-        '',
+        'vine 1.0.0',
+        '---',
         '[root] Root Project (started)',
         'The root task.',
         '-> middle',
+        '---',
+        '[middle] Middle Task (planning)',
+        'Depends on both leaves.',
+        '-> leaf-a',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
         '',
       ].join('\n'),
     );
@@ -210,16 +244,18 @@ describe('removeTask', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
-        '[middle] Middle Task (planning)',
-        'Depends on both leaves.',
-        '-> leaf-b',
-        '',
+        'vine 1.0.0',
+        '---',
         '[root] Root Project (started)',
         'The root task.',
         '-> middle',
+        '---',
+        '[middle] Middle Task (planning)',
+        'Depends on both leaves.',
+        '-> leaf-b',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -260,20 +296,22 @@ describe('setStatus', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (started)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (started)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -284,20 +322,22 @@ describe('setStatus', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (complete)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -308,20 +348,22 @@ describe('setStatus', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (blocked)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (blocked)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -332,20 +374,22 @@ describe('setStatus', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (notstarted)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (notstarted)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -356,20 +400,22 @@ describe('setStatus', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (planning)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (planning)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -397,20 +443,22 @@ describe('updateTask', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Alpha Leaf (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Alpha Leaf (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -423,20 +471,22 @@ describe('updateTask', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Updated description.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -449,22 +499,24 @@ describe('updateTask', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '> Use TypeScript',
-        '> Keep it simple',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '> Use TypeScript',
+        '> Keep it simple',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -479,21 +531,23 @@ describe('updateTask', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Beta (started)',
-        'New desc.',
-        '> Go fast',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Beta (started)',
+        'New desc.',
+        '> Go fast',
         '',
       ].join('\n'),
     );
@@ -509,6 +563,7 @@ describe('updateTask', () => {
     expect(updated.description).toBe(original.description);
     expect(updated.dependencies).toEqual(original.dependencies);
     expect(updated.decisions).toEqual(original.decisions);
+    expect(updated.attachments).toEqual(original.attachments);
   });
 
   it('does not mutate the original graph', () => {
@@ -535,21 +590,23 @@ describe('addDependency', () => {
 
     expect(serialize(result)).toBe(
       [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
+        'vine 1.0.0',
+        '---',
+        '[root] Root Project (started)',
+        'The root task.',
+        '-> leaf-a',
+        '-> middle',
+        '---',
         '[middle] Middle Task (planning)',
         'Depends on both leaves.',
         '-> leaf-a',
         '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
-        '-> leaf-a',
+        '---',
+        '[leaf-a] Leaf A (complete)',
+        'A simple leaf task.',
+        '---',
+        '[leaf-b] Leaf B (started)',
+        'Another leaf task.',
         '',
       ].join('\n'),
     );
@@ -609,25 +666,7 @@ describe('removeDependency', () => {
     const withExtra = addDependency(baseGraph, 'root', 'leaf-a');
     const result = removeDependency(withExtra, 'root', 'leaf-a');
 
-    expect(serialize(result)).toBe(
-      [
-        '[leaf-a] Leaf A (complete)',
-        'A simple leaf task.',
-        '',
-        '[leaf-b] Leaf B (started)',
-        'Another leaf task.',
-        '',
-        '[middle] Middle Task (planning)',
-        'Depends on both leaves.',
-        '-> leaf-a',
-        '-> leaf-b',
-        '',
-        '[root] Root Project (started)',
-        'The root task.',
-        '-> middle',
-        '',
-      ].join('\n'),
-    );
+    expect(serialize(result)).toBe(baseOutput());
   });
 
   it('removed dep no longer in dependencies array', () => {

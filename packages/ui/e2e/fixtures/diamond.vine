@@ -1,15 +1,17 @@
-[leaf] Leaf Task (complete)
-Shared dependency at the bottom of the diamond.
-
-[left] Left Branch (started)
-Left branch depends on leaf.
--> leaf
-
-[right] Right Branch (planning)
-Right branch depends on leaf.
--> leaf
-
+vine 1.0.0
+---
 [root] Diamond Root (notstarted)
 Root depends on both left and right branches.
 -> left
 -> right
+---
+[left] Left Branch (started)
+Left branch depends on leaf.
+-> leaf
+---
+[right] Right Branch (planning)
+Right branch depends on leaf.
+-> leaf
+---
+[leaf] Leaf Task (complete)
+Shared dependency at the bottom of the diamond.

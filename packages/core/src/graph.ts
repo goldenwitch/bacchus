@@ -10,13 +10,18 @@ export function getTask(graph: VineGraph, id: string): Task {
   return task;
 }
 
-/** Returns the root task (last in order). */
-export function getRoot(graph: VineGraph): Task {
-  const lastId = graph.order[graph.order.length - 1];
-  if (lastId === undefined) {
+/** Returns the id of the root task (first in order). */
+export function getRootId(graph: VineGraph): string {
+  const firstId = graph.order[0];
+  if (firstId === undefined) {
     throw new VineError('Cannot get root: order is empty');
   }
-  return getTask(graph, lastId);
+  return firstId;
+}
+
+/** Returns the root task (first in order). */
+export function getRoot(graph: VineGraph): Task {
+  return getTask(graph, getRootId(graph));
 }
 
 /** Returns direct dependencies of a task (resolved to Task objects). */

@@ -1,9 +1,11 @@
-[dep] Dependency Task (complete)
-A prerequisite task.
-
+vine 1.0.0
+---
 [root] Decision Root (started)
 Root task with multiple decisions recorded.
 > Use approach A for the backend.
 > Prefer library X over library Y.
 > Deploy to staging first.
 -> dep
+---
+[dep] Dependency Task (complete)
+A prerequisite task.

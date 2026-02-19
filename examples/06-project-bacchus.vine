@@ -1,56 +1,6 @@
-[vine-format] Define VINE Format (complete)
-Specify the .vine file format for describing task graphs.
-> Keep it line-oriented, no nesting.
-> Status keywords: complete, started, notstarted, planning, blocked.
-
-[core-parser] Build Core Parser (complete)
-Parse .vine text into a structured graph object.
--> vine-format
-
-[core-validator] Build Validator (complete)
-Check structural constraints — unique IDs, no cycles, valid refs.
--> vine-format
-
-[core-serializer] Build Serializer (complete)
-Convert a VineGraph back to normalized .vine text.
--> vine-format
-
-[core-queries] Graph Query API (complete)
-Helpers like getRoot, getDependencies, getAncestors.
--> core-parser
--> core-validator
-
-[ui-layout] Force-Directed Layout (started)
-Position nodes using d3-force simulation.
--> core-queries
-
-[ui-render] Graph Rendering (started)
-Draw nodes, edges, and status colors on a canvas.
--> ui-layout
-
-[ui-input] File & URL Input (complete)
-Drag-and-drop .vine files or paste a URL to load a graph.
--> core-parser
-
-[ui-sidebar] Sidebar Details Panel (started)
-Click a node to see its description, decisions, and dependencies.
--> ui-render
-
-[ui-sound] Sound Effects (planning)
-Optional audio feedback for interactions.
-> Keep sounds subtle; allow muting.
--> ui-render
-
-[examples] Example .vine Files (started)
-Curated samples to help new users explore the format.
--> vine-format
-
-[docs] Documentation (notstarted)
-README, format spec, and getting-started guide.
--> core-queries
--> ui-render
--> examples
-
+vine 1.0.0
+title: Project Bacchus
+---
 [root] Project Bacchus (started)
 Build a tool for visualizing task graphs as vines.
 -> vine-format
@@ -65,3 +15,60 @@ Build a tool for visualizing task graphs as vines.
 -> ui-sound
 -> examples
 -> docs
+---
+[docs] Documentation (notstarted)
+README, format spec, and getting-started guide.
+-> core-queries
+-> ui-render
+-> examples
+---
+[ui-sidebar] Sidebar Details Panel (started)
+Click a node to see its description, decisions, and dependencies.
+-> ui-render
+---
+[ui-sound] Sound Effects (planning)
+Optional audio feedback for interactions.
+> Keep sounds subtle; allow muting.
+-> ui-render
+---
+[ui-render] Graph Rendering (started)
+Draw nodes, edges, and status colors on a canvas.
+@artifact text/html https://example.com/ui-demo/index.html
+@guidance text/markdown https://example.com/ui-style-guide.md
+-> ui-layout
+---
+[ui-layout] Force-Directed Layout (started)
+Position nodes using d3-force simulation.
+-> core-queries
+---
+[ui-input] File & URL Input (complete)
+Drag-and-drop .vine files or paste a URL to load a graph.
+-> core-parser
+---
+[core-queries] Graph Query API (complete)
+Helpers like getRoot, getDependencies, getAncestors.
+-> core-parser
+-> core-validator
+---
+[examples] Example .vine Files (started)
+Curated samples to help new users explore the format.
+-> vine-format
+---
+[core-parser] Build Core Parser (complete)
+Parse .vine text into a structured graph object.
+@artifact application/zip https://example.com/vine-ts-0.1.0.tgz
+-> vine-format
+---
+[core-validator] Build Validator (complete)
+Check structural constraints — unique IDs, no cycles, valid refs.
+-> vine-format
+---
+[core-serializer] Build Serializer (complete)
+Convert a VineGraph back to normalized .vine text.
+-> vine-format
+---
+[vine-format] Define VINE Format (complete)
+Specify the .vine file format for describing task graphs.
+> Keep it line-oriented, no nesting.
+> Status keywords: complete, started, notstarted, planning, blocked.
+@file application/pdf https://example.com/vine-spec-draft.pdf

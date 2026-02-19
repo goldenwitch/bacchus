@@ -1,22 +1,24 @@
-[f] Step F (complete)
-The deepest task in the chain.
-
-[e] Step E (complete)
-Depends on step F.
--> f
-
-[d] Step D (started)
-Depends on step E.
--> e
-
-[c] Step C (planning)
-Depends on step D.
--> d
-
-[b] Step B (notstarted)
-Depends on step C.
--> c
-
+vine 1.0.0
+---
 [a] Step A (blocked)
 Root task depends on step B.
 -> b
+---
+[b] Step B (notstarted)
+Depends on step C.
+-> c
+---
+[c] Step C (planning)
+Depends on step D.
+-> d
+---
+[d] Step D (started)
+Depends on step E.
+-> e
+---
+[e] Step E (complete)
+Depends on step F.
+-> f
+---
+[f] Step F (complete)
+The deepest task in the chain.

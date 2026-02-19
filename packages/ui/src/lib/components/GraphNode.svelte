@@ -454,5 +454,38 @@
           dominant-baseline="central">{line.text}</tspan
         >{/each}</text
     >
+
+    <!-- Attachment badge — bottom-right of node -->
+    {#if node.task.attachments?.length}
+      <g class="attachment-badge">
+        <circle
+          cx={radius * 0.65}
+          cy={radius * 0.65}
+          r={radius * 0.28}
+          fill="rgba(30,30,30,0.85)"
+          stroke="rgba(255,255,255,0.3)"
+          stroke-width="1"
+        />
+        <text
+          x={radius * 0.65}
+          y={radius * 0.65}
+          text-anchor="middle"
+          dominant-baseline="central"
+          font-size={radius * 0.28}
+          style="pointer-events:none"
+        >📎</text>
+        {#if node.task.attachments.length > 1}
+          <text
+            x={radius * 0.65 + radius * 0.18}
+            y={radius * 0.65 + radius * 0.18}
+            text-anchor="middle"
+            dominant-baseline="central"
+            font-size={radius * 0.18}
+            fill="white"
+            style="pointer-events:none"
+          >{node.task.attachments.length}</text>
+        {/if}
+      </g>
+    {/if}
   </g>
 </g>

@@ -23,6 +23,7 @@ The following features are currently available:
 - **Documentation Refresh** (v0.1.0): Updated stale design docs (PhysicsPanel.md params, VINE-TS.md mutations/search modules, docs README index), added end-user guide with annotated screenshots
 - **Luxury Color Palette**: Replaced the default Tailwind-derived status colors with a polychromatic luxury palette — emerald (complete), antique gold (started), polished silver (not started), royal purple (planning), and crimson (blocked). Sapphire for focus rings, gold for root-task highlight. Light theme uses a seafoam background instead of white.
 - **UX Fixes**: Volume slider now drops down below the toolbar instead of popping up off-screen. Resolved all ESLint strict-mode errors (10 lint issues across anthropic.ts, MarkdownMessage.svelte, Toolbar.svelte, and persistence.ts).
+- **VINE v1.0.0 UX & Documentation** (v1.0.0): Added `reviewing` status (amber/orange palette), attachment rendering (sidebar details + node badges), root-first convention in layout/graph view/chat tools, full chat tool support for attachment CRUD, all example files rewritten to v1.0.0 format, comprehensive documentation refresh.
 
 ## Exploring
 

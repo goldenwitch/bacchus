@@ -24,8 +24,8 @@ export { computeNodeRadius };
 export function computeDepths(graph: VineGraph): Map<string, number> {
   const depths = new Map<string, number>();
 
-  // Root is the last task in file order.
-  const rootId = graph.order[graph.order.length - 1];
+  // Root is the first task in file order (VINE v1.0.0 convention).
+  const rootId = graph.order[0];
   if (rootId === undefined) return depths;
 
   depths.set(rootId, 0);

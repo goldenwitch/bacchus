@@ -1,11 +1,13 @@
-[c] Task C (complete)
-Task C depends on task A, forming a cycle.
--> a
-
-[b] Task B (started)
-Task B depends on task C.
--> c
-
+vine 1.0.0
+---
 [a] Task A (notstarted)
 Task A depends on task B.
 -> b
+---
+[b] Task B (started)
+Task B depends on task C.
+-> c
+---
+[c] Task C (complete)
+Task C depends on task A, forming a cycle.
+-> a

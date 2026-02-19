@@ -3,7 +3,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml/badge.svg)](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml)
 
-A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE.md).
+A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE/v1.0.0.md).
 
 **Live at [grapesofgraph.com](https://grapesofgraph.com)** — automatically deployed on every push to `main`.
 
@@ -14,13 +14,14 @@ A tool for parsing, validating, querying, and visualizing task graphs in the [VI
 ```ts
 import { parse, getRoot, getDependencies, serialize } from '@bacchus/core';
 
-const graph = parse(`
-[leaf] Leaf Task (complete)
-A simple leaf task.
-
+const graph = parse(`vine 1.0.0
+---
 [root] Main Project (started)
 The root task depends on leaf.
 -> leaf
+---
+[leaf] Leaf Task (complete)
+A simple leaf task.
 `);
 
 const root = getRoot(graph); // Task { id: 'root', status: 'started', … }
@@ -36,7 +37,7 @@ const text = serialize(graph); // normalized .vine output
 | `serialize(graph)`                       | Convert a `VineGraph` back to `.vine` text.       |
 | `validate(graph)`                        | Check structural constraints (throws on failure). |
 | `getTask(graph, id)`                     | Look up a task by id.                             |
-| `getRoot(graph)`                         | Get the root task (last in file order).           |
+| `getRoot(graph)`                         | Get the root task (first in file order).          |
 | `getDependencies(graph, id)`             | Direct dependencies of a task.                    |
 | `getDependants(graph, id)`               | Tasks that depend on the given task.              |
 | `getAncestors(graph, id)`                | All transitive dependencies (BFS).                |
@@ -65,13 +66,28 @@ Both extend `VineError`.
 
 ### VINE Format
 
-- **Header**: `[id] Short Name (status)` — status is one of `complete`, `notstarted`, `planning`, `blocked`, `started`
-- **Description**: plain lines (no prefix) — joined with spaces
+The `.vine` format is versioned. Every v1.0.0+ file begins with a magic line (`vine 1.0.0`) so parsers can dispatch to the correct version-specific reader.
+
+- **Preamble**: `vine 1.0.0`, optional `title:` and `delimiter:` metadata, terminated by `---`
+- **Header**: `[id] Short Name (status)` — status is one of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`
+- **Description**: plain lines (no prefix) — newlines preserved
 - **Dependency**: `-> other-id`
 - **Decision**: `> Note text`
-- **Root**: the last task in the file
+- **Attachments**: `@artifact <mime> <uri>`, `@guidance <mime> <uri>`, `@file <mime> <uri>`
+- **Root**: the **first** task in the file
+- **Block delimiter**: `---` (configurable via metadata)
 
-See [VINE.md](docs/VINE.md) for the full specification.
+See the [VINE v1.0.0 spec](docs/VINE/v1.0.0.md) for the full specification and ABNF grammar.
+
+### VINE Versioning
+
+The `.vine` format follows [SemVer](https://semver.org/). The magic line (`vine <version>`) is always the first line, allowing parsers to read a single line before choosing a version-specific code path. Files without a valid magic line are rejected.
+
+Each version has its own spec document under [`docs/VINE/`](docs/VINE/). When minting a new format version:
+
+1. Create a new spec document (e.g., `docs/VINE/v2.0.0.md`) and update the [index](docs/VINE.md)
+2. Follow the [VINE Versioning Guide](docs/VINE-VERSIONING.md) — a phased checklist covering types, parser, serializer, validator, CLI, UI, examples, tests, and docs
+3. Validate with `yarn typecheck && yarn lint && yarn test`
 
 ---
 
@@ -147,7 +163,7 @@ The [`examples/`](examples/) folder contains `.vine` files you can drag into the
 | `01-single-task.vine`     | One node, no edges — the simplest graph.     |
 | `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).  |
 | `03-diamond.vine`         | Two parallel branches merging into one task. |
-| `04-all-statuses.vine`    | Every status keyword in action.              |
+| `04-all-statuses.vine`    | Every status keyword (all 6) in action.  |
 | `05-decisions.vine`       | Tasks annotated with `>` decision notes.     |
 | `06-project-bacchus.vine` | A realistic 13-task project graph.           |
 

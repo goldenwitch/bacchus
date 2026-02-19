@@ -10,38 +10,40 @@ import {
 } from '../src/search.js';
 
 const VINE_TEXT = [
-  '[design] Design System (complete)',
-  'Create the visual design language.',
-  '',
-  '[api] Build API (started)',
-  'Implement REST endpoints.',
-  '-> design',
-  '',
-  '[frontend] Build Frontend (started)',
-  'Build the React app.',
-  '-> design',
-  '-> api',
-  '',
-  '[docs] Write Docs (notstarted)',
-  'Documentation for the project.',
-  '-> api',
-  '',
-  '[deploy] Deploy Pipeline (blocked)',
-  'Set up CI/CD and deployment.',
-  '-> frontend',
-  '-> docs',
-  '',
+  'vine 1.0.0',
+  '---',
   '[root] Launch Product (planning)',
   'Ship the product to users.',
   '-> deploy',
+  '---',
+  '[deploy] Deploy Pipeline (blocked)',
+  'Set up CI/CD and deployment.',
+  '-> docs',
+  '-> frontend',
+  '---',
+  '[frontend] Build Frontend (started)',
+  'Build the React app.',
+  '-> api',
+  '-> design',
+  '---',
+  '[docs] Write Docs (notstarted)',
+  'Documentation for the project.',
+  '-> api',
+  '---',
+  '[api] Build API (started)',
+  'Implement REST endpoints.',
+  '-> design',
+  '---',
+  '[design] Design System (complete)',
+  'Create the visual design language.',
 ].join('\n');
 
 const graph = parse(VINE_TEXT);
 
 describe('filterByStatus', () => {
-  it("returns [api, frontend] for 'started'", () => {
+  it("returns [frontend, api] for 'started'", () => {
     const result = filterByStatus(graph, 'started');
-    expect(result.map((t) => t.id)).toEqual(['api', 'frontend']);
+    expect(result.map((t) => t.id)).toEqual(['frontend', 'api']);
   });
 
   it("returns [design] for 'complete'", () => {
@@ -59,7 +61,7 @@ describe('filterByStatus', () => {
     // by checking a status that exists but has zero matches after we know the graph
     // 'blocked' has deploy, 'planning' has root — they exist, so instead filter
     // a freshly-parsed single-task graph for a missing status
-    const small = parse('[only] Only Task (complete)\nDone.');
+    const small = parse('vine 1.0.0\n---\n[only] Only Task (complete)\nDone.');
     const result = filterByStatus(small, 'blocked');
     expect(result).toEqual([]);
   });
@@ -75,9 +77,9 @@ describe('filterByStatus', () => {
 });
 
 describe('searchTasks', () => {
-  it("'build' matches api and frontend (case insensitive)", () => {
+  it("'build' matches frontend and api (case insensitive)", () => {
     const result = searchTasks(graph, 'build');
-    expect(result.map((t) => t.id)).toEqual(['api', 'frontend']);
+    expect(result.map((t) => t.id)).toEqual(['frontend', 'api']);
   });
 
   it("'REST' matches api by description", () => {
@@ -88,12 +90,12 @@ describe('searchTasks', () => {
   it('empty string returns all tasks', () => {
     const result = searchTasks(graph, '');
     expect(result.map((t) => t.id)).toEqual([
-      'design',
-      'api',
+      'root',
+      'deploy',
       'frontend',
       'docs',
-      'deploy',
-      'root',
+      'api',
+      'design',
     ]);
   });
 
@@ -114,11 +116,11 @@ describe('getDescendants', () => {
   it("descendants of 'design' includes all other tasks", () => {
     const result = getDescendants(graph, 'design');
     expect(result.map((t) => t.id)).toEqual([
-      'api',
+      'root',
+      'deploy',
       'frontend',
       'docs',
-      'deploy',
-      'root',
+      'api',
     ]);
   });
 
@@ -127,13 +129,13 @@ describe('getDescendants', () => {
     expect(result).toEqual([]);
   });
 
-  it("descendants of 'api' = [frontend, docs, deploy, root]", () => {
+  it("descendants of 'api' = [root, deploy, frontend, docs]", () => {
     const result = getDescendants(graph, 'api');
     expect(result.map((t) => t.id)).toEqual([
+      'root',
+      'deploy',
       'frontend',
       'docs',
-      'deploy',
-      'root',
     ]);
   });
 
@@ -150,6 +152,7 @@ describe('getSummary', () => {
     expect(summary.byStatus).toEqual({
       complete: 1,
       started: 2,
+      reviewing: 0,
       notstarted: 1,
       blocked: 1,
       planning: 1,

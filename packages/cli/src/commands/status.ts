@@ -9,7 +9,7 @@ export const statusCommand = new Command('status')
   .argument('<id>', 'task id')
   .argument(
     '<status>',
-    `new status (${['complete', 'started', 'planning', 'notstarted', 'blocked'].join(', ')})`,
+    `new status (${['complete', 'started', 'reviewing', 'planning', 'notstarted', 'blocked'].join(', ')})`,
   )
   .action((file: string, id: string, statusArg: string) => {
     if (!isValidStatus(statusArg)) {

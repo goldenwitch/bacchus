@@ -19,7 +19,7 @@ import type { Task, VineGraph } from '@bacchus/core';
  * `addTask()` validation won't reject the new task as an island.
  */
 function patchRootDeps(graph: VineGraph, newDepId: string): VineGraph {
-  const rootId = graph.order[graph.order.length - 1];
+  const rootId = graph.order[0];
   if (rootId === undefined) throw new Error('empty graph');
   const root = graph.tasks.get(rootId);
   if (!root) throw new Error('root task missing');
@@ -29,24 +29,26 @@ function patchRootDeps(graph: VineGraph, newDepId: string): VineGraph {
   };
   const tasks = new Map(graph.tasks);
   tasks.set(rootId, patched);
-  return { tasks, order: graph.order };
+  return { ...graph, tasks };
 }
 
 const SAMPLE_VINE = `\
-[setup] Environment Setup (complete)
-Install dependencies and configure the build system.
-
-[auth] Authentication Module (started)
-Implement user login and session management.
--> setup
-
-[dashboard] Dashboard UI (notstarted)
-Build the main dashboard interface.
--> auth
-
+vine 1.0.0
+---
 [root] Web Application (planning)
 The full web application project.
 -> dashboard
+---
+[dashboard] Dashboard UI (notstarted)
+Build the main dashboard interface.
+-> auth
+---
+[auth] Authentication Module (started)
+Implement user login and session management.
+-> setup
+---
+[setup] Environment Setup (complete)
+Install dependencies and configure the build system.
 `;
 
 const INVALID_SYNTAX_VINE = `\
@@ -55,10 +57,12 @@ Just random text.
 `;
 
 const CYCLE_VINE = `\
+vine 1.0.0
+---
 [a] Task A (notstarted)
 Description A.
 -> b
-
+---
 [b] Task B (notstarted)
 Description B.
 -> a
@@ -86,7 +90,7 @@ describe('readGraph', () => {
     const graph = readGraph(filePath);
 
     expect(graph.tasks.size).toBe(4);
-    expect(graph.order).toEqual(['setup', 'auth', 'dashboard', 'root']);
+    expect(graph.order).toEqual(['root', 'dashboard', 'auth', 'setup']);
 
     const setup = graph.tasks.get('setup');
     expect(setup).toBeDefined();
@@ -172,6 +176,7 @@ describe('round-trip: add task', () => {
       status: 'notstarted',
       dependencies: ['auth'],
       decisions: [],
+      attachments: [],
     };
 
     graph = patchRootDeps(graph, 'api');
@@ -202,6 +207,7 @@ describe('round-trip: add task', () => {
       status: 'notstarted',
       dependencies: ['setup'],
       decisions: [],
+      attachments: [],
     };
 
     const patched = patchRootDeps(original, 'testing');
@@ -296,6 +302,7 @@ describe('integration with search', () => {
     expect(summary.byStatus.notstarted).toBe(1);
     expect(summary.byStatus.planning).toBe(1);
     expect(summary.byStatus.blocked).toBe(0);
+    expect(summary.byStatus.reviewing).toBe(0);
     expect(summary.leafCount).toBe(1);
   });
 

@@ -3,12 +3,14 @@ import { parse } from '@bacchus/core';
 import { buildToolFeedback } from '../../src/lib/chat/toolFeedback.js';
 import type { ToolCall } from '../../src/lib/chat/types.js';
 
-const SAMPLE_VINE = `[leaf] Leaf Task (complete)
-A leaf.
-
+const SAMPLE_VINE = `vine 1.0.0
+---
 [root] Root Task (started)
 The root.
 -> leaf
+---
+[leaf] Leaf Task (complete)
+A leaf.
 `;
 
 function call(name: string, input: Record<string, unknown> = {}): ToolCall {

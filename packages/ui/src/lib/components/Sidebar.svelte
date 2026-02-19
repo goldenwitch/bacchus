@@ -105,6 +105,26 @@
       </div>
     {/if}
 
+    {#if task.attachments?.length}
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading">Attachments</h3>
+        <ul class="attachment-list">
+          {#each task.attachments as att (att.uri)}
+            <li class="attachment-item">
+              <span class="attachment-icon">
+                {att.class === 'artifact' ? '📦' : att.class === 'guidance' ? '📘' : '📄'}
+              </span>
+              <span class="attachment-class">{att.class.charAt(0).toUpperCase() + att.class.slice(1)}</span>
+              <span class="attachment-mime">{att.mime}</span>
+              <a class="attachment-uri" href={att.uri} target="_blank" rel="noopener noreferrer">
+                {att.uri.length > 45 ? '…' + att.uri.slice(-42) : att.uri}
+              </a>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
     <div class="dep-section">
       <h3 class="section-heading">Depends on</h3>
       {#if deps.length === 0}
@@ -300,6 +320,70 @@
     color: var(--accent-green);
     font-size: 0.7rem;
     font-weight: 600;
+  }
+
+  .sidebar-section {
+    margin-top: 8px;
+  }
+
+  .sidebar-heading {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-dimmed);
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 6px;
+    margin: 16px 0 8px 0;
+  }
+
+  .attachment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .attachment-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+  }
+
+  .attachment-icon {
+    font-size: 1rem;
+  }
+
+  .attachment-class {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .attachment-mime {
+    font-family: monospace;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+
+  .attachment-uri {
+    font-size: 0.75rem;
+    color: var(--color-accent, #60a5fa);
+    text-decoration: none;
+    word-break: break-all;
+  }
+
+  .attachment-uri:hover {
+    text-decoration: underline;
   }
 
   /* Mobile bottom-sheet layout */

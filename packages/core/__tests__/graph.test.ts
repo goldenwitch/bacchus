@@ -29,7 +29,7 @@ describe('getTask', () => {
 });
 
 describe('getRoot', () => {
-  it('returns the last task', () => {
+  it('returns the first task', () => {
     const root = getRoot(graph);
 
     expect(root.id).toBe('root');
@@ -42,7 +42,7 @@ describe('getDependencies', () => {
     const deps = getDependencies(graph, 'graph-cli');
     const depIds = deps.map((t) => t.id);
 
-    expect(depIds).toEqual(['vine-ts', 'build-ui']);
+    expect(depIds).toEqual(['build-ui', 'vine-ts']);
   });
 
   it('returns empty for leaf task', () => {
