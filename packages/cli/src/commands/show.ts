@@ -8,6 +8,7 @@ import type { Status } from '@bacchus/core';
 const STATUS_LABELS: Readonly<Record<Status, string>> = {
   complete: 'Complete',
   started: 'Started',
+  reviewing: 'Reviewing',
   notstarted: 'Not Started',
   planning: 'Planning',
   blocked: 'Blocked',

@@ -12,8 +12,9 @@ import { validate } from './validator.js';
 function buildGraph(
   tasks: ReadonlyMap<string, Task>,
   order: readonly string[],
+  source: VineGraph,
 ): VineGraph {
-  return { tasks, order };
+  return { version: source.version, title: source.title, delimiter: source.delimiter, tasks, order };
 }
 
 /**
@@ -35,8 +36,8 @@ function replaceTask(
 /**
  * Add a new task to the graph.
  *
- * The task is inserted **before** the root (second-to-last in order) so that
- * the root task always remains the last element.
+ * The task is appended **after** all existing tasks in order so that
+ * the root task always remains the first element.
  *
  * @throws {VineError} if a task with the same id already exists.
  */
@@ -46,18 +47,9 @@ export function addTask(graph: VineGraph, task: Task): VineGraph {
   }
 
   const newTasks = replaceTask(graph.tasks, task);
+  const newOrder = [...graph.order, task.id];
 
-  let newOrder: readonly string[];
-  if (graph.order.length === 0) {
-    newOrder = [task.id];
-  } else {
-    // Insert before the last element (root).
-    const arr = [...graph.order];
-    arr.splice(arr.length - 1, 0, task.id);
-    newOrder = arr;
-  }
-
-  const next = buildGraph(newTasks, newOrder);
+  const next = buildGraph(newTasks, newOrder, graph);
   validate(next);
   return next;
 }
@@ -68,14 +60,14 @@ export function addTask(graph: VineGraph, task: Task): VineGraph {
  * Also strips the removed id from every other task's `dependencies` array.
  *
  * @throws {VineError} if the task does not exist.
- * @throws {VineError} if trying to remove the root task (last in order).
+ * @throws {VineError} if trying to remove the root task (first in order).
  */
 export function removeTask(graph: VineGraph, id: string): VineGraph {
   if (!graph.tasks.has(id)) {
     throw new VineError(`Task not found: ${id}`);
   }
 
-  const rootId = graph.order[graph.order.length - 1];
+  const rootId = graph.order[0];
   if (id === rootId) {
     throw new VineError('Cannot remove the root task.');
   }
@@ -96,7 +88,7 @@ export function removeTask(graph: VineGraph, id: string): VineGraph {
 
   const newOrder = graph.order.filter((tid) => tid !== id);
 
-  const next = buildGraph(newTasks, newOrder);
+  const next = buildGraph(newTasks, newOrder, graph);
   validate(next);
   return next;
 }
@@ -117,7 +109,7 @@ export function setStatus(
   }
 
   const updated: Task = { ...task, status };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order);
+  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
   validate(next);
   return next;
 }
@@ -132,7 +124,7 @@ export function setStatus(
 export function updateTask(
   graph: VineGraph,
   id: string,
-  fields: Partial<Pick<Task, 'shortName' | 'description' | 'decisions'>>,
+  fields: Partial<Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>>,
 ): VineGraph {
   const task = graph.tasks.get(id);
   if (!task) {
@@ -140,7 +132,7 @@ export function updateTask(
   }
 
   const updated: Task = { ...task, ...fields };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order);
+  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
   validate(next);
   return next;
 }
@@ -171,7 +163,7 @@ export function addDependency(
     ...task,
     dependencies: [...task.dependencies, depId],
   };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order);
+  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
   validate(next);
   return next;
 }
@@ -202,7 +194,7 @@ export function removeDependency(
     ...task,
     dependencies: task.dependencies.filter((d) => d !== depId),
   };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order);
+  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
   validate(next);
   return next;
 }

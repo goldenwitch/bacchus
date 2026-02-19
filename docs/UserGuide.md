@@ -31,9 +31,9 @@ After loading a `.vine` file (via drop, URL, or demo), Bacchus transitions to th
 
 **What you see:**
 
-- **Task nodes** — colored circles representing each task. Colors reflect status: 💎 complete (emerald), 🪙 started (gold), 🪩 planning (purple), ⚪ not started (silver), 🔴 blocked (crimson)
+- **Task nodes** — colored circles representing each task. Colors reflect status: 💎 complete (emerald), 🪙 started (gold), 🔍 reviewing (amber), 🪩 planning (purple), ⚪ not started (silver), 🔴 blocked (crimson)
 - **Dependency edges** — curved arrows showing task relationships (arrow points from dependent → dependency)
-- **Status emoji badges** — small emoji icons on each node (🌿 complete, 🔨 started, 📋 not started, etc.)
+- **Status emoji badges** — small emoji icons on each node (🌿 complete, 🔨 started, � reviewing, �📋 not started, etc.)
 - **Strata lines** — dashed horizontal lines grouping tasks by depth level
 - **Toolbar** (top-right) — home, zoom controls, fit-to-view, SVG export, chat toggle, theme, and sound
 
@@ -58,6 +58,7 @@ Click any node to **focus** it. The camera smoothly zooms in, framing the select
 - **Description** — full task description
 - **Depends on** — clickable list of upstream dependencies
 - **Depended on by** — clickable list of downstream dependants
+- **Attachments** — if the task has attachments, a section showing each attachment with its class icon (📎 artifact, 📖 guidance, 📁 file), MIME type badge, and clickable URI link
 - **Task ID** — with a copy-to-clipboard button
 
 > **Breadcrumbs:** Landing → Load graph → Click node → Sidebar opens

@@ -1,6 +1,6 @@
 # BacchusUI — Design Specification
 
-Version: 0.1
+Version: 1.0.0
 Package: `@bacchus/ui` (`packages/ui/`)
 
 ## Overview
@@ -21,7 +21,7 @@ The package ships **two things**:
 | Rendering surface   | **SVG**                         | Svelte transitions on graph elements; CSS styling; easy hit-testing.     |
 | Sound approach      | **Web Audio API (synthesis)**   | Synthesized tones — zero audio assets, infinitely tweakable.             |
 | Reactive state      | **`$state` / `$derived` runes** | Svelte 5 runes replace stores — no external state library needed.        |
-| Root identification | **Last task in file order**     | Matches `@bacchus/core` `getRoot()` convention.                          |
+| Root identification | **First task in file order**    | Matches `@bacchus/core` `getRoot()` convention.                          |
 | Input modes         | **File picker + URL parameter** | Local files via drag-and-drop; shareable links via `?file=<url>`.        |
 | Packaging           | **Component + App**             | `<GraphView>` is embeddable; the app is a thin shell for standalone use. |
 
@@ -37,6 +37,7 @@ Each `Status` maps to a color, emoji, and CSS class. The palette uses luxury mat
 | ------------ | ----------- | ----- | -------------------- | -------------------------------------- |
 | `complete`   | `#50C878`   | 🌿    | `.status-complete`   | Finished — rich emerald, lush            |
 | `started`    | `#E2B93B`   | 🔨    | `.status-started`    | In progress — antique gold, active       |
+| `reviewing`  | `#E8A317`   | 🔍    | `.status-reviewing`  | Awaiting review — warm amber             |
 | `notstarted` | `#A0A8B4`   | 📋    | `.status-notstarted` | Ready — polished silver, waiting         |
 | `planning`   | `#9B72CF`   | 💭    | `.status-planning`   | Thinking — royal purple, imaginative     |
 | `blocked`    | `#DC3F52`   | 🚧    | `.status-blocked`    | Stuck — crimson, needs attention         |
@@ -252,7 +253,8 @@ A slide-out panel displaying full details of the focused task.
 2. **Heading**: `task.shortName` as an `<h2>`.
 3. **Description**: `task.description` rendered as paragraph text.
 4. **Decisions**: if `task.decisions.length > 0`, a labeled section with each decision as a bullet point.
-5. **Watermark**: `task.id` as a faint label in the bottom-right corner.
+5. **Attachments**: if `task.attachments.length > 0`, a labeled section showing each attachment with a class icon (📎 artifact, 📖 guidance, 📁 file), MIME type badge, and clickable URI link.
+6. **Watermark**: `task.id` as a faint label in the bottom-right corner.
 
 ---
 
@@ -391,6 +393,10 @@ Errors include a "Dismiss" button that returns to the clean landing screen.
 ║  ├── GraphNode.svelte (×N)     # one per task
 ║  ├── Sidebar.svelte            # shown when focusedTaskId is set
 ║  ├── Tooltip.svelte            # shown on node hover
+║  ├── Legend.svelte             # status color legend
+║  ├── PhysicsPanel.svelte       # force-directed layout tuning
+║  ├── GlassAccordion.svelte     # shared accordion + glassmorphism
+║  ├── ChatPanel.svelte          # AI chat planner panel
 ║  └── Toolbar.svelte            # mute toggle, overlays
 ║      └── MuteButton.svelte     # sound toggle
 ╚══════════════════════════════════════════════════════════════
@@ -418,7 +424,7 @@ See each component’s dedicated section for full behavior. Summary of ownership
 
 ## Data Flow
 
-All graph data originates from `@bacchus/core` and flows one-way into the UI. The graph is **read-only** — no mutations.
+All graph data originates from `@bacchus/core` and flows one-way into the UI. The graph is **mutable via the Chat Planner** — the AI uses structured tool calls (`addTask`, `updateTask`, `setStatus`, `addDependency`, `removeDependency`, `addAttachment`, `removeAttachment`, etc.) to apply validated mutations, which produce new `VineGraph` instances that replace the current state.
 
 ### State
 
@@ -468,8 +474,16 @@ packages/ui/
 │       ├── sound.ts                      # Web Audio API SoundEngine
 │       ├── layout.ts                     # D3-force simulation setup
 │       ├── camera.ts                     # Viewport transform + focus framing
+│       ├── physics.ts                    # Physics parameter tuning
+│       ├── persistence.ts                # localStorage session persistence
 │       ├── status.ts                     # Status → color / emoji / CSS mappings
-│       └── types.ts                      # UI-specific types (SimNode, SimLink, etc.)
+│       ├── types.ts                      # UI-specific types (SimNode, SimLink, etc.)
+│       └── chat/                         # Chat planner module
+│           ├── anthropic.ts              # Anthropic API client (streaming + tools)
+│           ├── orchestrator.ts           # Tool-use orchestration loop
+│           ├── session.ts                # Chat session state management
+│           ├── sessionStore.ts           # localStorage session buffer
+│           └── tools.ts                  # Graph mutation tools (incl. add_attachment, remove_attachment)
 └── __tests__/
     ├── layout.test.ts
     ├── camera.test.ts
@@ -509,6 +523,9 @@ Dev dependencies inherit from the workspace root (`typescript`, `vitest`, `eslin
 | `camera.test.ts` | Bounding box computation for focus framing; scale/translate fits all nodes; edge case: root focused (no dependants).                              |
 | `sound.test.ts`  | `AudioContext` mock — `playPop`/`playHover`/`playWhoosh` create correct oscillator configs; mute state persists; graceful no-op when unavailable. |
 | `status.test.ts` | Every `Status` value has a mapped color, emoji, and CSS class; no missing entries; exhaustive switch coverage.                                    |
+| `physics.test.ts` | Physics parameter defaults, clamping, and reset behavior.                                                                                        |
+| `persistence.test.ts` | Session round-trip to localStorage, circular buffer eviction, per-graph keying.                                                              |
+| `chat/*.test.ts` | Anthropic API client, orchestrator tool loop, session state, session store, tool feedback rendering.                                              |
 
 ### Visual / E2E Testing
 

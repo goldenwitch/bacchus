@@ -9,6 +9,7 @@
   --color-notstarted: #A0A8B4;
   --color-planning: #9B72CF;
   --color-blocked: #DC3F52;
+  --color-reviewing: #E8A317;
 
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
@@ -37,6 +38,7 @@
   --color-notstarted-dark: #4A5058;
   --color-planning-dark: #5E3D8F;
   --color-blocked-dark: #8F2233;
+  --color-reviewing-dark: #A06B0F;
 
   /* UI chrome */
   --color-root-ring: #D4A017;
@@ -119,6 +121,7 @@
   --color-notstarted-dark: #B0B8C0;
   --color-planning-dark: #9B72CF;
   --color-blocked-dark: #DC3F52;
+  --color-reviewing-dark: #E8A317;
 
   /* UI chrome */
   --color-root-ring: #B8860B;
@@ -227,6 +230,11 @@ textarea {
 .status-blocked {
   fill: var(--color-blocked);
   stroke: var(--color-blocked);
+}
+
+.status-reviewing {
+  fill: var(--color-reviewing);
+  stroke: var(--color-reviewing);
 }
 
 /* ── Keyframe Animations ──────────────────────────────── */

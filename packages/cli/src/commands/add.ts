@@ -47,6 +47,7 @@ export const addCommand = new Command('add')
           status: opts.status,
           dependencies: opts.dependsOn ?? [],
           decisions: [],
+          attachments: [],
         };
 
         let graph = readGraph(file);

@@ -191,7 +191,7 @@ test.describe('Chat panel (mocked)', () => {
     await seedApiKey(page);
 
     const vineText =
-      '[design] Design (notstarted)\nDesign the system.\n\n[build] Build (notstarted)\nBuild it.\n-> design\n\n[ship] Ship (notstarted)\nShip it.\n-> build';
+      'vine 1.0.0\n---\n[ship] Ship (notstarted)\nShip it.\n-> build\n---\n[build] Build (notstarted)\nBuild it.\n-> design\n---\n[design] Design (notstarted)\nDesign the system.';
 
     const round1: ContentBlock[] = [
       {
@@ -230,7 +230,7 @@ test.describe('Chat panel (mocked)', () => {
     await seedApiKey(page);
 
     const vineText =
-      '[design] Design (notstarted)\nDesign the system.\n\n[build] Build (notstarted)\nBuild it.\n-> design\n\n[ship] Ship (notstarted)\nShip it.\n-> build';
+      'vine 1.0.0\n---\n[ship] Ship (notstarted)\nShip it.\n-> build\n---\n[build] Build (notstarted)\nBuild it.\n-> design\n---\n[design] Design (notstarted)\nDesign the system.';
 
     // Conversation 1 (from landing): replace_graph + text summary
     const round1: ContentBlock[] = [

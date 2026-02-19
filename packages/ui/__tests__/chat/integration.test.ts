@@ -31,12 +31,14 @@ async function collectEvents(
 }
 
 describe.skipIf(!API_KEY)('Chat integration (live Anthropic API)', () => {
-  const SEED_VINE = `[build] Build Project (started)
-Compile the source code.
-
+  const SEED_VINE = `vine 1.0.0
+---
 [root] Release (notstarted)
 Ship the release.
 -> build
+---
+[build] Build Project (started)
+Compile the source code.
 `;
 
   it(

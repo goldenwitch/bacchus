@@ -9,19 +9,20 @@ import {
 import type { SimNode, SimLink } from '../src/lib/types.js';
 import { getDefaults } from '../src/lib/physics.js';
 
-const VINE_SOURCE = `
-[leaf-a] Leaf A (complete)
-Task A
-
-[leaf-b] Leaf B (started)
-Task B
-
+const VINE_SOURCE = `vine 1.0.0
+---
+[root] Root (started)
+-> mid
+---
 [mid] Middle (notstarted)
 -> leaf-a
 -> leaf-b
-
-[root] Root (started)
--> mid
+---
+[leaf-a] Leaf A (complete)
+Task A
+---
+[leaf-b] Leaf B (started)
+Task B
 `;
 
 const graph = parse(VINE_SOURCE);
@@ -54,17 +55,18 @@ describe('computeDepths', () => {
   it('uses maximum hops for diamond graphs', () => {
     // root → a, root → b, b → a
     // min-hop: a=1, b=1   max-hop: a=2, b=1
-    const diamond = parse(`
-[a] Task A (notstarted)
-Do A
-
-[b] Task B (notstarted)
--> a
-Do B
-
+    const diamond = parse(`vine 1.0.0
+---
 [root] Root (started)
 -> a
 -> b
+---
+[b] Task B (notstarted)
+-> a
+Do B
+---
+[a] Task A (notstarted)
+Do A
 `);
     const depths = computeDepths(diamond);
     expect(depths.get('root')).toBe(0);

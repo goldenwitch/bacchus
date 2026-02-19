@@ -15,13 +15,14 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: 'started',
     dependencies: [],
     decisions: [],
+    attachments: [],
     ...overrides,
   };
 }
 
 function makeGraph(tasks: Task[] = []): VineGraph {
   const map = new Map(tasks.map((t) => [t.id, t]));
-  return { tasks: map, order: tasks.map((t) => t.id) };
+  return { tasks: map, order: tasks.map((t) => t.id), version: '1.0.0', title: undefined, delimiter: '---' };
 }
 
 // ---------------------------------------------------------------------------

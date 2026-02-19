@@ -11,6 +11,7 @@ import {
 const ALL_STATUSES: Status[] = [
   'complete',
   'started',
+  'reviewing',
   'notstarted',
   'planning',
   'blocked',
@@ -23,8 +24,8 @@ describe('STATUS_MAP', () => {
     }
   });
 
-  it('has exactly 5 entries (no extras, no missing)', () => {
-    expect(Object.keys(STATUS_MAP)).toHaveLength(5);
+  it('has exactly 6 entries (no extras, no missing)', () => {
+    expect(Object.keys(STATUS_MAP)).toHaveLength(6);
     expect(new Set(Object.keys(STATUS_MAP))).toEqual(new Set(ALL_STATUSES));
   });
 
@@ -43,6 +44,7 @@ describe('STATUS_MAP', () => {
   it('colors match the spec values', () => {
     expect(STATUS_MAP.complete.color).toBe('#50C878');
     expect(STATUS_MAP.started.color).toBe('#E2B93B');
+    expect(STATUS_MAP.reviewing.color).toBe('#E8A317');
     expect(STATUS_MAP.notstarted.color).toBe('#A0A8B4');
     expect(STATUS_MAP.planning.color).toBe('#9B72CF');
     expect(STATUS_MAP.blocked.color).toBe('#DC3F52');

@@ -44,6 +44,15 @@ export const STATUS_MAP: Record<Status, StatusInfo> = {
     cssColorVar: '--color-started',
     cssDarkColorVar: '--color-started-dark',
   },
+  reviewing: {
+    color: '#E8A317',
+    darkColor: '#A06B0F',
+    emoji: '🔍',
+    cssClass: 'status-reviewing',
+    label: 'Reviewing',
+    cssColorVar: '--color-reviewing',
+    cssDarkColorVar: '--color-reviewing-dark',
+  },
   notstarted: {
     color: '#A0A8B4',
     darkColor: '#4A5058',

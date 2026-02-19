@@ -1,10 +1,12 @@
-[short-name] AB (complete)
-A task with a very short name.
-
-[long-name] This Is A Very Long Task Name!! (started)
-A task with a very long name.
--> short-name
-
+vine 1.0.0
+---
 [root] Root Task (notstarted)
 Root depends on the long-name task.
 -> long-name
+---
+[long-name] This Is A Very Long Task Name!! (started)
+A task with a very long name.
+-> short-name
+---
+[short-name] AB (complete)
+A task with a very short name.

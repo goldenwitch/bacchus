@@ -4,25 +4,29 @@ import type { VineGraph } from '@bacchus/core';
 import type { ToolCall } from '../../src/lib/chat/types.js';
 import { GRAPH_TOOLS, executeToolCall } from '../../src/lib/chat/tools.js';
 
-const SAMPLE_VINE = `[leaf] Leaf Task (complete)
-A simple leaf task.
-
+const SAMPLE_VINE = `vine 1.0.0
+---
 [root] Root Task (started)
 The root task.
 -> leaf
+---
+[leaf] Leaf Task (complete)
+A simple leaf task.
 `;
 
-const MULTI_DEP_VINE = `[leaf] Leaf (complete)
-A leaf task.
-
-[mid] Middle (started)
-Depends on leaf.
--> leaf
-
+const MULTI_DEP_VINE = `vine 1.0.0
+---
 [root] Root Task (started)
 The root task.
 -> mid
 -> leaf
+---
+[mid] Middle (started)
+Depends on leaf.
+-> leaf
+---
+[leaf] Leaf (complete)
+A leaf task.
 `;
 
 function sampleGraph() {
@@ -131,7 +135,7 @@ describe('executeToolCall', () => {
     });
 
     it('adds a task to an empty graph without root patching', () => {
-      const emptyGraph: VineGraph = { tasks: new Map(), order: [] };
+      const emptyGraph: VineGraph = { tasks: new Map(), order: [], version: '1.0.0', title: undefined, delimiter: '---' };
       const result = executeToolCall(
         emptyGraph,
         call('add_task', { id: 'solo', shortName: 'Solo Task' }),
@@ -302,7 +306,9 @@ describe('executeToolCall', () => {
 
   describe('replace_graph', () => {
     it('creates a new graph from VINE text', () => {
-      const vineText = `[only] Only Task (planning)
+      const vineText = `vine 1.0.0
+---
+[only] Only Task (planning)
 Just one task.
 `;
       const result = executeToolCall(null, call('replace_graph', { vineText }));

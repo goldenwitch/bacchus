@@ -16,7 +16,7 @@ import {
 function makeAppState(vineId: string, overrides?: Partial<PersistedAppState>): PersistedAppState {
   return {
     vineId,
-    vineText: `[root] Root (notstarted)\nA task.\n`,
+    vineText: `vine 1.0.0\n---\n[root] Root (notstarted)\nA task.\n`,
     camera: { x: 0, y: 0, k: 1 },
     focusedTaskId: null,
     chatOpen: false,

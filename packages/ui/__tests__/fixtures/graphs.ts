@@ -8,6 +8,7 @@ function makeTask(overrides: Partial<Task> & { id: string }): Task {
     status: overrides.status ?? 'notstarted',
     dependencies: overrides.dependencies ?? [],
     decisions: overrides.decisions ?? [],
+    attachments: overrides.attachments ?? [],
   };
 }
 
@@ -36,10 +37,10 @@ export function simpleGraph(): VineGraph {
       dependencies: ['mid'],
     }),
   );
-  return { tasks, order: ['leaf', 'mid', 'root'] };
+  return { tasks, order: ['root', 'mid', 'leaf'], version: '1.0.0', title: undefined, delimiter: '---' };
 }
 
-/** 5 tasks, one per status: task-e → task-d → task-c → task-b → task-a */
+/** 6 tasks, one per status */
 export function fiveStatusGraph(): VineGraph {
   const tasks = new Map<string, Task>();
   tasks.set(
@@ -79,10 +80,19 @@ export function fiveStatusGraph(): VineGraph {
       id: 'task-a',
       shortName: 'Task A',
       status: 'blocked',
-      dependencies: ['task-b'],
+      dependencies: ['task-b', 'review'],
     }),
   );
-  return { tasks, order: ['task-e', 'task-d', 'task-c', 'task-b', 'task-a'] };
+  tasks.set(
+    'review',
+    makeTask({
+      id: 'review',
+      shortName: 'Under Review',
+      status: 'reviewing',
+      dependencies: ['task-e'],
+    }),
+  );
+  return { tasks, order: ['task-a', 'task-b', 'review', 'task-c', 'task-d', 'task-e'], version: '1.0.0', title: undefined, delimiter: '---' };
 }
 
 /** 1 standalone task */
@@ -92,7 +102,7 @@ export function singleTaskGraph(): VineGraph {
     'only',
     makeTask({ id: 'only', shortName: 'Single Task', status: 'complete' }),
   );
-  return { tasks, order: ['only'] };
+  return { tasks, order: ['only'], version: '1.0.0', title: undefined, delimiter: '---' };
 }
 
 /** 4 tasks in a diamond: leaf → left + right → root */
@@ -129,7 +139,7 @@ export function diamondGraph(): VineGraph {
       dependencies: ['left', 'right'],
     }),
   );
-  return { tasks, order: ['leaf', 'left', 'right', 'root'] };
+  return { tasks, order: ['root', 'left', 'right', 'leaf'], version: '1.0.0', title: undefined, delimiter: '---' };
 }
 
 /** 2 tasks with decisions on root */
@@ -153,7 +163,7 @@ export function decisionsGraph(): VineGraph {
       ],
     }),
   );
-  return { tasks, order: ['dep', 'root'] };
+  return { tasks, order: ['root', 'dep'], version: '1.0.0', title: undefined, delimiter: '---' };
 }
 
 /** Tasks with 2-char and 30-char names */
@@ -181,5 +191,5 @@ export function longNamesGraph(): VineGraph {
       dependencies: ['long-name'],
     }),
   );
-  return { tasks, order: ['short-name', 'long-name', 'root'] };
+  return { tasks, order: ['root', 'long-name', 'short-name'], version: '1.0.0', title: undefined, delimiter: '---' };
 }

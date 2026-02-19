@@ -80,7 +80,7 @@ Adds a new task to a `.vine` file. **Modifies the file in-place.**
 | ----------------------- | -------- | ----------------------------------------------------------------------------------------- |
 | `--id <id>`             | Yes      | Unique task identifier.                                                                   |
 | `--name <name>`         | Yes      | Short task name.                                                                          |
-| `--status <status>`     | No       | One of `complete`, `started`, `planning`, `notstarted`, `blocked`. Default: `notstarted`. |
+| `--status <status>`     | No       | One of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`. Default: `notstarted`. |
 | `--description <text>`  | No       | Task description text.                                                                    |
 | `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                                              |
 
@@ -96,7 +96,7 @@ yarn dlx tsx packages/cli/src/cli.ts add examples/03-diamond.vine \
 
 Updates a task's status. **Modifies the file in-place.**
 
-Valid statuses: `complete`, `started`, `planning`, `notstarted`, `blocked`.
+Valid statuses: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`.
 
 ```powershell
 yarn dlx tsx packages/cli/src/cli.ts status examples/03-diamond.vine left complete
@@ -122,3 +122,4 @@ Both extend `VineError` and print a human-readable message to stderr.
 - The `add` and `status` commands parse the file, apply the mutation, re-serialize, and write back. The output is normalized `.vine` text—formatting may change slightly.
 - Task IDs must be unique within a file. Attempting to add a duplicate ID will fail with a validation error.
 - Dependency IDs passed to `--depends-on` must reference tasks that already exist in the file.
+- Attachments (`@artifact`, `@guidance`, `@file` lines) are fully supported in the `.vine` format and are preserved during `add` and `status` mutations, but there is currently no CLI command for adding or managing attachments directly. Use the Chat Planner UI or edit the file manually.

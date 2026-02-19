@@ -1,19 +1,26 @@
-[done] Completed Step (complete)
-This task is fully finished.
-
-[wip] Work In Progress (started)
-Actively being worked on right now.
--> done
-
-[planned] Planned Step (notstarted)
-Ready to start once the previous step finishes.
--> wip
-
+vine 1.0.0
+title: All Statuses
+---
+[stuck] Blocked Step (blocked)
+Waiting on an external dependency to unblock.
+-> review
+-> thinking
+---
+[review] Under Review (reviewing)
+Waiting for peer feedback before proceeding.
+-> planned
+---
 [thinking] Still Planning (planning)
 Requirements are being gathered — not ready to build yet.
 -> wip
-
-[stuck] Blocked Step (blocked)
-Waiting on an external dependency to unblock.
--> planned
--> thinking
+---
+[planned] Planned Step (notstarted)
+Ready to start once the previous step finishes.
+-> wip
+---
+[wip] Work In Progress (started)
+Actively being worked on right now.
+-> done
+---
+[done] Completed Step (complete)
+This task is fully finished.

@@ -6,6 +6,9 @@ import { VINE_EXAMPLE } from './fixtures/vine-example.js';
 
 function graphToPlain(graph: VineGraph) {
   return {
+    version: graph.version,
+    title: graph.title,
+    delimiter: graph.delimiter,
     order: [...graph.order],
     tasks: Object.fromEntries(
       [...graph.tasks.entries()].map(([id, task]) => [
@@ -14,6 +17,7 @@ function graphToPlain(graph: VineGraph) {
           ...task,
           dependencies: [...task.dependencies],
           decisions: [...task.decisions],
+          attachments: [...task.attachments],
         },
       ]),
     ),
@@ -30,7 +34,7 @@ describe('round-trip', () => {
   });
 
   it('round-trips a minimal single-task graph', () => {
-    const input = '[root] Root Task (complete)\n';
+    const input = 'vine 1.0.0\n---\n[root] Root Task (complete)\n';
     const graph1 = parse(input);
     const serialized = serialize(graph1);
     const graph2 = parse(serialized);

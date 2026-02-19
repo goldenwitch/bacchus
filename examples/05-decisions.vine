@@ -1,18 +1,21 @@
-[prototype] Build Prototype (complete)
-Quick spike to validate the idea.
-> Use Svelte instead of React for lighter bundle size.
-> Target WebGL for rendering — revisit if perf is fine with SVG.
-
-[feedback] Collect Feedback (complete)
-Share the prototype and gather input from stakeholders.
--> prototype
-
+vine 1.0.0
+title: Decisions
+---
+[launch] Public Launch (notstarted)
+Ship the first public version.
+-> iterate
+---
 [iterate] Iterate on Design (started)
 Refine the approach based on feedback.
 > Stakeholders prefer dark mode by default.
 > Defer mobile support to v2.
 -> feedback
-
-[launch] Public Launch (notstarted)
-Ship the first public version.
--> iterate
+---
+[feedback] Collect Feedback (complete)
+Share the prototype and gather input from stakeholders.
+-> prototype
+---
+[prototype] Build Prototype (complete)
+Quick spike to validate the idea.
+> Use Svelte instead of React for lighter bundle size.
+> Target WebGL for rendering — revisit if perf is fine with SVG.

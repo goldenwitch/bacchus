@@ -1,18 +1,25 @@
-[task-e] Task E (complete)
-Complete task at the bottom of the chain.
-
-[task-d] Task D (started)
-Started task depends on task-e.
--> task-e
-
-[task-c] Task C (notstarted)
-Not-started task depends on task-d.
--> task-d
-
+vine 1.0.0
+---
+[task-a] Task A (blocked)
+Blocked root task depends on task-b and review.
+-> task-b
+-> review
+---
 [task-b] Task B (planning)
 Planning task depends on task-c.
 -> task-c
-
-[task-a] Task A (blocked)
-Blocked root task depends on task-b.
--> task-b
+---
+[review] Under Review (reviewing)
+Reviewing task depends on task-e.
+-> task-e
+---
+[task-c] Task C (notstarted)
+Not-started task depends on task-d.
+-> task-d
+---
+[task-d] Task D (started)
+Started task depends on task-e.
+-> task-e
+---
+[task-e] Task E (complete)
+Complete task at the bottom of the chain.

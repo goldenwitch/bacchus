@@ -654,7 +654,7 @@
           {node}
           focused={node.id === focusedTaskId}
           dimmed={focusedTaskId !== null && !connectedIds.has(node.id)}
-          isRoot={node.id === graph.order[graph.order.length - 1]}
+          isRoot={node.id === graph.order[0]}
           visible={visibleNodeSet === null || visibleNodeSet.has(node.id)}
           onfocus={(id) => {
             focusedTaskId = id;

@@ -1,3 +1,5 @@
-[only] Hello World (complete)
-A single standalone task with no dependencies.
-The simplest possible VINE graph.
+vine 1.0.0
+title: Single Task
+---
+[only] The Only Task (complete)
+This is the simplest possible graph — a single task with no dependencies.

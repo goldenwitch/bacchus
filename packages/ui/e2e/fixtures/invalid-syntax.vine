@@ -1,2 +1,4 @@
+vine 1.0.0
+---
 [bad-header Malformed Task (complete)
 This header is missing the closing bracket on the id.

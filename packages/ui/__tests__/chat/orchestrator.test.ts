@@ -9,12 +9,14 @@ import type {
 import { ChatOrchestrator } from '../../src/lib/chat/orchestrator.js';
 import type { OrchestratorEvent } from '../../src/lib/chat/orchestrator.js';
 
-const SAMPLE_VINE = `[leaf] Leaf Task (complete)
-A leaf.
-
+const SAMPLE_VINE = `vine 1.0.0
+---
 [root] Root Task (started)
 The root.
 -> leaf
+---
+[leaf] Leaf Task (complete)
+A leaf.
 `;
 
 /**

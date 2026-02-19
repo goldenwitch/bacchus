@@ -23,21 +23,24 @@
   } = $props();
   let error: string | null = $state(null);
 
-  const DIAMOND_EXAMPLE = `[schema] Design Database Schema (complete)
-Define tables, indexes, and constraints.
-
-[api] Build REST API (started)
-Implement CRUD endpoints on top of the schema.
--> schema
-
-[ui] Build Frontend (started)
-Create the user-facing interface against the schema contract.
--> schema
-
+  const DIAMOND_EXAMPLE = `vine 1.0.0
+title: Diamond Example
+---
 [integration] Integration Testing (notstarted)
 End-to-end tests verifying the API and UI work together.
 -> api
 -> ui
+---
+[api] Build REST API (started)
+Implement CRUD endpoints on top of the schema.
+-> schema
+---
+[ui] Build Frontend (started)
+Create the user-facing interface against the schema contract.
+-> schema
+---
+[schema] Design Database Schema (complete)
+Define tables, indexes, and constraints.
 `;
 
   function handleTryExample() {
