@@ -239,7 +239,11 @@ function parseBlock(block: RawBlock): Task {
     throw new VineParseError('Empty block — no header found', block.startLine);
   }
 
-  const headerLine = block.lines[headerIndex]!.trim();
+  const rawHeader = block.lines[headerIndex];
+  if (rawHeader === undefined) {
+    throw new VineParseError('Empty block — no header found', block.startLine);
+  }
+  const headerLine = rawHeader.trim();
   const headerMatch = HEADER_RE.exec(headerLine);
 
   if (!headerMatch) {
