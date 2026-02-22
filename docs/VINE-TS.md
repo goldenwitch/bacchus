@@ -1,6 +1,6 @@
 # VINE TypeScript Library — Design Specification
 
-Version: 1.0.0
+Version: 1.1.0
 Package: `@bacchus/core` (`packages/core/`)
 
 ## Overview
@@ -47,10 +47,11 @@ interface Task {
   readonly id: string;
   readonly shortName: string;
   readonly description: string;
-  readonly status: Status;
+  readonly status: Status | undefined;
   readonly dependencies: readonly string[];
   readonly decisions: readonly string[];
   readonly attachments: readonly Attachment[];
+  readonly vine: string | undefined;
 }
 ```
 
@@ -60,11 +61,32 @@ interface Task {
 interface VineGraph {
   readonly tasks: ReadonlyMap<string, Task>;
   readonly order: readonly string[]; // task ids in file order; first element is always root
-  readonly version: string;           // e.g. '1.0.0'
+  readonly version: string;           // e.g. '1.1.0'
   readonly title: string | undefined; // from preamble title: metadata
   readonly delimiter: string;          // block delimiter, default '---'
+  readonly prefix: string | undefined; // controls ID namespacing during expansion
 }
 ```
+
+**Field notes (v1.1.0):**
+
+- `status` — `Status | undefined`. For concrete tasks this is one of the six status keywords. For **reference nodes** (`ref` lines), `status` is `undefined`.
+- `vine` — `string | undefined`. For reference nodes this is the URI pointing to the child `.vine` file. For concrete tasks, `vine` is `undefined`.
+- `id` — now supports slash-separated segments (e.g. `ds/components`) to accommodate prefixed IDs from expansion.
+
+### `GraphSummary`
+
+```ts
+interface GraphSummary {
+  readonly total: number;
+  readonly byStatus: Record<Status, number>;
+  readonly rootId: string;
+  readonly rootName: string;
+  readonly leafCount: number;
+}
+```
+
+`getSummary(graph)` returns a `GraphSummary` with aggregate stats. All six status keys are present in `byStatus` (initialized to 0).
 
 ---
 
@@ -129,15 +151,18 @@ Parses a `.vine` string into a validated `VineGraph`. Throws `VineParseError` on
 
 ### Algorithm
 
-1. **Magic line detection**: The first line must be `vine <version>` (e.g. `vine 1.0.0`). Extract the version string. Throw `VineParseError` if the magic line is missing or malformed.
-2. **Preamble parsing**: Lines between the magic line and the first `---` delimiter are preamble metadata. Parse `key: value` pairs (e.g. `title: My Project`, `delimiter: ===`). The `---` terminator is consumed.
+1. **Magic line detection**: The first line must be `vine <version>` (e.g. `vine 1.1.0`). Extract the version string. Throw `VineParseError` if the magic line is missing or malformed.
+2. **Preamble parsing**: Lines between the magic line and the first `---` delimiter are preamble metadata. Parse `key: value` pairs (e.g. `title: My Project`, `delimiter: ===`, `prefix: ds`). The `---` terminator is consumed. The `prefix` metadata is stored on `VineGraph.prefix`.
 3. **Block splitting**: Split the remaining text on the delimiter (default `---`). Trim whitespace, discard empty blocks.
 4. **For each block**:
-   a. The first line is the **header**. Extract `id`, `shortName`, and `status` via the spec regex:
-   ```
-   ^\[([a-zA-Z0-9-]+)\]\s+(.+?)\s+\((complete|started|reviewing|planning|notstarted|blocked)\)$
-   ```
-   Throw `VineParseError` if the header doesn't match.
+   a. The first line is either a **task header** or a **reference node header**.
+      - **Task header**: `[id] Short Name (status)` — extract `id`, `shortName`, and `status` via the spec regex:
+        ```
+        ^\[([a-zA-Z0-9/-]+)\]\s+(.+?)\s+\((complete|started|reviewing|planning|notstarted|blocked)\)$
+        ```
+      - **Reference node header** (v1.1.0): `ref [id] Name (URI)` — extract `id`, `shortName`, and `vine` URI. The task's `status` is set to `undefined`.
+      - IDs may contain slash-separated segments (e.g. `ds/components`).
+   Throw `VineParseError` if neither pattern matches.
    b. Classify remaining **body lines** by prefix:
    - `-> ` → dependency (trim prefix, value is target task id)
    - `> ` → decision (trim prefix, rest is text)
@@ -149,7 +174,7 @@ Parses a `.vine` string into a validated `VineGraph`. Throws `VineParseError` on
 5. **Build** a `Task` per block (including `attachments` array). Collect into a `Map<string, Task>` keyed by id.
    - On duplicate id insertion, throw `VineParseError`.
 6. **Preserve** insertion order as the `order` array.
-7. **Build `VineGraph`** with `version`, `title`, `delimiter` from the preamble.
+7. **Build `VineGraph`** with `version`, `title`, `delimiter`, and `prefix` from the preamble.
 8. **Validate** by calling `validate()` — parser always returns a valid graph or throws.
 
 ### Edge Cases
@@ -251,6 +276,42 @@ function getAncestors(graph: VineGraph, id: string): Task[];
 
 ---
 
+## Reference Node Helpers — `src/expansion.ts`
+
+### `isVineRef`
+
+```ts
+function isVineRef(task: Task): boolean;
+```
+
+Returns `true` if the task is a **reference node** — i.e. it has a non-`undefined` `vine` field (and `status` is `undefined`). Use this to distinguish concrete tasks from `ref` placeholders.
+
+### `expandVineRef`
+
+```ts
+function expandVineRef(
+  parentGraph: VineGraph,
+  refNodeId: string,
+  childGraph: VineGraph,
+): VineGraph;
+```
+
+Expands a reference node by inlining all tasks from a child graph into the parent graph. Returns a new `VineGraph`.
+
+**Behavior:**
+
+1. **Child root replaces the ref node** — the child graph's root task takes the ref node's position in `order`. It inherits the ref node's location in the parent graph.
+2. **ID prefixing** — all non-root child task IDs are prefixed as `prefix/originalId`, where `prefix` comes from the child graph's `prefix` metadata (defaults to `refNodeId` if `prefix` is `undefined`).
+3. **Dependency merging** — dependencies are merged (union, deduplicated). The child root inherits the ref node's incoming dependants.
+4. **Decision merging** — the child root's decisions are appended after the ref node's decisions.
+5. **Validation** — throws `VineError` if:
+   - `refNodeId` does not exist in the parent graph
+   - The node at `refNodeId` is not a reference node (`isVineRef` returns false)
+   - The child graph is empty (no tasks)
+   - An ID collision occurs between prefixed child IDs and existing parent IDs
+
+---
+
 ## Public API — `src/index.ts`
 
 Single barrel export re-exporting the public surface:
@@ -275,6 +336,10 @@ export {
   getDependencies,
   getDependants,
 } from './graph.js';
+
+// Reference Node Helpers
+export { isVineRef } from './expansion.js';
+export { expandVineRef } from './expansion.js';
 
 // Mutations
 export {

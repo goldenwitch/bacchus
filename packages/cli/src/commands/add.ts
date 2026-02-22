@@ -31,9 +31,9 @@ export const addCommand = new Command('add')
         return;
       }
 
-      if (!/^[a-z0-9-]+$/i.test(opts.id)) {
+      if (!/^[a-z0-9-]+(?:\/[a-z0-9-]+)*$/i.test(opts.id)) {
         console.error(
-          'Invalid task id: must contain only letters, digits, and hyphens.',
+          'Invalid task id: must contain only letters, digits, hyphens, and slashes.',
         );
         process.exitCode = 1;
         return;
@@ -48,6 +48,7 @@ export const addCommand = new Command('add')
           dependencies: opts.dependsOn ?? [],
           decisions: [],
           attachments: [],
+          vine: undefined,
         };
 
         let graph = readGraph(file);

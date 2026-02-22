@@ -431,6 +431,20 @@ describe('setStatus', () => {
   it('throws VineError for nonexistent task', () => {
     expect(() => setStatus(baseGraph, 'nope', 'started')).toThrow(VineError);
   });
+
+  it('throws VineError when setting status on a ref node', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      'ref [ext] External (./other.vine)',
+    ].join('\n');
+    const refGraph = parse(refVine);
+
+    expect(() => setStatus(refGraph, 'ext', 'complete')).toThrow(VineError);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -577,6 +591,37 @@ describe('updateTask', () => {
     expect(() => updateTask(baseGraph, 'ghost', { shortName: 'X' })).toThrow(
       VineError,
     );
+  });
+
+  it('throws VineError when adding attachments to a ref node', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      'ref [ext] External (./other.vine)',
+    ].join('\n');
+    const refGraph = parse(refVine);
+
+    expect(() => updateTask(refGraph, 'ext', {
+      attachments: [{ class: 'artifact', mime: 'text/plain', uri: 'file.txt' }],
+    })).toThrow(VineError);
+  });
+
+  it('allows updating description on a ref node', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      'ref [ext] External (./other.vine)',
+    ].join('\n');
+    const refGraph = parse(refVine);
+
+    const updated = updateTask(refGraph, 'ext', { description: 'Updated ref desc.' });
+    expect(updated.tasks.get('ext')!.description).toBe('Updated ref desc.');
   });
 });
 

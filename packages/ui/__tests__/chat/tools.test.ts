@@ -48,6 +48,10 @@ describe('GRAPH_TOOLS', () => {
     expect(names).toContain('add_dependency');
     expect(names).toContain('remove_dependency');
     expect(names).toContain('replace_graph');
+    expect(names).toContain('add_ref');
+    expect(names).toContain('expand_ref');
+    expect(names).toContain('add_attachment');
+    expect(names).toContain('remove_attachment');
   });
 
   it('each tool has name, description, and inputSchema', () => {
@@ -324,6 +328,275 @@ Just one task.
       );
       expect(result.isError).toBe(true);
       expect(result.result).toContain('Error');
+    });
+  });
+
+  describe('add_ref', () => {
+    const REF_VINE = `vine 1.1.0
+---
+[root] Root Task (started)
+The root task.
+-> leaf
+---
+[leaf] Leaf Task (complete)
+A simple leaf task.
+`;
+
+    function refGraph() {
+      return parse(REF_VINE);
+    }
+
+    it('adds a ref node to the graph', () => {
+      const graph = refGraph();
+      const result = executeToolCall(
+        graph,
+        call('add_ref', {
+          id: 'child-ref',
+          shortName: 'Child Ref',
+          uri: './child.vine',
+        }),
+      );
+      expect(result.isError).toBe(false);
+      expect(result.graph?.tasks.has('child-ref')).toBe(true);
+      const task = result.graph?.tasks.get('child-ref');
+      expect(task?.vine).toBe('./child.vine');
+      expect(task?.status).toBeUndefined();
+      expect(task?.attachments).toEqual([]);
+      expect(result.result).toContain('Added reference');
+      // Root should now depend on the ref node
+      expect(result.graph?.tasks.get('root')?.dependencies).toContain('child-ref');
+    });
+
+    it('returns error when no graph', () => {
+      const result = executeToolCall(
+        null,
+        call('add_ref', {
+          id: 'child-ref',
+          shortName: 'Child Ref',
+          uri: './child.vine',
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
+
+    it('returns error for missing required fields', () => {
+      const graph = refGraph();
+      const result = executeToolCall(
+        graph,
+        call('add_ref', { id: 'child-ref' }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('Invalid input');
+    });
+
+    it('ref node with optional deps, decisions, and description', () => {
+      const graph = refGraph();
+      const result = executeToolCall(
+        graph,
+        call('add_ref', {
+          id: 'child-ref',
+          shortName: 'Child Ref',
+          uri: './child.vine',
+          dependencies: ['leaf'],
+          decisions: ['Decided to reference'],
+          description: 'A reference to child graph.',
+        }),
+      );
+      expect(result.isError).toBe(false);
+      const task = result.graph?.tasks.get('child-ref');
+      expect(task?.dependencies).toContain('leaf');
+      expect(task?.decisions).toContain('Decided to reference');
+      expect(task?.description).toBe('A reference to child graph.');
+    });
+  });
+
+  describe('expand_ref', () => {
+    const REF_VINE = `vine 1.1.0
+---
+[root] Root Task (started)
+The root task.
+-> child-ref
+---
+ref [child-ref] Child Ref (./child.vine)
+A reference to child graph.
+`;
+
+    const CHILD_VINE = `vine 1.1.0
+prefix: cr
+---
+[task-a] Task A (notstarted)
+-> task-b
+---
+[task-b] Task B (planning)
+A child task.
+`;
+
+    it('expands a ref node with child graph', () => {
+      const graph = parse(REF_VINE);
+      const result = executeToolCall(
+        graph,
+        call('expand_ref', {
+          refNodeId: 'child-ref',
+          childVineText: CHILD_VINE,
+        }),
+      );
+      expect(result.isError).toBe(false);
+      expect(result.result).toContain('Expanded reference');
+      expect(result.result).toContain('child-ref');
+      expect(result.result).toContain('2 tasks inlined');
+    });
+
+    it('returns error when no graph', () => {
+      const result = executeToolCall(
+        null,
+        call('expand_ref', {
+          refNodeId: 'child-ref',
+          childVineText: CHILD_VINE,
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
+
+    it('returns error for invalid child vine text', () => {
+      const graph = parse(REF_VINE);
+      const result = executeToolCall(
+        graph,
+        call('expand_ref', {
+          refNodeId: 'child-ref',
+          childVineText: 'not valid vine',
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('Error');
+    });
+
+    it('returns error for missing required fields', () => {
+      const graph = parse(REF_VINE);
+      const result = executeToolCall(
+        graph,
+        call('expand_ref', { refNodeId: 'child-ref' }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('Invalid input');
+    });
+  });
+
+  describe('add_attachment', () => {
+    it('adds an attachment to a task', () => {
+      const graph = sampleGraph();
+      const result = executeToolCall(
+        graph,
+        call('add_attachment', {
+          taskId: 'leaf',
+          attachmentClass: 'artifact',
+          mimeType: 'text/plain',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(result.isError).toBe(false);
+      const task = result.graph?.tasks.get('leaf');
+      expect(task?.attachments).toHaveLength(1);
+      expect(task?.attachments[0].uri).toBe('https://example.com/doc.txt');
+      expect(task?.attachments[0].class).toBe('artifact');
+      expect(task?.attachments[0].mime).toBe('text/plain');
+      expect(result.result).toContain('Added');
+      expect(result.result).toContain('artifact');
+    });
+
+    it('returns error when no graph', () => {
+      const result = executeToolCall(
+        null,
+        call('add_attachment', {
+          taskId: 'leaf',
+          attachmentClass: 'artifact',
+          mimeType: 'text/plain',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
+
+    it('returns error for duplicate URI', () => {
+      const graph = sampleGraph();
+      // First add
+      const first = executeToolCall(
+        graph,
+        call('add_attachment', {
+          taskId: 'leaf',
+          attachmentClass: 'artifact',
+          mimeType: 'text/plain',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(first.isError).toBe(false);
+      // Second add with same URI
+      const result = executeToolCall(
+        first.graph,
+        call('add_attachment', {
+          taskId: 'leaf',
+          attachmentClass: 'guidance',
+          mimeType: 'text/html',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('already exists');
+    });
+  });
+
+  describe('remove_attachment', () => {
+    it('removes an attachment from a task', () => {
+      const graph = sampleGraph();
+      // Add an attachment first
+      const withAttachment = executeToolCall(
+        graph,
+        call('add_attachment', {
+          taskId: 'leaf',
+          attachmentClass: 'artifact',
+          mimeType: 'text/plain',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(withAttachment.isError).toBe(false);
+      // Now remove it
+      const result = executeToolCall(
+        withAttachment.graph,
+        call('remove_attachment', {
+          taskId: 'leaf',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(result.isError).toBe(false);
+      expect(result.graph?.tasks.get('leaf')?.attachments).toHaveLength(0);
+      expect(result.result).toContain('Removed attachment');
+    });
+
+    it('returns error when no graph', () => {
+      const result = executeToolCall(
+        null,
+        call('remove_attachment', {
+          taskId: 'leaf',
+          uri: 'https://example.com/doc.txt',
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No graph loaded');
+    });
+
+    it('returns error when attachment not found', () => {
+      const graph = sampleGraph();
+      const result = executeToolCall(
+        graph,
+        call('remove_attachment', {
+          taskId: 'leaf',
+          uri: 'https://example.com/nonexistent.txt',
+        }),
+      );
+      expect(result.isError).toBe(true);
+      expect(result.result).toContain('No attachment');
     });
   });
 

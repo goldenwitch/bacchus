@@ -159,6 +159,79 @@ describe('buildToolFeedback', () => {
     }
   });
 
+  it('builds add_ref feedback', () => {
+    const detail = buildToolFeedback(
+      call('add_ref', { id: 'ref-1', shortName: 'my-ref', uri: 'https://example.com/spec.vine' }),
+      null,
+      '',
+    );
+    expect(detail.kind).toBe('add_ref');
+    if (detail.kind === 'add_ref') {
+      expect(detail.id).toBe('ref-1');
+      expect(detail.shortName).toBe('my-ref');
+      expect(detail.uri).toBe('https://example.com/spec.vine');
+    }
+  });
+
+  it('builds expand_ref feedback parsing task count', () => {
+    const detail = buildToolFeedback(
+      call('expand_ref', { refNodeId: 'ref-1' }),
+      null,
+      'Expanded reference "my-ref" (3 tasks) inlined',
+    );
+    expect(detail.kind).toBe('expand_ref');
+    if (detail.kind === 'expand_ref') {
+      expect(detail.refNodeId).toBe('ref-1');
+      expect(detail.taskCount).toBe(3);
+    }
+  });
+
+  it('builds expand_ref feedback with 0 when no match', () => {
+    const detail = buildToolFeedback(
+      call('expand_ref', { refNodeId: 'ref-2' }),
+      null,
+      'no count here',
+    );
+    expect(detail.kind).toBe('expand_ref');
+    if (detail.kind === 'expand_ref') {
+      expect(detail.refNodeId).toBe('ref-2');
+      expect(detail.taskCount).toBe(0);
+    }
+  });
+
+  it('builds add_attachment feedback', () => {
+    const detail = buildToolFeedback(
+      call('add_attachment', {
+        taskId: 'task-1',
+        attachmentClass: 'image',
+        mimeType: 'image/png',
+        uri: 'https://example.com/img.png',
+      }),
+      null,
+      '',
+    );
+    expect(detail.kind).toBe('add_attachment');
+    if (detail.kind === 'add_attachment') {
+      expect(detail.taskId).toBe('task-1');
+      expect(detail.attachmentClass).toBe('image');
+      expect(detail.mimeType).toBe('image/png');
+      expect(detail.uri).toBe('https://example.com/img.png');
+    }
+  });
+
+  it('builds remove_attachment feedback', () => {
+    const detail = buildToolFeedback(
+      call('remove_attachment', { taskId: 'task-2', uri: 'https://example.com/doc.pdf' }),
+      null,
+      '',
+    );
+    expect(detail.kind).toBe('remove_attachment');
+    if (detail.kind === 'remove_attachment') {
+      expect(detail.taskId).toBe('task-2');
+      expect(detail.uri).toBe('https://example.com/doc.pdf');
+    }
+  });
+
   it('returns unknown for unrecognized tool', () => {
     const detail = buildToolFeedback(call('mystery_tool'), null, 'something');
     expect(detail.kind).toBe('unknown');

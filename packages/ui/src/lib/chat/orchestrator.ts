@@ -35,7 +35,8 @@ function buildSystemPrompt(graph: VineGraph | null): string {
   const vineSpec = `You are a task planning assistant for Bacchus, a tool that visualizes task graphs in the VINE format.
 
 ## VINE Format
-Every .vine file starts with a magic line (vine 1.0.0) and a preamble section.
+Every .vine file starts with a magic line (vine 1.1.0) and a preamble section.
+Optional preamble keys: title, delimiter, prefix (for ID namespacing during expansion).
 Task blocks are separated by delimiter lines (--- by default):
   [id] Short Name (status)
   Description text
@@ -45,8 +46,15 @@ Task blocks are separated by delimiter lines (--- by default):
   @guidance mime/type uri
   @file mime/type uri
 
+Reference blocks point to external .vine files:
+  ref [id] Short Name (URI)
+  Description text
+  > dependency-id
+  ? Decision note
+Reference nodes have no status and cannot have attachments.
+
 Status keywords: complete, started, reviewing, planning, notstarted, blocked
-Task ids: alphanumeric and hyphens only, must be unique.
+Task ids: alphanumeric, hyphens, and forward slashes (for namespaced ids like ds/components), must be unique.
 The first task in the file is the root task.
 Constraints: no cycles, no islands (every task must connect to root), all dependency refs must exist.
 Tasks can have attachments: @artifact (products of work), @guidance (context/constraints), @file (other resources). Use the add_attachment and remove_attachment tools to manage them.

@@ -10,6 +10,7 @@ import {
   serialize,
   isValidStatus,
   getTask,
+  expandVineRef,
 } from '@bacchus/core';
 import type { ToolCall, ToolDefinition } from './types.js';
 
@@ -228,6 +229,62 @@ export const GRAPH_TOOLS: readonly ToolDefinition[] = [
       required: ['taskId', 'uri'],
     },
   },
+  {
+    name: 'add_ref',
+    description:
+      'Add a reference node that points to an external .vine file. Reference nodes have no status and cannot have attachments.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Unique id for the reference node',
+        },
+        shortName: {
+          type: 'string',
+          description: 'Short display name for the reference',
+        },
+        uri: {
+          type: 'string',
+          description: 'URI or path to the external .vine file',
+        },
+        dependencies: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of task ids this reference depends on',
+        },
+        decisions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Decision notes for the reference',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the reference',
+        },
+      },
+      required: ['id', 'shortName', 'uri'],
+    },
+  },
+  {
+    name: 'expand_ref',
+    description:
+      'Expand a reference node by inlining tasks from a child VINE graph. The child graph text is parsed and its tasks replace the reference node.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        refNodeId: {
+          type: 'string',
+          description: 'The id of the reference node to expand',
+        },
+        childVineText: {
+          type: 'string',
+          description: 'Complete VINE-format text of the child graph to inline',
+        },
+      },
+      required: ['refNodeId', 'childVineText'],
+    },
+  },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -296,6 +353,7 @@ export function executeToolCall(
             ? (input.decisions as string[])
             : [],
           attachments: [],
+          vine: undefined,
         };
         // Patch root to depend on the new task so it doesn't become an island.
         // addTask inserts before root; we need root -> new-task for connectivity.
@@ -308,10 +366,7 @@ export function executeToolCall(
           };
           const patchedTasks = new Map(graph.tasks);
           patchedTasks.set(rootId, patchedRoot);
-          const patchedGraph: VineGraph = {
-            tasks: patchedTasks,
-            order: graph.order,
-          };
+          const patchedGraph: VineGraph = { ...graph, tasks: patchedTasks };
           const updated = addTask(patchedGraph, task);
           return {
             graph: updated,
@@ -462,6 +517,90 @@ export function executeToolCall(
           isError: false,
         };
       }
+      case 'add_ref': {
+        if (!graph) {
+          return {
+            graph,
+            result:
+              'No graph loaded. Use replace_graph first to create the initial graph.',
+            isError: true,
+          };
+        }
+        const input = call.input;
+        if (
+          typeof input.id !== 'string' ||
+          typeof input.shortName !== 'string' ||
+          typeof input.uri !== 'string'
+        ) {
+          return {
+            graph,
+            result: 'Invalid input: "id", "shortName", and "uri" must be strings.',
+            isError: true,
+          };
+        }
+        const refTask: Task = {
+          id: input.id,
+          shortName: input.shortName,
+          status: undefined,
+          description:
+            typeof input.description === 'string' ? input.description : '',
+          dependencies: Array.isArray(input.dependencies)
+            ? (input.dependencies as string[])
+            : [],
+          decisions: Array.isArray(input.decisions)
+            ? (input.decisions as string[])
+            : [],
+          attachments: [],
+          vine: input.uri,
+        };
+        const rootId = graph.order[0];
+        const root = graph.tasks.get(rootId);
+        if (root && rootId !== refTask.id) {
+          const patchedRoot: Task = {
+            ...root,
+            dependencies: [...root.dependencies, refTask.id],
+          };
+          const patchedTasks = new Map(graph.tasks);
+          patchedTasks.set(rootId, patchedRoot);
+          const patchedGraph: VineGraph = { ...graph, tasks: patchedTasks };
+          const updated = addTask(patchedGraph, refTask);
+          return {
+            graph: updated,
+            result: `Added reference "${input.id}" \u2192 ${input.uri}`,
+            isError: false,
+          };
+        }
+        const updated = addTask(graph, refTask);
+        return {
+          graph: updated,
+          result: `Added reference "${input.id}" \u2192 ${input.uri}`,
+          isError: false,
+        };
+      }
+
+      case 'expand_ref': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        if (
+          typeof call.input.refNodeId !== 'string' ||
+          typeof call.input.childVineText !== 'string'
+        ) {
+          return {
+            graph,
+            result: 'Invalid input: "refNodeId" and "childVineText" must be strings.',
+            isError: true,
+          };
+        }
+        const childGraph = parse(call.input.childVineText);
+        const expanded = expandVineRef(graph, call.input.refNodeId, childGraph);
+        return {
+          graph: expanded,
+          result: `Expanded reference "${call.input.refNodeId}" (${String(childGraph.order.length)} tasks inlined)`,
+          isError: false,
+        };
+      }
+
       case 'remove_attachment': {
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };

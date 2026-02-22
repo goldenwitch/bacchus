@@ -42,6 +42,17 @@ export type ToolFeedbackDetail =
     }
   | { readonly kind: 'add_attachment'; readonly taskId: string; readonly attachmentClass: string; readonly mimeType: string; readonly uri: string }
   | { readonly kind: 'remove_attachment'; readonly taskId: string; readonly uri: string }
+  | {
+      readonly kind: 'add_ref';
+      readonly id: string;
+      readonly shortName: string;
+      readonly uri: string;
+    }
+  | {
+      readonly kind: 'expand_ref';
+      readonly refNodeId: string;
+      readonly taskCount: number;
+    }
   | { readonly kind: 'unknown'; readonly toolName: string };
 
 // ---------------------------------------------------------------------------
@@ -145,6 +156,23 @@ export function buildToolFeedback(
     case 'remove_attachment': {
       const { taskId, uri } = call.input as { taskId: string; uri: string };
       return { kind: 'remove_attachment', taskId, uri };
+    }
+
+    case 'add_ref':
+      return {
+        kind: 'add_ref',
+        id: str(call.input.id),
+        shortName: str(call.input.shortName),
+        uri: str(call.input.uri),
+      };
+
+    case 'expand_ref': {
+      const match = /\((\d+) tasks?\)/.exec(resultText);
+      return {
+        kind: 'expand_ref',
+        refNodeId: str(call.input.refNodeId),
+        taskCount: match ? Number(match[1]) : 0,
+      };
     }
 
     default:

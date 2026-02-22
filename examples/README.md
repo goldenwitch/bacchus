@@ -10,6 +10,9 @@ Sample `.vine` files to explore in the Bacchus UI. Start the dev server, then dr
 | `04-all-statuses.vine`    | All 6 status keywords: complete, started, reviewing, notstarted, planning, blocked.        |
 | `05-decisions.vine`       | Tasks annotated with `>` decision notes.                                                   |
 | `06-project-bacchus.vine` | A realistic project graph with 13 tasks, including attachments — the Bacchus project itself.|
+| `07-design-system.vine`   | Child graph with `prefix` metadata — a v1.1.0 feature for namespaced task IDs.             |
+| `08-nested-vine.vine`     | Parent graph using `ref` nodes to reference an external `.vine` file (v1.1.0).              |
+| `09-ref-advanced.vine`    | Advanced multi-ref pattern with cross-dependencies and decisions on reference nodes (v1.1.0).|
 
 ## Loading in the UI
 

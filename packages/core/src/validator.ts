@@ -165,6 +165,42 @@ function checkNoIslands(graph: VineGraph): void {
   }
 }
 
+/**
+ * 5. Reference nodes must have a non-empty vine URI and no status.
+ */
+function checkRefUriRequired(graph: VineGraph): void {
+  for (const [taskId, task] of graph.tasks) {
+    if (task.vine !== undefined) {
+      if (task.vine === '') {
+        fail(`Reference node "${taskId}" must have a non-empty vine URI.`, {
+          constraint: 'ref-uri-required',
+          taskId,
+        });
+      }
+      if (task.status !== undefined) {
+        fail(`Reference node "${taskId}" must not have a status.`, {
+          constraint: 'ref-uri-required',
+          taskId,
+        });
+      }
+    }
+  }
+}
+
+/**
+ * 6. Reference nodes must not have attachments.
+ */
+function checkNoRefAttachments(graph: VineGraph): void {
+  for (const [taskId, task] of graph.tasks) {
+    if (task.vine !== undefined && task.attachments.length > 0) {
+      fail(`Reference node "${taskId}" must not have attachments.`, {
+        constraint: 'no-ref-attachments',
+        taskId,
+      });
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -180,10 +216,14 @@ function checkNoIslands(graph: VineGraph): void {
  *  2. valid-dependency-refs
  *  3. no-cycles
  *  4. no-islands
+ *  5. ref-uri-required
+ *  6. no-ref-attachments
  */
 export function validate(graph: VineGraph): void {
   checkAtLeastOneTask(graph);
   checkValidDependencyRefs(graph);
   checkNoCycles(graph);
   checkNoIslands(graph);
+  checkRefUriRequired(graph);
+  checkNoRefAttachments(graph);
 }

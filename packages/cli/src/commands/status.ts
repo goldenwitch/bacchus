@@ -27,7 +27,7 @@ export const statusCommand = new Command('status')
       graph = setStatus(graph, id, statusArg);
       writeGraph(file, graph);
 
-      console.log(`✓ ${id}: ${oldStatus} → ${statusArg}`);
+      console.log(`✓ ${id}: ${String(oldStatus)} → ${statusArg}`);
     } catch (error: unknown) {
       handleCommandError(error, file);
     }

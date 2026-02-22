@@ -14,7 +14,7 @@ function buildGraph(
   order: readonly string[],
   source: VineGraph,
 ): VineGraph {
-  return { version: source.version, title: source.title, delimiter: source.delimiter, tasks, order };
+  return { version: source.version, title: source.title, delimiter: source.delimiter, prefix: source.prefix, tasks, order };
 }
 
 /**
@@ -107,6 +107,9 @@ export function setStatus(
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
+  if (task.vine !== undefined) {
+    throw new VineError(`Cannot set status on reference node "${id}".`);
+  }
 
   const updated: Task = { ...task, status };
   const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
@@ -129,6 +132,9 @@ export function updateTask(
   const task = graph.tasks.get(id);
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
+  }
+  if (task.vine !== undefined && fields.attachments !== undefined) {
+    throw new VineError(`Cannot set attachments on reference node "${id}".`);
   }
 
   const updated: Task = { ...task, ...fields };

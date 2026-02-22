@@ -121,5 +121,6 @@ Both extend `VineError` and print a human-readable message to stderr.
 
 - The `add` and `status` commands parse the file, apply the mutation, re-serialize, and write back. The output is normalized `.vine` text—formatting may change slightly.
 - Task IDs must be unique within a file. Attempting to add a duplicate ID will fail with a validation error.
+- **Slash-separated IDs (v1.1.0):** Task IDs now support slash-separated segments (e.g., `ds/components`, `auth/login`). This is used by the expansion system to namespace child-graph IDs but is also valid in manually authored files. The `add` command's `--id` flag accepts these IDs.
 - Dependency IDs passed to `--depends-on` must reference tasks that already exist in the file.
 - Attachments (`@artifact`, `@guidance`, `@file` lines) are fully supported in the `.vine` format and are preserved during `add` and `status` mutations, but there is currently no CLI command for adding or managing attachments directly. Use the Chat Planner UI or edit the file manually.
