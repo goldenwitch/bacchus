@@ -115,7 +115,9 @@ export function getSummary(graph: VineGraph): GraphSummary {
   };
 
   for (const task of graph.tasks.values()) {
-    byStatus[task.status] += 1;
+    if (task.status !== undefined) {
+      byStatus[task.status] += 1;
+    }
   }
 
   const rootId = graph.order[0];

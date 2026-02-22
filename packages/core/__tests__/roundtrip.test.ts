@@ -9,6 +9,7 @@ function graphToPlain(graph: VineGraph) {
     version: graph.version,
     title: graph.title,
     delimiter: graph.delimiter,
+    prefix: graph.prefix,
     order: [...graph.order],
     tasks: Object.fromEntries(
       [...graph.tasks.entries()].map(([id, task]) => [
@@ -63,5 +64,27 @@ describe('round-trip', () => {
     const secondPass = serialize(parse(firstPass));
 
     expect(secondPass).toBe(firstPass);
+  });
+
+  it('round-trips a graph with ref nodes', () => {
+    const input = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '-> setup',
+      '---',
+      '[setup] Setup (complete)',
+      '---',
+      'ref [ext] External Lib (./lib.vine)',
+      '-> setup',
+      '> Use ESM?',
+    ].join('\n');
+
+    const graph1 = parse(input);
+    const serialized = serialize(graph1);
+    const graph2 = parse(serialized);
+
+    expect(graphToPlain(graph2)).toEqual(graphToPlain(graph1));
   });
 });

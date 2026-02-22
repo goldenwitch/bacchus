@@ -1,11 +1,12 @@
 /** Shared VINE example text used across parser, graph, serializer, and roundtrip tests. */
 export const VINE_EXAMPLE = [
-  'vine 1.0.0',
+  'vine 1.1.0',
   'title: Project Bacchus',
   '---',
   '[root] Project Bacchus (started)',
   'Build a graph of tasks and visualize them as a vine.',
   '-> build-ui',
+  '-> docs-site',
   '-> graph-cli',
   '-> vine-format',
   '-> vine-ts',
@@ -26,4 +27,7 @@ export const VINE_EXAMPLE = [
   '[vine-format] Define VINE Format (complete)',
   'Specify the .vine file format.',
   '> Keep it line-oriented, no nesting.',
+  '---',
+  'ref [docs-site] Documentation Site (./docs.vine)',
+  '-> vine-format',
 ].join('\n');

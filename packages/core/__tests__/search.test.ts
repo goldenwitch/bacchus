@@ -74,6 +74,26 @@ describe('filterByStatus', () => {
       expect(orderIndices[i]).toBeGreaterThan(orderIndices[i - 1]!);
     }
   });
+
+  it('ref nodes are not returned for any status filter', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      'ref [ext] External (./other.vine)',
+    ].join('\n');
+    const refGraph = parse(refVine);
+    const started = filterByStatus(refGraph, 'started');
+    expect(started.map((t) => t.id)).toEqual(['root']);
+    // ref node should not appear in any status filter
+    const allStatuses = ['complete', 'started', 'reviewing', 'planning', 'notstarted', 'blocked'] as const;
+    for (const s of allStatuses) {
+      const result = filterByStatus(refGraph, s);
+      expect(result.every((t) => t.vine === undefined)).toBe(true);
+    }
+  });
 });
 
 describe('searchTasks', () => {
@@ -102,6 +122,22 @@ describe('searchTasks', () => {
   it("'zzzzz' returns empty array", () => {
     const result = searchTasks(graph, 'zzzzz');
     expect(result).toEqual([]);
+  });
+
+  it('finds ref nodes by name/description', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      'ref [ext] External Library (./other.vine)',
+      'Points to the external library.',
+    ].join('\n');
+    const refGraph = parse(refVine);
+
+    const result = searchTasks(refGraph, 'External');
+    expect(result.map((t) => t.id)).toContain('ext');
   });
 });
 
@@ -160,5 +196,27 @@ describe('getSummary', () => {
     expect(summary.rootId).toBe('root');
     expect(summary.rootName).toBe('Launch Product');
     expect(summary.leafCount).toBe(1);
+  });
+
+  it('handles ref nodes without crashing', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      '[task-a] Task A (complete)',
+      '---',
+      'ref [ext] External (./other.vine)',
+      '-> task-a',
+    ].join('\n');
+    const refGraph = parse(refVine);
+    const summary = getSummary(refGraph);
+
+    expect(summary.total).toBe(3);
+    expect(summary.byStatus.started).toBe(1);
+    expect(summary.byStatus.complete).toBe(1);
+    // ref node has undefined status — should not crash or pollute counts
+    expect(Number.isNaN(summary.byStatus.notstarted)).toBe(false);
   });
 });

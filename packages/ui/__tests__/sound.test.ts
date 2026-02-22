@@ -291,3 +291,139 @@ describe('sound spec compliance', () => {
     expect(mockCtx.resume).toHaveBeenCalled();
   });
 });
+
+describe('setVolume / getVolume', () => {
+  it('sets and gets volume', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    sound.setVolume(0.7);
+    expect(sound.getVolume()).toBe(0.7);
+  });
+
+  it('clamps volume to [0, 1]', async () => {
+    const sound = await loadSound();
+    sound.setVolume(2);
+    expect(sound.getVolume()).toBe(1);
+    sound.setVolume(-1);
+    expect(sound.getVolume()).toBe(0);
+  });
+
+  it('mutes when volume set to 0', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    sound.setVolume(0);
+    expect(sound.isMuted()).toBe(true);
+  });
+
+  it('unmutes when volume set above 0 while muted', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    sound.setMuted(true);
+    expect(sound.isMuted()).toBe(true);
+    sound.setVolume(0.5);
+    expect(sound.isMuted()).toBe(false);
+  });
+
+  it('updates masterGain when initialized', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    const masterGain = mockCtx.createGain.mock.results[0]?.value;
+    sound.setVolume(0.8);
+    expect(masterGain.gain.value).toBe(0.8);
+  });
+
+  it('persists volume to localStorage', async () => {
+    const sound = await loadSound();
+    sound.setVolume(0.6);
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      'bacchus-ui-volume',
+      '0.6',
+    );
+  });
+});
+
+describe('initAudio error handling', () => {
+  it('handles AudioContext constructor failure gracefully', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(() => {
+        throw new Error('AudioContext not supported');
+      }),
+    );
+    const sound = await loadSound();
+
+    expect(() => sound.initAudio()).not.toThrow();
+
+    // play functions should be no-ops
+    expect(() => sound.playPop()).not.toThrow();
+    expect(() => sound.playHover()).not.toThrow();
+    expect(() => sound.playWhoosh()).not.toThrow();
+  });
+});
+
+describe('initAudio idempotency', () => {
+  it('does not create a second AudioContext on repeat call', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    sound.initAudio();
+    expect(AudioContext).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('loadVolumeState', () => {
+  it('reads persisted volume from localStorage on init', async () => {
+    (localStorage.getItem as ReturnType<typeof vi.fn>).mockImplementation(
+      (key: string) => {
+        if (key === 'bacchus-ui-volume') return '0.6';
+        return null;
+      },
+    );
+    const sound = await loadSound();
+    sound.initAudio();
+    const masterGain = mockCtx.createGain.mock.results[0]?.value;
+    expect(masterGain.gain.value).toBe(0.6);
+    expect(sound.getVolume()).toBe(0.6);
+  });
+});
+
+describe('play functions with AudioContext in suspended state', () => {
+  it('attempts to resume suspended context before playing', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    // After init, set state to suspended
+    mockCtx.state = 'suspended';
+    mockCtx.resume.mockClear();
+
+    sound.playPop();
+    expect(mockCtx.resume).toHaveBeenCalled();
+  });
+});
+
+describe('play functions catch blocks', () => {
+  it('playPop swallows errors from createOscillator', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    mockCtx.createOscillator.mockImplementation(() => {
+      throw new Error('oscillator failed');
+    });
+    expect(() => sound.playPop()).not.toThrow();
+  });
+
+  it('playHover swallows errors from createOscillator', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    mockCtx.createOscillator.mockImplementation(() => {
+      throw new Error('oscillator failed');
+    });
+    expect(() => sound.playHover()).not.toThrow();
+  });
+
+  it('playWhoosh swallows errors from createBufferSource', async () => {
+    const sound = await loadSound();
+    sound.initAudio();
+    mockCtx.createBufferSource.mockImplementation(() => {
+      throw new Error('buffer source failed');
+    });
+    expect(() => sound.playWhoosh()).not.toThrow();
+  });
+});

@@ -1,6 +1,6 @@
 // Types
 export type { Attachment, AttachmentClass, Status, Task, VineGraph } from './types.js';
-export { VALID_STATUSES, isValidStatus } from './types.js';
+export { VALID_STATUSES, isValidStatus, isVineRef } from './types.js';
 
 // Errors
 export { VineError, VineParseError, VineValidationError } from './errors.js';
@@ -23,6 +23,9 @@ export {
   addDependency,
   removeDependency,
 } from './mutations.js';
+
+// Expansion
+export { expandVineRef } from './expansion.js';
 
 // Search & Filter
 export type { GraphSummary } from './search.js';

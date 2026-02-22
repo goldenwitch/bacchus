@@ -1,0 +1,19 @@
+vine 1.1.0
+title: Product Launch
+
+---
+
+[research] Market Research (started)
+Analyze competitor landscape and user needs.
+
+ref [design-system] Design System (./07-design-system.vine)
+> research
+? Should we adopt an existing system or build from scratch?
+
+[prototype] Build Prototype (notstarted)
+> design-system
+Assemble a clickable prototype using the design system.
+
+[launch] Product Launch (notstarted)
+> prototype
+Ship the MVP to production.

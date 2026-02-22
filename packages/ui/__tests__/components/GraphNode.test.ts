@@ -31,6 +31,8 @@ function makeSimNode(
     status: overrides.task?.status ?? 'started',
     dependencies: overrides.task?.dependencies ?? [],
     decisions: overrides.task?.decisions ?? [],
+    attachments: [],
+    vine: undefined,
   };
   return {
     id: task.id,

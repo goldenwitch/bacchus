@@ -5,6 +5,10 @@ import {
   computeNodeRadius,
   createSimulation,
   computeFocusBandPositions,
+  applyPhysicsConfig,
+  forceLayer,
+  forceCluster,
+  buildDependantsMap,
 } from '../src/lib/layout.js';
 import type { SimNode, SimLink } from '../src/lib/types.js';
 import { getDefaults } from '../src/lib/physics.js';
@@ -328,6 +332,184 @@ describe('computeFocusBandPositions', () => {
     for (const pos of result) {
       expect(Number.isFinite(pos.x)).toBe(true);
       expect(Number.isFinite(pos.y)).toBe(true);
+    }
+  });
+});
+
+describe('buildDependantsMap', () => {
+  it('maps each target to its dependant sources', () => {
+    const links: SimLink[] = [
+      { source: 'root', target: 'mid' },
+      { source: 'mid', target: 'leaf-a' },
+      { source: 'mid', target: 'leaf-b' },
+    ];
+    const map = buildDependantsMap(links);
+    expect(map.get('mid')).toEqual(['root']);
+    expect(map.get('leaf-a')).toEqual(['mid']);
+    expect(map.get('leaf-b')).toEqual(['mid']);
+  });
+
+  it('returns empty map for empty links', () => {
+    const map = buildDependantsMap([]);
+    expect(map.size).toBe(0);
+  });
+
+  it('handles multiple dependants for a single target', () => {
+    const links: SimLink[] = [
+      { source: 'a', target: 'shared' },
+      { source: 'b', target: 'shared' },
+      { source: 'c', target: 'shared' },
+    ];
+    const map = buildDependantsMap(links);
+    expect(map.get('shared')!.sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('works with resolved SimNode objects as source/target', () => {
+    // After simulation, source/target become SimNode objects
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+    sim.tick(1); // resolve link references
+    // Now links have SimNode objects
+    const map = buildDependantsMap(links);
+    // mid depends on leaf-a and leaf-b, so leaf-a's dependant is mid
+    expect(map.get('leaf-a')).toContain('mid');
+    expect(map.get('leaf-b')).toContain('mid');
+    expect(map.get('mid')).toContain('root');
+  });
+});
+
+describe('forceLayer', () => {
+  it('getter for strength returns the initial value', () => {
+    const f = forceLayer((_d) => 100, 0.5, 2, 80);
+    expect((f.strength as (s?: number) => number | typeof f)()).toBe(0.5);
+  });
+
+  it('getter for exponent returns the initial value', () => {
+    const f = forceLayer((_d) => 100, 0.5, 2, 80);
+    expect((f.exponent as (e?: number) => number | typeof f)()).toBe(2);
+  });
+
+  it('getter for layerSpacing returns the initial value', () => {
+    const f = forceLayer((_d) => 100, 0.5, 2, 80);
+    expect((f.layerSpacing as (ls?: number) => number | typeof f)()).toBe(80);
+  });
+
+  it('getter for y returns the target function', () => {
+    const targetFn = (_d: SimNode) => 100;
+    const f = forceLayer(targetFn, 0.5, 2, 80);
+    expect((f.y as (fn?: (d: SimNode) => number) => unknown)()).toBe(targetFn);
+  });
+
+  it('setter returns the force for chaining', () => {
+    const f = forceLayer((_d) => 100, 0.5, 2, 80);
+    const result = f.strength(0.8);
+    expect(result).toBe(f);
+  });
+
+  it('setter updates the value returned by getter', () => {
+    const f = forceLayer((_d) => 100, 0.5, 2, 80);
+    f.strength(0.9);
+    expect((f.strength as (s?: number) => number | typeof f)()).toBe(0.9);
+    f.exponent(3);
+    expect((f.exponent as (e?: number) => number | typeof f)()).toBe(3);
+    f.layerSpacing(120);
+    expect((f.layerSpacing as (ls?: number) => number | typeof f)()).toBe(120);
+  });
+});
+
+describe('forceCluster', () => {
+  it('getter for strength returns the initial value', () => {
+    const depMap = new Map<string, string[]>();
+    const f = forceCluster(depMap, 0.4);
+    expect((f.strength as (s?: number) => number | typeof f)()).toBe(0.4);
+  });
+
+  it('setter updates strength and returns force for chaining', () => {
+    const depMap = new Map<string, string[]>();
+    const f = forceCluster(depMap, 0.4);
+    const result = f.strength(0.7);
+    expect(result).toBe(f);
+    expect((f.strength as (s?: number) => number | typeof f)()).toBe(0.7);
+  });
+});
+
+describe('applyPhysicsConfig', () => {
+  it('reheats simulation after applying new config', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+    // Let it settle
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    const newConfig = { ...getDefaults(), chargeStrength: -200, layerSpacing: 120 };
+    applyPhysicsConfig(sim, newConfig, 800, 600);
+
+    expect(sim.alpha()).toBeGreaterThan(0); // reheated
+  });
+
+  it('produces valid positions after config change and settling', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    applyPhysicsConfig(sim, getDefaults(), 800, 600);
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    for (const node of nodes) {
+      expect(Number.isFinite(node.x)).toBe(true);
+      expect(Number.isFinite(node.y)).toBe(true);
+    }
+  });
+
+  it('applies changed velocityDecay', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+
+    const newConfig = { ...getDefaults(), velocityDecay: 0.6 };
+    applyPhysicsConfig(sim, newConfig, 800, 600);
+
+    expect(sim.velocityDecay()).toBe(0.6);
+  });
+
+  it('alpha is specifically 0.3 after applyPhysicsConfig', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    applyPhysicsConfig(sim, getDefaults(), 800, 600);
+
+    expect(sim.alpha()).toBeCloseTo(0.3, 2);
+  });
+
+  it('can be called multiple times without crashing', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+
+    const config1 = { ...getDefaults(), chargeStrength: -100, layerSpacing: 60 };
+    const config2 = { ...getDefaults(), chargeStrength: -300, layerSpacing: 150 };
+
+    applyPhysicsConfig(sim, config1, 800, 600);
+    for (let i = 0; i < 50; i++) sim.tick();
+    applyPhysicsConfig(sim, config2, 800, 600);
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    for (const node of nodes) {
+      expect(Number.isFinite(node.x)).toBe(true);
+      expect(Number.isFinite(node.y)).toBe(true);
+    }
+  });
+
+  it('updates with different width and height', () => {
+    const { nodes, links } = buildSimData();
+    const sim = createSimulation(nodes, links, 800, 600);
+    for (let i = 0; i < 100; i++) sim.tick();
+
+    // Apply with a different viewport size
+    applyPhysicsConfig(sim, getDefaults(), 1200, 900);
+    for (let i = 0; i < 300; i++) sim.tick();
+
+    for (const node of nodes) {
+      expect(Number.isFinite(node.x)).toBe(true);
+      expect(Number.isFinite(node.y)).toBe(true);
     }
   });
 });
