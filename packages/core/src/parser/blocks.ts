@@ -3,7 +3,7 @@
 // Step 4 — Parse a single block into a Task (unified task + ref)
 // ---------------------------------------------------------------------------
 
-import type { Attachment, AttachmentClass, Status, Task } from '../types.js';
+import type { Attachment, AttachmentClass, ConcreteTask, RefTask, Status, Task } from '../types.js';
 import type { RawBlock } from './constants.js';
 import { ATTACHMENT_CLASSES, HEADER_RE, REF_HEADER_RE } from './constants.js';
 import { VineParseError } from '../errors.js';
@@ -102,20 +102,23 @@ function findHeaderIndex(block: RawBlock): number {
   throw new VineParseError('Empty block — no header found', block.startLine);
 }
 
-/** Result of parsing a block header line. */
-interface ParsedHeader {
-  /** Task identifier. */
-  id: string;
-  /** Human-readable short name. */
-  shortName: string;
-  /** Status (concrete tasks) or `undefined` (ref nodes). */
-  status: Status | undefined;
-  /** External vine URI (ref nodes) or `undefined` (concrete tasks). */
-  vine: string | undefined;
-  /** Whether this is a reference node. */
-  isRef: boolean;
-  /** Index of the header line within the block's `lines` array. */
-  headerIndex: number;
+/** Discriminated result of parsing a block header line. */
+type ParsedHeader = ParsedTaskHeader | ParsedRefHeader;
+
+interface ParsedTaskHeader {
+  readonly kind: 'task';
+  readonly id: string;
+  readonly shortName: string;
+  readonly status: Status;
+  readonly headerIndex: number;
+}
+
+interface ParsedRefHeader {
+  readonly kind: 'ref';
+  readonly id: string;
+  readonly shortName: string;
+  readonly vine: string;
+  readonly headerIndex: number;
 }
 
 /**
@@ -146,7 +149,7 @@ function parseHeader(block: RawBlock): ParsedHeader {
     if (id === undefined || shortName === undefined || vine === undefined) {
       throw new VineParseError(`Invalid reference header: "${headerLine}"`, lineNumber);
     }
-    return { id, shortName, status: undefined, vine, isRef: true, headerIndex };
+    return { kind: 'ref', id, shortName, vine, headerIndex };
   }
 
   // Otherwise, try concrete task header.
@@ -160,7 +163,7 @@ function parseHeader(block: RawBlock): ParsedHeader {
   if (id === undefined || shortName === undefined || status === undefined) {
     throw new VineParseError(`Invalid task header: "${headerLine}"`, lineNumber);
   }
-  return { id, shortName, status, vine: undefined, isRef: false, headerIndex };
+  return { kind: 'task', id, shortName, status, headerIndex };
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +218,7 @@ export function parseBlock(block: RawBlock): Task {
       for (const cls of ATTACHMENT_CLASSES) {
         const prefix = `@${cls} `;
         if (line.startsWith(prefix)) {
-          if (header.isRef) {
+          if (header.kind === 'ref') {
             throw new VineParseError(
               'Attachments are not allowed on reference nodes',
               lineNumber,
@@ -241,7 +244,21 @@ export function parseBlock(block: RawBlock): Task {
 
   const description = descriptionParts.join('\n');
 
-  return {
+  if (header.kind === 'ref') {
+    const ref: RefTask = {
+      kind: 'ref',
+      id: header.id,
+      shortName: header.shortName,
+      description,
+      dependencies,
+      decisions,
+      vine: header.vine,
+    };
+    return ref;
+  }
+
+  const task: ConcreteTask = {
+    kind: 'task',
     id: header.id,
     shortName: header.shortName,
     description,
@@ -249,6 +266,6 @@ export function parseBlock(block: RawBlock): Task {
     dependencies,
     decisions,
     attachments,
-    vine: header.vine,
   };
+  return task;
 }

@@ -1,6 +1,6 @@
 // Types
-export type { Attachment, AttachmentClass, Status, Task, VineGraph } from './types.js';
-export { VALID_STATUSES, isValidStatus, isVineRef } from './types.js';
+export type { Attachment, AttachmentClass, ConcreteTask, RefTask, Status, Task, VineGraph } from './types.js';
+export { VALID_STATUSES, isValidStatus, isVineRef, isConcreteTask } from './types.js';
 
 // Errors
 export { VineError, VineParseError, VineValidationError } from './errors.js';

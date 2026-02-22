@@ -97,7 +97,8 @@ export function buildToolFeedback(
 
     case 'set_status': {
       const id = str(call.input.id);
-      const oldStatus = preGraph?.tasks.get(id)?.status ?? null;
+      const existing = preGraph?.tasks.get(id);
+      const oldStatus = existing?.kind === 'task' ? existing.status : null;
       return {
         kind: 'set_status',
         id,

@@ -25,7 +25,7 @@
 
   const statusInfo = $derived.by(() => {
     void themeVersion();
-    return STATUS_MAP[node.task.status];
+    return node.task.kind === 'task' ? STATUS_MAP[node.task.status] : STATUS_MAP['notstarted'];
   });
 
   const radius = $derived(computeNodeRadius(node.task.shortName.length));
@@ -372,7 +372,7 @@
       stroke-width="2.5"
       filter="url(#{filterId})"
       opacity="0.6"
-      class={node.task.status === 'started' ? 'anim-glow-pulse' : ''}
+      class={node.task.kind === 'task' && node.task.status === 'started' ? 'anim-glow-pulse' : ''}
     />
 
     <!-- Inner fill circle with gradient -->
@@ -381,7 +381,7 @@
       fill="url(#{glassGradId})"
       stroke={statusInfo.color}
       stroke-width="1"
-      class={node.task.status === 'complete' ? 'anim-completion-shimmer' : ''}
+      class={node.task.kind === 'task' && node.task.status === 'complete' ? 'anim-completion-shimmer' : ''}
     />
 
     <!-- Specular highlight overlay -->
@@ -456,7 +456,7 @@
     >
 
     <!-- Attachment badge — bottom-right of node -->
-    {#if node.task.attachments?.length}
+    {#if node.task.kind === 'task' && node.task.attachments?.length}
       <g class="attachment-badge">
         <circle
           cx={radius * 0.65}
@@ -474,7 +474,7 @@
           font-size={radius * 0.28}
           style="pointer-events:none"
         >📎</text>
-        {#if node.task.attachments.length > 1}
+        {#if node.task.kind === 'task' && node.task.attachments.length > 1}
           <text
             x={radius * 0.65 + radius * 0.18}
             y={radius * 0.65 + radius * 0.18}
@@ -483,7 +483,7 @@
             font-size={radius * 0.18}
             fill="white"
             style="pointer-events:none"
-          >{node.task.attachments.length}</text>
+          >{node.task.kind === 'task' ? node.task.attachments.length : 0}</text>
         {/if}
       </g>
     {/if}

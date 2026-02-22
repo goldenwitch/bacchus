@@ -8,6 +8,7 @@ import {
 } from '../src/graph.js';
 import { VineError } from '../src/errors.js';
 import { VINE_EXAMPLE } from './fixtures/vine-example.js';
+import type { ConcreteTask } from '../src/types.js';
 
 const graph = parse(VINE_EXAMPLE);
 
@@ -17,7 +18,7 @@ describe('getTask', () => {
 
     expect(task.id).toBe('vine-ts');
     expect(task.shortName).toBe('VINE TypeScript Library');
-    expect(task.status).toBe('started');
+    expect((task as ConcreteTask).status).toBe('started');
     expect(task.description).toBe('Parse and validate .vine files.');
     expect(task.dependencies).toEqual(['vine-format']);
     expect(task.decisions).toEqual([]);

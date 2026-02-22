@@ -10,7 +10,7 @@ import {
 import { parse } from '../src/parser.js';
 import { serialize } from '../src/serializer.js';
 import { VineError, VineValidationError } from '../src/errors.js';
-import type { Task, VineGraph } from '../src/types.js';
+import type { Task, VineGraph, ConcreteTask } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
 // Base graph
@@ -87,7 +87,8 @@ function baseOutput(): string {
 describe('addTask', () => {
   it('adds a task and verifies serialized output', () => {
     const patched = patchRootDeps(baseGraph, 'new-task');
-    const newTask: Task = {
+    const newTask: ConcreteTask = {
+      kind: 'task',
       id: 'new-task',
       shortName: 'New Task',
       description: 'Brand new.',
@@ -95,7 +96,6 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
-      vine: undefined,
     };
     const result = addTask(patched, newTask);
 
@@ -129,7 +129,8 @@ describe('addTask', () => {
 
   it('preserves all original tasks unchanged', () => {
     const patched = patchRootDeps(baseGraph, 'new-task');
-    const newTask: Task = {
+    const newTask: ConcreteTask = {
+      kind: 'task',
       id: 'new-task',
       shortName: 'New Task',
       description: 'Brand new.',
@@ -137,7 +138,6 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
-      vine: undefined,
     };
     const result = addTask(patched, newTask);
 
@@ -150,7 +150,8 @@ describe('addTask', () => {
 
   it('does not mutate the original graph', () => {
     const patched = patchRootDeps(baseGraph, 'new-task');
-    const newTask: Task = {
+    const newTask: ConcreteTask = {
+      kind: 'task',
       id: 'new-task',
       shortName: 'New Task',
       description: 'Brand new.',
@@ -158,7 +159,6 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
-      vine: undefined,
     };
     addTask(patched, newTask);
 
@@ -167,7 +167,8 @@ describe('addTask', () => {
   });
 
   it('throws VineError for duplicate id', () => {
-    const dup: Task = {
+    const dup: ConcreteTask = {
+      kind: 'task',
       id: 'leaf-a',
       shortName: 'Dup',
       description: '',
@@ -175,7 +176,6 @@ describe('addTask', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
-      vine: undefined,
     };
 
     expect(() => addTask(baseGraph, dup)).toThrow(VineError);
@@ -183,7 +183,8 @@ describe('addTask', () => {
 
   it('throws VineValidationError for invalid dependency ref', () => {
     const patched = patchRootDeps(baseGraph, 'bad-ref');
-    const badTask: Task = {
+    const badTask: ConcreteTask = {
+      kind: 'task',
       id: 'bad-ref',
       shortName: 'Bad Ref',
       description: '',
@@ -191,14 +192,14 @@ describe('addTask', () => {
       dependencies: ['does-not-exist'],
       decisions: [],
       attachments: [],
-      vine: undefined,
     };
 
     expect(() => addTask(patched, badTask)).toThrow(VineValidationError);
   });
 
   it('throws VineValidationError when task is unreachable (island)', () => {
-    const island: Task = {
+    const island: ConcreteTask = {
+      kind: 'task',
       id: 'orphan',
       shortName: 'Orphan',
       description: '',
@@ -206,7 +207,6 @@ describe('addTask', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
-      vine: undefined,
     };
 
     try {
@@ -430,7 +430,7 @@ describe('setStatus', () => {
   it('does not mutate the original graph', () => {
     setStatus(baseGraph, 'leaf-a', 'started');
 
-    const original = baseGraph.tasks.get('leaf-a')!;
+    const original = baseGraph.tasks.get('leaf-a')! as ConcreteTask;
     expect(original.status).toBe('complete');
   });
 
@@ -575,8 +575,8 @@ describe('updateTask', () => {
 
   it('preserves fields not included in update', () => {
     const result = updateTask(baseGraph, 'leaf-a', { shortName: 'Alpha Leaf' });
-    const updated = result.tasks.get('leaf-a')!;
-    const original = baseGraph.tasks.get('leaf-a')!;
+    const updated = result.tasks.get('leaf-a')! as ConcreteTask;
+    const original = baseGraph.tasks.get('leaf-a')! as ConcreteTask;
 
     expect(updated.id).toBe(original.id);
     expect(updated.status).toBe(original.status);

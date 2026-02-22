@@ -1,22 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { validate } from '../src/validator.js';
 import { VineValidationError } from '../src/errors.js';
-import type { VineGraph } from '../src/types.js';
+import type { VineGraph, Task, RefTask } from '../src/types.js';
 
 function makeGraph(tasks: Array<{ id: string; deps?: string[] }>): VineGraph {
-  const taskMap = new Map();
+  const taskMap = new Map<string, Task>();
   const order: string[] = [];
 
   for (const t of tasks) {
     taskMap.set(t.id, {
+      kind: 'task',
       id: t.id,
       shortName: t.id,
       description: '',
       status: 'complete' as const,
       dependencies: t.deps ?? [],
       decisions: [],
-      attachments: [] as readonly [],
-      vine: undefined,
+      attachments: [],
     });
     order.push(t.id);
   }
@@ -133,7 +133,8 @@ describe('validate', () => {
     const graph = makeGraph([{ id: 'root', deps: ['ref-node'] }, { id: 'ref-node' }]);
     // Manually make ref-node a ref with empty vine
     const tasks = new Map(graph.tasks);
-    tasks.set('ref-node', { ...tasks.get('ref-node')!, vine: '', status: undefined });
+    const refNode: RefTask = { kind: 'ref', id: 'ref-node', shortName: 'ref-node', description: '', dependencies: [], decisions: [], vine: '' };
+    tasks.set('ref-node', refNode);
     const refGraph: VineGraph = { ...graph, tasks };
 
     try {
@@ -145,50 +146,14 @@ describe('validate', () => {
     }
   });
 
-  it('throws ref-uri-required when ref node has status set', () => {
-    const graph = makeGraph([{ id: 'root', deps: ['ref-node'] }, { id: 'ref-node' }]);
-    const tasks = new Map(graph.tasks);
-    // vine is set but status is also set — invalid
-    tasks.set('ref-node', { ...tasks.get('ref-node')!, vine: './other.vine', status: 'complete' as const });
-    const refGraph: VineGraph = { ...graph, tasks };
-
-    try {
-      validate(refGraph);
-      expect.unreachable('should have thrown');
-    } catch (e) {
-      expect(e).toBeInstanceOf(VineValidationError);
-      expect((e as VineValidationError).constraint).toBe('ref-uri-required');
-    }
-  });
-
-  it('throws no-ref-attachments when ref node has attachments', () => {
-    const graph = makeGraph([{ id: 'root', deps: ['ref-node'] }, { id: 'ref-node' }]);
-    const tasks = new Map(graph.tasks);
-    tasks.set('ref-node', {
-      ...tasks.get('ref-node')!,
-      vine: './other.vine',
-      status: undefined,
-      attachments: [{ class: 'artifact' as const, mime: 'text/plain', uri: 'file.txt' }],
-    });
-    const refGraph: VineGraph = { ...graph, tasks };
-
-    try {
-      validate(refGraph);
-      expect.unreachable('should have thrown');
-    } catch (e) {
-      expect(e).toBeInstanceOf(VineValidationError);
-      expect((e as VineValidationError).constraint).toBe('no-ref-attachments');
-    }
-  });
+  // "ref node has status set" is now a compile-time error — RefTask has no status field.
+  // "ref node has attachments" is now a compile-time error — RefTask has no attachments field.
 
   it('passes for valid ref node', () => {
     const graph = makeGraph([{ id: 'root', deps: ['ref-node'] }, { id: 'ref-node' }]);
     const tasks = new Map(graph.tasks);
-    tasks.set('ref-node', {
-      ...tasks.get('ref-node')!,
-      vine: './other.vine',
-      status: undefined,
-    });
+    const refNode: RefTask = { kind: 'ref', id: 'ref-node', shortName: 'ref-node', description: '', dependencies: [], decisions: [], vine: './other.vine' };
+    tasks.set('ref-node', refNode);
     const refGraph: VineGraph = { ...graph, tasks };
 
     expect(() => validate(refGraph)).not.toThrow();

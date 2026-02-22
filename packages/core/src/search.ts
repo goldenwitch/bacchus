@@ -115,7 +115,7 @@ export function getSummary(graph: VineGraph): GraphSummary {
   };
 
   for (const task of graph.tasks.values()) {
-    if (task.status !== undefined) {
+    if (task.kind === 'task') {
       byStatus[task.status] += 1;
     }
   }

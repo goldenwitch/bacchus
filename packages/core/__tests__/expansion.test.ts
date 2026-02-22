@@ -1,21 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { expandVineRef } from '../src/expansion.js';
-import type { Task, VineGraph } from '../src/types.js';
+import type { Task, VineGraph, ConcreteTask, RefTask } from '../src/types.js';
 import { VineError } from '../src/errors.js';
 
 function makeParentGraph(overrides?: Partial<{ refDeps: string[]; refDecisions: string[]; refDescription: string }>): VineGraph {
   const tasks = new Map<string, Task>();
   tasks.set('root', {
-    id: 'root', shortName: 'Root', description: '', status: 'started',
-    dependencies: ['setup', 'ext-lib'], decisions: [], attachments: [], vine: undefined,
+    kind: 'task', id: 'root', shortName: 'Root', description: '', status: 'started',
+    dependencies: ['setup', 'ext-lib'], decisions: [], attachments: [],
   });
   tasks.set('setup', {
-    id: 'setup', shortName: 'Setup', description: '', status: 'complete',
-    dependencies: [], decisions: [], attachments: [], vine: undefined,
+    kind: 'task', id: 'setup', shortName: 'Setup', description: '', status: 'complete',
+    dependencies: [], decisions: [], attachments: [],
   });
   tasks.set('ext-lib', {
-    id: 'ext-lib', shortName: 'External Library', description: overrides?.refDescription ?? '', status: undefined,
-    dependencies: overrides?.refDeps ?? ['setup'], decisions: overrides?.refDecisions ?? [], attachments: [], vine: './lib.vine',
+    kind: 'ref', id: 'ext-lib', shortName: 'External Library', description: overrides?.refDescription ?? '',
+    dependencies: overrides?.refDeps ?? ['setup'], decisions: overrides?.refDecisions ?? [], vine: './lib.vine',
   });
   return {
     version: '1.1.0', title: undefined, delimiter: '---', prefix: undefined,
@@ -26,12 +26,12 @@ function makeParentGraph(overrides?: Partial<{ refDeps: string[]; refDecisions: 
 function makeChildGraph(overrides?: Partial<{ prefix: string | undefined }>): VineGraph {
   const tasks = new Map<string, Task>();
   tasks.set('child-root', {
-    id: 'child-root', shortName: 'Lib Root', description: 'The library root.', status: 'planning',
-    dependencies: ['util'], decisions: ['Use ESM only.'], attachments: [], vine: undefined,
+    kind: 'task', id: 'child-root', shortName: 'Lib Root', description: 'The library root.', status: 'planning',
+    dependencies: ['util'], decisions: ['Use ESM only.'], attachments: [],
   });
   tasks.set('util', {
-    id: 'util', shortName: 'Utilities', description: 'Shared helpers.', status: 'notstarted',
-    dependencies: [], decisions: [], attachments: [], vine: undefined,
+    kind: 'task', id: 'util', shortName: 'Utilities', description: 'Shared helpers.', status: 'notstarted',
+    dependencies: [], decisions: [], attachments: [],
   });
   return {
     version: '1.1.0', title: undefined, delimiter: '---', prefix: overrides !== undefined && 'prefix' in overrides ? overrides.prefix : 'lib',
@@ -45,9 +45,10 @@ describe('expandVineRef', () => {
     const result = expandVineRef(makeParentGraph(), 'ext-lib', makeChildGraph());
     expect(result.tasks.has('ext-lib')).toBe(true);
     expect(result.tasks.has('lib/util')).toBe(true);
-    expect(result.tasks.get('ext-lib')!.status).toBe('planning');
-    expect(result.tasks.get('ext-lib')!.vine).toBeUndefined();
-    expect(result.tasks.get('ext-lib')!.description).toBe('The library root.');
+    const expanded = result.tasks.get('ext-lib')! as ConcreteTask;
+    expect(expanded.kind).toBe('task');
+    expect(expanded.status).toBe('planning');
+    expect(expanded.description).toBe('The library root.');
   });
 
   it('uses refNodeId as default prefix when child has no prefix', () => {
@@ -85,14 +86,14 @@ describe('expandVineRef', () => {
 
   it('adopts attachments from child root', () => {
     const child = makeChildGraph();
-    const childRoot = child.tasks.get('child-root')!;
-    const withAttachment: Task = { ...childRoot, attachments: [{ class: 'artifact', mime: 'text/plain', uri: 'readme.md' }] };
+    const childRoot = child.tasks.get('child-root')! as ConcreteTask;
+    const withAttachment: ConcreteTask = { ...childRoot, attachments: [{ class: 'artifact', mime: 'text/plain', uri: 'readme.md' }] };
     const modifiedTasks = new Map(child.tasks);
     modifiedTasks.set('child-root', withAttachment);
     const modifiedChild: VineGraph = { ...child, tasks: modifiedTasks };
     
     const result = expandVineRef(makeParentGraph(), 'ext-lib', modifiedChild);
-    expect(result.tasks.get('ext-lib')!.attachments).toEqual([{ class: 'artifact', mime: 'text/plain', uri: 'readme.md' }]);
+    expect((result.tasks.get('ext-lib')! as ConcreteTask).attachments).toEqual([{ class: 'artifact', mime: 'text/plain', uri: 'readme.md' }]);
   });
 
   it('throws VineError on ID collision', () => {
@@ -100,8 +101,8 @@ describe('expandVineRef', () => {
     const parent = makeParentGraph();
     const tasks = new Map(parent.tasks);
     tasks.set('lib/util', {
-      id: 'lib/util', shortName: 'Collision', description: '', status: 'complete',
-      dependencies: [], decisions: [], attachments: [], vine: undefined,
+      kind: 'task', id: 'lib/util', shortName: 'Collision', description: '', status: 'complete',
+      dependencies: [], decisions: [], attachments: [],
     });
     const order = [...parent.order, 'lib/util'];
     // Also need root to depend on lib/util for connectivity

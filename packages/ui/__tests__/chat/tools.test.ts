@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parse, serialize } from '@bacchus/core';
-import type { VineGraph } from '@bacchus/core';
+import type { VineGraph, ConcreteTask } from '@bacchus/core';
 import type { ToolCall } from '../../src/lib/chat/types.js';
 import { GRAPH_TOOLS, executeToolCall } from '../../src/lib/chat/tools.js';
 
@@ -98,7 +98,7 @@ describe('executeToolCall', () => {
       expect(result.graph).not.toBe(graph);
       expect(result.graph?.tasks.has('new-task')).toBe(true);
       expect(result.graph?.tasks.get('new-task')?.shortName).toBe('New Task');
-      expect(result.graph?.tasks.get('new-task')?.status).toBe('planning');
+      expect((result.graph?.tasks.get('new-task') as ConcreteTask | undefined)?.status).toBe('planning');
       expect(result.graph?.tasks.get('new-task')?.dependencies).toContain(
         'leaf',
       );
@@ -114,7 +114,7 @@ describe('executeToolCall', () => {
         call('add_task', { id: 'default-task', shortName: 'Default' }),
       );
       expect(result.isError).toBe(false);
-      expect(result.graph?.tasks.get('default-task')?.status).toBe(
+      expect((result.graph?.tasks.get('default-task') as ConcreteTask | undefined)?.status).toBe(
         'notstarted',
       );
     });
@@ -185,7 +185,7 @@ describe('executeToolCall', () => {
         call('set_status', { id: 'leaf', status: 'blocked' }),
       );
       expect(result.isError).toBe(false);
-      expect(result.graph?.tasks.get('leaf')?.status).toBe('blocked');
+      expect((result.graph?.tasks.get('leaf') as ConcreteTask | undefined)?.status).toBe('blocked');
     });
 
     it('returns error for unknown task', () => {
@@ -359,9 +359,8 @@ A simple leaf task.
       expect(result.isError).toBe(false);
       expect(result.graph?.tasks.has('child-ref')).toBe(true);
       const task = result.graph?.tasks.get('child-ref');
-      expect(task?.vine).toBe('./child.vine');
-      expect(task?.status).toBeUndefined();
-      expect(task?.attachments).toEqual([]);
+      expect(task?.kind).toBe('ref');
+      expect(task?.kind === 'ref' && task.vine).toBe('./child.vine');
       expect(result.result).toContain('Added reference');
       // Root should now depend on the ref node
       expect(result.graph?.tasks.get('root')?.dependencies).toContain('child-ref');

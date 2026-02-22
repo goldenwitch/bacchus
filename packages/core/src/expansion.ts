@@ -1,4 +1,4 @@
-import type { Task, VineGraph } from './types.js';
+import type { ConcreteTask, RefTask, Task, VineGraph } from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 
@@ -62,7 +62,7 @@ export function expandVineRef(
   if (!refNode) {
     throw new VineError(`Task "${refNodeId}" does not exist in the parent graph.`);
   }
-  if (refNode.vine === undefined) {
+  if (refNode.kind !== 'ref') {
     throw new VineError(`Task "${refNodeId}" is not a reference node.`);
   }
 
@@ -91,12 +91,16 @@ export function expandVineRef(
   if (!childRoot) {
     throw new VineError('Child graph root task not found.');
   }
+  if (childRoot.kind !== 'task') {
+    throw new VineError('Child graph root must be a concrete task.');
+  }
 
   const childRootDeps = childRoot.dependencies.map((d) => idMap.get(d) ?? d);
   const mergedDeps = [...new Set([...childRootDeps, ...refNode.dependencies])];
   const mergedDecisions = [...childRoot.decisions, ...refNode.decisions];
 
-  const expandedRoot: Task = {
+  const expandedRoot: ConcreteTask = {
+    kind: 'task',
     id: refNodeId,
     shortName: childRoot.shortName,
     description: childRoot.description,
@@ -104,7 +108,6 @@ export function expandVineRef(
     dependencies: mergedDeps,
     decisions: mergedDecisions,
     attachments: childRoot.attachments,
-    vine: undefined,
   };
 
   // 7. Remap all non-root child tasks.
@@ -113,16 +116,32 @@ export function expandVineRef(
     if (childId === childRootId) continue;
     const childTask = childGraph.tasks.get(childId);
     if (!childTask) continue;
-    remappedChildTasks.push({
-      id: idMap.get(childTask.id) ?? childTask.id,
-      shortName: childTask.shortName,
-      description: childTask.description,
-      status: childTask.status,
-      dependencies: childTask.dependencies.map((d) => idMap.get(d) ?? d),
-      decisions: childTask.decisions,
-      attachments: childTask.attachments,
-      vine: childTask.vine,
-    });
+
+    const remappedId = idMap.get(childTask.id) ?? childTask.id;
+    const remappedDeps = childTask.dependencies.map((d) => idMap.get(d) ?? d);
+
+    if (childTask.kind === 'ref') {
+      remappedChildTasks.push({
+        kind: 'ref',
+        id: remappedId,
+        shortName: childTask.shortName,
+        description: childTask.description,
+        dependencies: remappedDeps,
+        decisions: childTask.decisions,
+        vine: childTask.vine,
+      } satisfies RefTask);
+    } else {
+      remappedChildTasks.push({
+        kind: 'task',
+        id: remappedId,
+        shortName: childTask.shortName,
+        description: childTask.description,
+        status: childTask.status,
+        dependencies: remappedDeps,
+        decisions: childTask.decisions,
+        attachments: childTask.attachments,
+      } satisfies ConcreteTask);
+    }
   }
 
   // 8. Build the new tasks map.

@@ -225,7 +225,7 @@ describe('serialize', () => {
     const reparsed = parse(output);
 
     const ext = reparsed.tasks.get('ext');
-    expect(ext!.vine).toBe('./lib.vine');
+    expect((ext as import('../src/types.js').RefTask).vine).toBe('./lib.vine');
     expect(ext!.description).toBe('A reference to the library.');
     expect(ext!.dependencies).toEqual(['dep']);
     expect(ext!.decisions).toEqual(['Use v2 or v3?']);

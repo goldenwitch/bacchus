@@ -1,4 +1,4 @@
-import type { Status, Task, VineGraph } from './types.js';
+import type { ConcreteTask, Status, Task, VineGraph } from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 
@@ -107,11 +107,11 @@ export function setStatus(
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
-  if (task.vine !== undefined) {
+  if (task.kind === 'ref') {
     throw new VineError(`Cannot set status on reference node "${id}".`);
   }
 
-  const updated: Task = { ...task, status };
+  const updated: ConcreteTask = { ...task, status };
   const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
   validate(next);
   return next;
@@ -133,11 +133,11 @@ export function updateTask(
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
-  if (task.vine !== undefined && fields.attachments !== undefined) {
+  if (task.kind === 'ref' && fields.attachments !== undefined) {
     throw new VineError(`Cannot set attachments on reference node "${id}".`);
   }
 
-  const updated: Task = { ...task, ...fields };
+  const updated: Task = { ...task, ...fields } as Task;
   const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
   validate(next);
   return next;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
-import type { Task } from '@bacchus/core';
+import type { ConcreteTask } from '@bacchus/core';
 import type { SimNode } from '../../src/lib/types.js';
 import { STATUS_MAP } from '../../src/lib/status.js';
 import GraphNode from '../../src/lib/components/GraphNode.svelte';
@@ -22,9 +22,10 @@ vi.mock('../../src/lib/sound.js', () => ({
 // ---------------------------------------------------------------------------
 
 function makeSimNode(
-  overrides: Partial<SimNode & { task?: Partial<Task> }> = {},
+  overrides: Partial<SimNode & { task?: Partial<ConcreteTask> }> = {},
 ): SimNode {
-  const task: Task = {
+  const task: ConcreteTask = {
+    kind: 'task',
     id: overrides.id ?? 'node-1',
     shortName: overrides.task?.shortName ?? 'Test Node',
     description: overrides.task?.description ?? 'Test description',
@@ -32,7 +33,6 @@ function makeSimNode(
     dependencies: overrides.task?.dependencies ?? [],
     decisions: overrides.task?.decisions ?? [],
     attachments: [],
-    vine: undefined,
   };
   return {
     id: task.id,

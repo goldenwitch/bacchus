@@ -66,9 +66,10 @@ describe('parse', () => {
 
       const graph = parse(input);
       expect(graph.tasks.size).toBe(3);
-      expect(graph.tasks.get('setup')!.status).toBe('complete');
-      expect(graph.tasks.get('ext')!.vine).toBe('./other.vine');
-      expect(graph.tasks.get('ext')!.status).toBeUndefined();
+      expect(graph.tasks.get('setup')!.kind).toBe('task');
+      expect((graph.tasks.get('setup')! as import('../src/types.js').ConcreteTask).status).toBe('complete');
+      expect(graph.tasks.get('ext')!.kind).toBe('ref');
+      expect((graph.tasks.get('ext')! as import('../src/types.js').RefTask).vine).toBe('./other.vine');
     });
 
     it('v1.0.0 file parses identically (backward compat)', () => {
@@ -86,7 +87,7 @@ describe('parse', () => {
       const graph = parse(input);
       expect(graph.version).toBe('1.0.0');
       expect(graph.tasks.size).toBe(2);
-      expect(graph.tasks.get('root')!.vine).toBeUndefined();
+      expect(graph.tasks.get('root')!.kind).toBe('task');
     });
 
     it('throws VineParseError on duplicate ids', () => {
@@ -381,10 +382,9 @@ describe('parse', () => {
       const graph = parse(input);
       const ext = graph.tasks.get('ext');
       expect(ext).toBeDefined();
-      expect(ext!.vine).toBe('./other.vine');
-      expect(ext!.status).toBeUndefined();
+      expect(ext!.kind).toBe('ref');
+      expect((ext! as import('../src/types.js').RefTask).vine).toBe('./other.vine');
       expect(ext!.shortName).toBe('External');
-      expect(ext!.attachments).toEqual([]);
     });
 
     it('parses ref block with deps, decisions, and description', () => {

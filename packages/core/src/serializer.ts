@@ -48,7 +48,7 @@ export function serialize(graph: VineGraph): string {
 
     const lines: string[] = [];
 
-    if (task.vine !== undefined) {
+    if (task.kind === 'ref') {
       // ── Reference node ──────────────────────────────────────────
       lines.push(`ref [${task.id}] ${task.shortName} (${task.vine})`);
 
@@ -71,8 +71,7 @@ export function serialize(graph: VineGraph): string {
     } else {
       // ── Concrete task node ──────────────────────────────────────
       // Header — status is guaranteed defined for concrete tasks
-      lines.push(`[${task.id}] ${task.shortName} (${task.status as string})`);
-
+      lines.push(`[${task.id}] ${task.shortName} (${task.status})`);
       // Description — split on newlines so internal blank lines are preserved
       if (task.description !== '') {
         for (const descLine of task.description.split('\n')) {

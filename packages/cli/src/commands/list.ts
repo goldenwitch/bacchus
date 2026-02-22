@@ -10,6 +10,10 @@ import {
 } from '@bacchus/core';
 import type { Task } from '@bacchus/core';
 
+function statusLabel(task: Task): string {
+  return task.kind === 'task' ? task.status : 'ref';
+}
+
 function printTaskTable(tasks: Task[]): void {
   if (tasks.length === 0) {
     console.log('No tasks found.');
@@ -19,7 +23,7 @@ function printTaskTable(tasks: Task[]): void {
   // Calculate column widths.
   const idWidth = Math.max(2, ...tasks.map((t) => t.id.length));
   const nameWidth = Math.max(4, ...tasks.map((t) => t.shortName.length));
-  const statusWidth = Math.max(6, ...tasks.map((t) => t.status.length));
+  const statusWidth = Math.max(6, ...tasks.map((t) => statusLabel(t).length));
 
   const header = `${'ID'.padEnd(idWidth)}  ${'NAME'.padEnd(nameWidth)}  ${'STATUS'.padEnd(statusWidth)}`;
   console.log(header);
@@ -27,7 +31,7 @@ function printTaskTable(tasks: Task[]): void {
 
   for (const task of tasks) {
     console.log(
-      `${task.id.padEnd(idWidth)}  ${task.shortName.padEnd(nameWidth)}  ${task.status.padEnd(statusWidth)}`,
+      `${task.id.padEnd(idWidth)}  ${task.shortName.padEnd(nameWidth)}  ${statusLabel(task).padEnd(statusWidth)}`,
     );
   }
 }

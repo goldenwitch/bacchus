@@ -23,24 +23,44 @@ export interface Attachment {
   readonly uri: string;
 }
 
+// ---------------------------------------------------------------------------
+// Discriminated union: Task = ConcreteTask | RefTask
+// ---------------------------------------------------------------------------
+
 /**
- * A single task in the vine graph.
- * All fields are deeply readonly — consumers cannot mutate graph data.
- *
- * When `vine` is set the node is a **reference node** — it points to an
- * external `.vine` file and carries no status of its own (`status` will
- * be `undefined`).
+ * Fields shared by both concrete tasks and reference nodes.
  */
-export interface Task {
+interface BaseNode {
   readonly id: string;
   readonly shortName: string;
   readonly description: string;
-  readonly status: Status | undefined;
   readonly dependencies: readonly string[];
   readonly decisions: readonly string[];
-  readonly attachments: readonly Attachment[];
-  readonly vine: string | undefined;
 }
+
+/**
+ * A concrete task with a completion status and optional attachments.
+ */
+export interface ConcreteTask extends BaseNode {
+  readonly kind: 'task';
+  readonly status: Status;
+  readonly attachments: readonly Attachment[];
+}
+
+/**
+ * A reference node that proxies an external `.vine` graph.
+ * Carries no status and no attachments.
+ */
+export interface RefTask extends BaseNode {
+  readonly kind: 'ref';
+  readonly vine: string;
+}
+
+/**
+ * A single node in the vine graph — either a concrete task or a reference.
+ * Discriminate on `kind` (`'task'` or `'ref'`) for full type narrowing.
+ */
+export type Task = ConcreteTask | RefTask;
 
 /**
  * An immutable task graph parsed from a .vine file.
@@ -81,8 +101,15 @@ export function isValidStatus(value: string): value is Status {
 }
 
 /**
- * Type guard: returns true when `task` is a reference node (has a `vine` URI).
+ * Type guard: returns true when `task` is a reference node.
  */
-export function isVineRef(task: Task): boolean {
-  return task.vine !== undefined;
+export function isVineRef(task: Task): task is RefTask {
+  return task.kind === 'ref';
+}
+
+/**
+ * Type guard: returns true when `task` is a concrete task.
+ */
+export function isConcreteTask(task: Task): task is ConcreteTask {
+  return task.kind === 'task';
 }

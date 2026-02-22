@@ -294,7 +294,7 @@
   const focusedStatusColor = $derived.by(() => {
     if (!focusedTaskId) return 'var(--color-vine)';
     const task = getTask(graph, focusedTaskId);
-    return getStatusColor(task.status);
+    return task.kind === 'task' ? getStatusColor(task.status) : 'var(--color-vine)';
   });
 
   // Derived focused and hovered tasks

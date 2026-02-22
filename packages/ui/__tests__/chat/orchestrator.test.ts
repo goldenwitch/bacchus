@@ -119,7 +119,8 @@ describe('ChatOrchestrator', () => {
     const graphUpdates = events.filter((e) => e.type === 'graph_update');
     expect(graphUpdates).toHaveLength(1);
     if (graphUpdates[0]?.type === 'graph_update') {
-      expect(graphUpdates[0].graph.tasks.get('leaf')?.status).toBe('blocked');
+      const leaf = graphUpdates[0].graph.tasks.get('leaf');
+      expect(leaf?.kind === 'task' && leaf.status).toBe('blocked');
     }
   });
 

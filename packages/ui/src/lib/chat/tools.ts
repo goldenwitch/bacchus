@@ -1,4 +1,4 @@
-import type { VineGraph, Task, Status } from '@bacchus/core';
+import type { VineGraph, Task, Status, ConcreteTask, RefTask } from '@bacchus/core';
 import {
   addTask,
   removeTask,
@@ -337,7 +337,8 @@ export function executeToolCall(
         if (typeof input.id !== 'string' || typeof input.shortName !== 'string') {
           return { graph, result: 'Invalid input: "id" and "shortName" must be strings.', isError: true };
         }
-        const task: Task = {
+        const task: ConcreteTask = {
+          kind: 'task',
           id: input.id,
           shortName: input.shortName,
           status:
@@ -353,7 +354,6 @@ export function executeToolCall(
             ? (input.decisions as string[])
             : [],
           attachments: [],
-          vine: undefined,
         };
         // Patch root to depend on the new task so it doesn't become an island.
         // addTask inserts before root; we need root -> new-task for connectivity.
@@ -503,6 +503,9 @@ export function executeToolCall(
           uri: string;
         };
         const task = getTask(graph, taskId);
+        if (task.kind !== 'task') {
+          return { graph, result: `Cannot add attachment to reference node "${taskId}".`, isError: true };
+        }
         const newAttachment = { class: attachmentClass, mime: mimeType, uri };
         const existingAttachments = task.attachments;
         if (existingAttachments.some((a) => a.uri === uri)) {
@@ -538,10 +541,10 @@ export function executeToolCall(
             isError: true,
           };
         }
-        const refTask: Task = {
+        const refTask: RefTask = {
+          kind: 'ref',
           id: input.id,
           shortName: input.shortName,
-          status: undefined,
           description:
             typeof input.description === 'string' ? input.description : '',
           dependencies: Array.isArray(input.dependencies)
@@ -550,7 +553,6 @@ export function executeToolCall(
           decisions: Array.isArray(input.decisions)
             ? (input.decisions as string[])
             : [],
-          attachments: [],
           vine: input.uri,
         };
         const rootId = graph.order[0];
@@ -607,6 +609,9 @@ export function executeToolCall(
         }
         const { taskId, uri } = call.input as { taskId: string; uri: string };
         const task = getTask(graph, taskId);
+        if (task.kind !== 'task') {
+          return { graph, result: `Cannot remove attachment from reference node "${taskId}".`, isError: true };
+        }
         const existingAttachments = task.attachments;
         const filtered = existingAttachments.filter((a) => a.uri !== uri);
         if (filtered.length === existingAttachments.length) {

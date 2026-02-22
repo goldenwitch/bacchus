@@ -91,7 +91,7 @@ describe('filterByStatus', () => {
     const allStatuses = ['complete', 'started', 'reviewing', 'planning', 'notstarted', 'blocked'] as const;
     for (const s of allStatuses) {
       const result = filterByStatus(refGraph, s);
-      expect(result.every((t) => t.vine === undefined)).toBe(true);
+      expect(result.every((t) => t.kind === 'task')).toBe(true);
     }
   });
 });

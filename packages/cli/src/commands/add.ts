@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readGraph, writeGraph } from '../io.js';
 import { handleCommandError } from '../errors.js';
 import { addTask, VALID_STATUSES, isValidStatus } from '@bacchus/core';
-import type { Task } from '@bacchus/core';
+import type { ConcreteTask } from '@bacchus/core';
 
 export const addCommand = new Command('add')
   .description('Add a new task to a .vine file')
@@ -40,7 +40,8 @@ export const addCommand = new Command('add')
       }
 
       try {
-        const task: Task = {
+        const task: ConcreteTask = {
+          kind: 'task',
           id: opts.id,
           shortName: opts.name,
           description: opts.description,
@@ -48,7 +49,6 @@ export const addCommand = new Command('add')
           dependencies: opts.dependsOn ?? [],
           decisions: [],
           attachments: [],
-          vine: undefined,
         };
 
         let graph = readGraph(file);
