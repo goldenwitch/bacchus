@@ -161,10 +161,9 @@ export class AnthropicChatService implements ChatService {
         const readResult = await Promise.race([
           reader.read(),
           new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error('SSE stream read timed out (no data for 30 s)')),
-              READ_TIMEOUT_MS,
-            ),
+            setTimeout(() => {
+              reject(new Error('SSE stream read timed out (no data for 30 s)'));
+            }, READ_TIMEOUT_MS),
           ),
         ]);
 
