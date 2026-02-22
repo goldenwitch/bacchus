@@ -474,7 +474,7 @@
           font-size={radius * 0.28}
           style="pointer-events:none"
         >📎</text>
-        {#if node.task.kind === 'task' && node.task.attachments.length > 1}
+        {#if node.task.attachments.length > 1}
           <text
             x={radius * 0.65 + radius * 0.18}
             y={radius * 0.65 + radius * 0.18}
@@ -483,7 +483,7 @@
             font-size={radius * 0.18}
             fill="white"
             style="pointer-events:none"
-          >{node.task.kind === 'task' ? node.task.attachments.length : 0}</text>
+          >{node.task.attachments.length}</text>
         {/if}
       </g>
     {/if}

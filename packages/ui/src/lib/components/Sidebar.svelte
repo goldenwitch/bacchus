@@ -109,7 +109,7 @@
       <div class="sidebar-section">
         <h3 class="sidebar-heading">Attachments</h3>
         <ul class="attachment-list">
-          {#each task.kind === 'task' ? task.attachments : [] as att (att.uri)}
+          {#each task.attachments as att (att.uri)}
             <li class="attachment-item">
               <span class="attachment-icon">
                 {att.class === 'artifact' ? '📦' : att.class === 'guidance' ? '📘' : '📄'}

@@ -40,19 +40,30 @@ interface Attachment {
 }
 ```
 
-### `Task`
+### `Task` (discriminated union)
 
 ```ts
-interface Task {
+// Fields shared by both concrete tasks and reference nodes.
+interface BaseNode {
   readonly id: string;
   readonly shortName: string;
   readonly description: string;
-  readonly status: Status | undefined;
   readonly dependencies: readonly string[];
   readonly decisions: readonly string[];
-  readonly attachments: readonly Attachment[];
-  readonly vine: string | undefined;
 }
+
+interface ConcreteTask extends BaseNode {
+  readonly kind: 'task';
+  readonly status: Status;
+  readonly attachments: readonly Attachment[];
+}
+
+interface RefTask extends BaseNode {
+  readonly kind: 'ref';
+  readonly vine: string;
+}
+
+type Task = ConcreteTask | RefTask;
 ```
 
 ### `VineGraph`
@@ -70,8 +81,10 @@ interface VineGraph {
 
 **Field notes (v1.1.0):**
 
-- `status` — `Status | undefined`. For concrete tasks this is one of the six status keywords. For **reference nodes** (`ref` lines), `status` is `undefined`.
-- `vine` — `string | undefined`. For reference nodes this is the URI pointing to the child `.vine` file. For concrete tasks, `vine` is `undefined`.
+- `kind` — discriminator field. `'task'` for concrete tasks, `'ref'` for reference nodes. Narrow via `task.kind === 'task'` before accessing `status`/`attachments`, or `task.kind === 'ref'` before accessing `vine`.
+- `status` — only on `ConcreteTask`. One of the six status keywords.
+- `attachments` — only on `ConcreteTask`. Resource attachments.
+- `vine` — only on `RefTask`. URI pointing to the child `.vine` file.
 - `id` — now supports slash-separated segments (e.g. `ds/components`) to accommodate prefixed IDs from expansion.
 
 ### `GraphSummary`

@@ -1,21 +1,19 @@
 vine 1.1.0
 title: Design System
 prefix: ds
-
 ---
-
+[review] Design Review (notstarted)
+Stakeholder sign-off on the design system.
+-> docs
+---
+[docs] Documentation Site (notstarted)
+Generate component documentation with examples.
+-> components
+---
+[components] Component Library (notstarted)
+Build reusable UI components.
+-> tokens
+---
 [tokens] Design Tokens (planning)
 Define color, spacing, and typography tokens.
-? Use CSS custom properties or SASS variables?
-
-[components] Component Library (notstarted)
-> tokens
-Build reusable UI components.
-
-[docs] Documentation Site (notstarted)
-> components
-Generate component documentation with examples.
-
-[review] Design Review (notstarted)
-> docs
-Stakeholder sign-off on the design system.
+> Use CSS custom properties or SASS variables?
