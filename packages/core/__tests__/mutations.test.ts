@@ -95,6 +95,7 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
+      vine: undefined,
     };
     const result = addTask(patched, newTask);
 
@@ -136,6 +137,7 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
+      vine: undefined,
     };
     const result = addTask(patched, newTask);
 
@@ -156,6 +158,7 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
+      vine: undefined,
     };
     addTask(patched, newTask);
 
@@ -172,6 +175,7 @@ describe('addTask', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
+      vine: undefined,
     };
 
     expect(() => addTask(baseGraph, dup)).toThrow(VineError);
@@ -187,6 +191,7 @@ describe('addTask', () => {
       dependencies: ['does-not-exist'],
       decisions: [],
       attachments: [],
+      vine: undefined,
     };
 
     expect(() => addTask(patched, badTask)).toThrow(VineValidationError);
@@ -201,6 +206,7 @@ describe('addTask', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
+      vine: undefined,
     };
 
     try {

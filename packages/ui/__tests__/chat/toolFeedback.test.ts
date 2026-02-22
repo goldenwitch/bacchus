@@ -177,7 +177,7 @@ describe('buildToolFeedback', () => {
     const detail = buildToolFeedback(
       call('expand_ref', { refNodeId: 'ref-1' }),
       null,
-      'Expanded reference "my-ref" (3 tasks) inlined',
+      'Expanded reference "my-ref" (3 tasks inlined)',
     );
     expect(detail.kind).toBe('expand_ref');
     if (detail.kind === 'expand_ref') {

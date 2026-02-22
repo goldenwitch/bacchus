@@ -139,7 +139,7 @@ describe('executeToolCall', () => {
     });
 
     it('adds a task to an empty graph without root patching', () => {
-      const emptyGraph: VineGraph = { tasks: new Map(), order: [], version: '1.0.0', title: undefined, delimiter: '---' };
+      const emptyGraph: VineGraph = { tasks: new Map(), order: [], version: '1.0.0', title: undefined, delimiter: '---', prefix: undefined };
       const result = executeToolCall(
         emptyGraph,
         call('add_task', { id: 'solo', shortName: 'Solo Task' }),

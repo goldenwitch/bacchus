@@ -167,7 +167,7 @@ export function buildToolFeedback(
       };
 
     case 'expand_ref': {
-      const match = /\((\d+) tasks?\)/.exec(resultText);
+      const match = /(\d+) tasks?/.exec(resultText);
       return {
         kind: 'expand_ref',
         refNodeId: str(call.input.refNodeId),

@@ -49,8 +49,8 @@ Task blocks are separated by delimiter lines (--- by default):
 Reference blocks point to external .vine files:
   ref [id] Short Name (URI)
   Description text
-  > dependency-id
-  ? Decision note
+  -> dependency-id
+  > Decision note
 Reference nodes have no status and cannot have attachments.
 
 Status keywords: complete, started, reviewing, planning, notstarted, blocked
