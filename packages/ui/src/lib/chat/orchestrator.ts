@@ -5,6 +5,7 @@ import type {
   ChatMessage,
   ToolCall,
   ToolResult,
+  ChatLogger,
 } from './types.js';
 import { GRAPH_TOOLS, executeToolCall } from './tools.js';
 import { buildToolFeedback, type ToolFeedbackDetail } from './toolFeedback.js';
@@ -103,10 +104,12 @@ export class ChatOrchestrator {
   private readonly service: ChatService;
   private messages: ChatMessage[] = [];
   private graph: VineGraph | null;
+  private readonly logger: ChatLogger | undefined;
 
-  constructor(service: ChatService, graph: VineGraph | null) {
+  constructor(service: ChatService, graph: VineGraph | null, logger?: ChatLogger) {
     this.service = service;
     this.graph = graph;
+    this.logger = logger;
   }
 
   /**
@@ -154,6 +157,7 @@ export class ChatOrchestrator {
 
     while (rounds < MAX_TOOL_ROUNDS) {
       rounds++;
+      this.logger?.log('info', 'Orchestrator round start', { round: rounds, messageCount: this.messages.length });
 
       const systemPrompt = buildSystemPrompt(this.graph);
       let assistantText = '';
@@ -181,6 +185,7 @@ export class ChatOrchestrator {
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
+        this.logger?.log('error', 'Orchestrator error', { message });
         yield { type: 'error', message };
         return;
       }
@@ -194,18 +199,23 @@ export class ChatOrchestrator {
 
       // If no tool calls, the conversation turn is complete
       if (toolCalls.length === 0 || stopReason !== 'tool_use') {
+        this.logger?.log('info', 'Orchestrator done', { rounds, stopReason });
         yield { type: 'done' };
         return;
       }
+
+      this.logger?.log('info', 'Tool calls received', { count: toolCalls.length, tools: toolCalls.map(tc => tc.name) });
 
       // Execute tool calls and collect results
       const toolResults: ToolResult[] = [];
 
       for (const call of toolCalls) {
+        this.logger?.log('info', 'Executing tool', { name: call.name, input: call.input });
         // Capture pre-mutation graph for feedback detail
         const preGraph = this.graph;
         const execResult = executeToolCall(this.graph, call);
         const detail = buildToolFeedback(call, preGraph, execResult.result);
+        this.logger?.log('info', 'Tool result', { name: call.name, isError: execResult.isError, result: execResult.result.slice(0, 200) });
 
         // Update graph if the tool changed it
         if (execResult.graph !== this.graph) {
@@ -239,6 +249,7 @@ export class ChatOrchestrator {
       });
     }
 
+    this.logger?.log('warn', 'Max tool rounds exceeded', { rounds });
     yield {
       type: 'error',
       message:

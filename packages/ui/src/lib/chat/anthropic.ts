@@ -3,6 +3,7 @@ import type {
   ChatEvent,
   ChatMessage,
   ToolDefinition,
+  ChatLogger,
 } from './types.js';
 
 /**
@@ -15,11 +16,15 @@ export class AnthropicChatService implements ChatService {
   private readonly apiKey: string;
   private readonly model: string;
   private readonly apiUrl: string;
+  private readonly requestTimeoutMs: number;
+  private readonly logger?: ChatLogger;
 
-  constructor(options: { apiKey: string; model?: string; apiUrl?: string }) {
+  constructor(options: { apiKey: string; model?: string; apiUrl?: string; requestTimeoutMs?: number; logger?: ChatLogger }) {
     this.apiKey = options.apiKey;
     this.model = options.model ?? 'claude-opus-4-6';
     this.apiUrl = options.apiUrl ?? 'https://api.anthropic.com';
+    this.requestTimeoutMs = options.requestTimeoutMs ?? 120_000;
+    this.logger = options.logger;
   }
 
   async *sendMessage(
@@ -36,6 +41,8 @@ export class AnthropicChatService implements ChatService {
       stream: true,
     };
 
+    this.logger?.log('info', 'Sending API request', { model: this.model, messageCount: messages.length, toolCount: tools.length });
+
     const response = await fetch(`${this.apiUrl}/v1/messages`, {
       method: 'POST',
       headers: {
@@ -45,6 +52,7 @@ export class AnthropicChatService implements ChatService {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.requestTimeoutMs),
     });
 
     if (!response.ok) {
@@ -58,6 +66,7 @@ export class AnthropicChatService implements ChatService {
       } catch {
         // Not JSON — use raw text
       }
+      this.logger?.log('error', 'API error', { status: response.status, detail });
       if (response.status === 401) {
         throw new Error(
           `Authentication failed — ${detail}. Check that your API key is valid.`,
@@ -67,6 +76,8 @@ export class AnthropicChatService implements ChatService {
         `Anthropic API error ${String(response.status)}: ${detail}`,
       );
     }
+
+    this.logger?.log('info', 'API response received', { status: response.status });
 
     if (!response.body) {
       throw new Error('Response body is null — streaming not supported');
@@ -144,9 +155,20 @@ export class AnthropicChatService implements ChatService {
     let currentToolName = '';
     let currentToolJson = '';
 
+    const READ_TIMEOUT_MS = 30_000;
     try {
       for (;;) {
-        const { done, value } = await reader.read();
+        const readResult = await Promise.race([
+          reader.read(),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('SSE stream read timed out (no data for 30 s)')),
+              READ_TIMEOUT_MS,
+            ),
+          ),
+        ]);
+
+        const { done, value } = readResult;
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -190,6 +212,7 @@ export class AnthropicChatService implements ChatService {
               } catch {
                 // If JSON parsing fails, use empty input
               }
+              this.logger?.log('info', 'SSE tool_call', { id: currentToolId, name: currentToolName });
               yield {
                 type: 'tool_call',
                 call: {
@@ -208,7 +231,10 @@ export class AnthropicChatService implements ChatService {
               yield { type: 'done', stopReason: delta.stop_reason as string };
             }
           } else if (eventType === 'message_stop') {
-            // Final event — ensure we yield done
+            // Final SSE event — exit the parser immediately so we don't
+            // block on reader.read() waiting for TCP close (HTTP/2 keep-alive).
+            this.logger?.log('info', 'SSE message_stop received');
+            return;
           }
         }
       }
