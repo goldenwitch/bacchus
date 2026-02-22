@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { expandVineRef } from '../src/expansion.js';
 import type { Task, VineGraph, ConcreteTask, RefTask } from '../src/types.js';
+import { EMPTY_ANNOTATIONS } from '../src/types.js';
 import { VineError } from '../src/errors.js';
 
 function makeParentGraph(
@@ -20,6 +21,7 @@ function makeParentGraph(
     dependencies: ['setup', 'ext-lib'],
     decisions: [],
     attachments: [],
+    annotations: EMPTY_ANNOTATIONS,
   });
   tasks.set('setup', {
     kind: 'task',
@@ -30,6 +32,7 @@ function makeParentGraph(
     dependencies: [],
     decisions: [],
     attachments: [],
+    annotations: EMPTY_ANNOTATIONS,
   });
   tasks.set('ext-lib', {
     kind: 'ref',
@@ -39,6 +42,7 @@ function makeParentGraph(
     dependencies: overrides?.refDeps ?? ['setup'],
     decisions: overrides?.refDecisions ?? [],
     vine: './lib.vine',
+    annotations: EMPTY_ANNOTATIONS,
   });
   return {
     version: '1.1.0',
@@ -63,6 +67,7 @@ function makeChildGraph(
     dependencies: ['util'],
     decisions: ['Use ESM only.'],
     attachments: [],
+    annotations: EMPTY_ANNOTATIONS,
   });
   tasks.set('util', {
     kind: 'task',
@@ -73,6 +78,7 @@ function makeChildGraph(
     dependencies: [],
     decisions: [],
     attachments: [],
+    annotations: EMPTY_ANNOTATIONS,
   });
   return {
     version: '1.1.0',
@@ -175,6 +181,7 @@ describe('expandVineRef', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     });
     const order = [...parent.order, 'lib/util'];
     // Also need root to depend on lib/util for connectivity

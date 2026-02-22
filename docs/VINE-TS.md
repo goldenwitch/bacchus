@@ -56,6 +56,7 @@ interface BaseNode {
   readonly description: string;
   readonly dependencies: readonly string[];
   readonly decisions: readonly string[];
+  readonly annotations: ReadonlyMap<string, readonly string[]>;
 }
 
 interface ConcreteTask extends BaseNode {
@@ -92,6 +93,7 @@ interface VineGraph {
 - `attachments` — only on `ConcreteTask`. Resource attachments.
 - `vine` — only on `RefTask`. URI pointing to the child `.vine` file.
 - `id` — now supports slash-separated segments (e.g. `ds/components`) to accommodate prefixed IDs from expansion.
+- `annotations` — a `ReadonlyMap<string, readonly string[]>` of header annotations (v1.2.0). The key is the annotation name (e.g. `sprite`), values are the comma-separated args. Empty for pre-v1.2.0 files. The helper `getSpriteUri(task)` returns the first value of the `sprite` annotation, if present.
 
 ### `GraphSummary`
 

@@ -382,6 +382,7 @@ export function executeToolCall(
             ? (input.decisions as string[])
             : [],
           attachments: [],
+          annotations: new Map(),
         };
         // Patch root to depend on the new task so it doesn't become an island.
         // addTask inserts before root; we need root -> new-task for connectivity.
@@ -630,6 +631,7 @@ export function executeToolCall(
             ? (input.decisions as string[])
             : [],
           vine: input.uri,
+          annotations: new Map(),
         };
         const rootId = graph.order[0];
         const root = graph.tasks.get(rootId);

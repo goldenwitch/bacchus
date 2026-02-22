@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="sprite-default" viewBox="0 0 100 100">
+    <defs>
+      <!-- Main body radial gradient: glass/orb look in neutral gray -->
+      <radialGradient id="sd-body" cx="38%" cy="35%" r="55%" fx="38%" fy="35%">
+        <stop offset="0%" stop-color="#e0e0e0" />
+        <stop offset="55%" stop-color="#a0a0a0" />
+        <stop offset="100%" stop-color="#707070" />
+      </radialGradient>
+      <!-- Specular highlight gradient -->
+      <radialGradient id="sd-highlight" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="white" stop-opacity="0.7" />
+        <stop offset="100%" stop-color="white" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+    <g>
+      <animateTransform
+        attributeName="transform"
+        type="scale"
+        values="1 1;1.03 1.03;1 1"
+        dur="3s"
+        repeatCount="indefinite"
+        additive="sum"
+        calcMode="spline"
+        keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+        keyTimes="0;0.5;1"
+      />
+      <!-- Offset group so scaling is centered on (50,50) -->
+      <g transform="translate(50,50)">
+        <g transform="translate(-50,-50)">
+          <!-- Main bubble circle -->
+          <circle cx="50" cy="50" r="42" fill="url(#sd-body)" />
+          <!-- Inner specular highlight -->
+          <circle cx="38" cy="35" r="18" fill="url(#sd-highlight)" />
+          <!-- Shimmer ellipse drifting across upper portion -->
+          <ellipse cx="30" cy="32" rx="14" ry="6" fill="white" opacity="0.13">
+            <animate
+              attributeName="cx"
+              values="30;70;30"
+              dur="6s"
+              repeatCount="indefinite"
+              calcMode="spline"
+              keySplines="0.4 0 0.6 1;0.4 0 0.6 1"
+              keyTimes="0;0.5;1"
+            />
+          </ellipse>
+        </g>
+      </g>
+    </g>
+  </symbol>
+</svg>

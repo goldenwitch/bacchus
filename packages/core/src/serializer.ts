@@ -1,6 +1,19 @@
 import type { AttachmentClass, VineGraph } from './types.js';
 import { VineError } from './errors.js';
 
+function serializeAnnotations(
+  annotations: ReadonlyMap<string, readonly string[]> | undefined,
+): string {
+  if (!annotations || annotations.size === 0) return '';
+  const parts: string[] = [];
+  // Alphabetical key order for deterministic output
+  for (const key of [...annotations.keys()].sort()) {
+    const values = annotations.get(key) ?? [];
+    parts.push(`@${key}(${values.join(',')})`);
+  }
+  return ' ' + parts.join(' ');
+}
+
 /**
  * Serialize a {@link VineGraph} back to `.vine` text.
  *
@@ -50,7 +63,9 @@ export function serialize(graph: VineGraph): string {
 
     if (task.kind === 'ref') {
       // ── Reference node ──────────────────────────────────────────
-      lines.push(`ref [${task.id}] ${task.shortName} (${task.vine})`);
+      lines.push(
+        `ref [${task.id}] ${task.shortName} (${task.vine})${serializeAnnotations(task.annotations)}`,
+      );
 
       // Description
       if (task.description !== '') {
@@ -71,7 +86,9 @@ export function serialize(graph: VineGraph): string {
     } else {
       // ── Concrete task node ──────────────────────────────────────
       // Header — status is guaranteed defined for concrete tasks
-      lines.push(`[${task.id}] ${task.shortName} (${task.status})`);
+      lines.push(
+        `[${task.id}] ${task.shortName} (${task.status})${serializeAnnotations(task.annotations)}`,
+      );
       // Description — split on newlines so internal blank lines are preserved
       if (task.description !== '') {
         for (const descLine of task.description.split('\n')) {

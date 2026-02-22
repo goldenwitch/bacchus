@@ -42,6 +42,14 @@
   import PhysicsPanel from './PhysicsPanel.svelte';
   import ChatPanel from './ChatPanel.svelte';
   import type { ChatSession } from '../chat/session.js';
+  import {
+    initSpriteRegistry,
+    extractSymbolDefs,
+  } from '../sprites/registry.js';
+  import { generateTintFilters } from '../sprites/tint.js';
+
+  // Initialize sprite system
+  initSpriteRegistry();
 
   let {
     graph,
@@ -100,6 +108,13 @@
   let hoveredTaskId: string | null = $state(null);
   let mouseX = $state(0);
   let mouseY = $state(0);
+
+  // Sprite system: generate SVG defs for symbol definitions and tint filters
+  const spriteDefs = $derived.by(() => {
+    const symbols = extractSymbolDefs();
+    const filters = generateTintFilters();
+    return [...symbols, ...filters].join('\n');
+  });
 
   // Pan/zoom hints state
   let showHints = $state(false);
@@ -621,6 +636,11 @@
       if (e.key === 'Escape') focusedTaskId = null;
     }}
   >
+    <!-- Shared sprite symbols and tint filters -->
+    <defs>
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -- spriteDefs is generated internally, not from user input -->
+      {@html spriteDefs}
+    </defs>
     <g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
       {#if showStrataLines}
         {#each strataLinePositions as strataY (strataY)}

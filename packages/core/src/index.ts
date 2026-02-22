@@ -9,10 +9,12 @@ export type {
   VineGraph,
 } from './types.js';
 export {
+  EMPTY_ANNOTATIONS,
   VALID_STATUSES,
   isValidStatus,
   isVineRef,
   isConcreteTask,
+  getSpriteUri,
 } from './types.js';
 
 // Errors

@@ -4,10 +4,11 @@ The `.vine` format is versioned. Each version lives in its own document under `d
 
 ## Versions
 
-| Version                  | Status  | Headline Features                                     |
-| ------------------------ | ------- | ----------------------------------------------------- |
-| [v1.1.0](VINE/v1.1.0.md) | Current | Reference nodes, prefix metadata, slash-separated IDs |
-| [v1.0.0](VINE/v1.0.0.md) |         |                                                       |
+| Version                  | Status  | Headline Features                                      |
+| ------------------------ | ------- | ------------------------------------------------------ |
+| [v1.2.0](VINE/v1.2.0.md) | Current | Header annotations, @sprite(uri), animated SVG sprites |
+| [v1.1.0](VINE/v1.1.0.md) |         | Reference nodes, prefix metadata, slash-separated IDs  |
+| [v1.0.0](VINE/v1.0.0.md) |         |                                                        |
 
 ## Version Detection
 

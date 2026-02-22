@@ -17,6 +17,7 @@ function makeTask(overrides: Partial<ConcreteTask> = {}): ConcreteTask {
     dependencies: [],
     decisions: [],
     attachments: [],
+    annotations: new Map(),
     ...overrides,
   };
 }

@@ -117,9 +117,9 @@ describe('GraphView', () => {
     });
     await vi.advanceTimersByTimeAsync(500);
     // simpleGraph has 3 tasks → 3 GraphNode components → 6 circles each (glow, fill, specular, shadow, rim, badge)
-    // + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 22
+    // 3 nodes × 2 circles (glow ring + emoji badge) + 1 root ring + 5 Toolbar/ThemeToggle = 12
     const circles = container.querySelectorAll('circle');
-    expect(circles.length).toBe(22);
+    expect(circles.length).toBe(12);
   });
 
   it('renders correct number of edge paths', async () => {
@@ -155,8 +155,8 @@ describe('GraphView', () => {
     });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    // 1 node × 6 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 10
-    expect(circles.length).toBe(10);
+    // 1 node × 2 circles (glow ring + emoji badge) + 1 root ring + 5 Toolbar/ThemeToggle = 8
+    expect(circles.length).toBe(8);
     const edgePaths = container.querySelectorAll('path.anim-edge-flow');
     expect(edgePaths.length).toBe(0);
   });
@@ -167,8 +167,8 @@ describe('GraphView', () => {
     });
     await vi.advanceTimersByTimeAsync(500);
     const circles = container.querySelectorAll('circle');
-    // 4 nodes × 6 circles + 1 root ring + 2 Toolbar circles + 1 ThemeToggle = 28
-    expect(circles.length).toBe(28);
+    // 4 nodes × 2 circles (glow ring + emoji badge) + 1 root ring + 5 Toolbar/ThemeToggle = 14
+    expect(circles.length).toBe(14);
     const edgePaths = container.querySelectorAll('path[stroke-width="2.5"]');
     expect(edgePaths.length).toBe(4);
   });
