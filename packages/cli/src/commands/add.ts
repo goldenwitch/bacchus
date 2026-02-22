@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readGraph, writeGraph } from '../io.js';
 import { handleCommandError } from '../errors.js';
 import { addTask, VALID_STATUSES, isValidStatus } from '@bacchus/core';
-import type { Task } from '@bacchus/core';
+import type { ConcreteTask } from '@bacchus/core';
 
 export const addCommand = new Command('add')
   .description('Add a new task to a .vine file')
@@ -31,16 +31,17 @@ export const addCommand = new Command('add')
         return;
       }
 
-      if (!/^[a-z0-9-]+$/i.test(opts.id)) {
+      if (!/^[a-z0-9-]+(?:\/[a-z0-9-]+)*$/i.test(opts.id)) {
         console.error(
-          'Invalid task id: must contain only letters, digits, and hyphens.',
+          'Invalid task id: must contain only letters, digits, hyphens, and slashes.',
         );
         process.exitCode = 1;
         return;
       }
 
       try {
-        const task: Task = {
+        const task: ConcreteTask = {
+          kind: 'task',
           id: opts.id,
           shortName: opts.name,
           description: opts.description,

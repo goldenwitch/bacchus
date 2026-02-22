@@ -16,8 +16,22 @@ import { parse } from '@bacchus/core';
 import { AnthropicChatService } from '../../src/lib/chat/anthropic.js';
 import { ChatOrchestrator } from '../../src/lib/chat/orchestrator.js';
 import type { OrchestratorEvent } from '../../src/lib/chat/orchestrator.js';
+import type { ChatLogger } from '../../src/lib/chat/types.js';
 
 const API_KEY = process.env.ANTHROPIC_API_KEY ?? '';
+
+/** Structured logger that writes to stderr so vitest captures it. */
+const testLogger: ChatLogger = {
+  log(level, message, data) {
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
+    if (data) {
+      console.error(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.error(`${prefix} ${message}`);
+    }
+  },
+};
 
 /** Collect all events from the orchestrator generator. */
 async function collectEvents(
@@ -25,13 +39,25 @@ async function collectEvents(
 ): Promise<OrchestratorEvent[]> {
   const events: OrchestratorEvent[] = [];
   for await (const event of gen) {
+    testLogger.log(
+      'info',
+      `Event: ${event.type}`,
+      'content' in event
+        ? {
+            content:
+              typeof event.content === 'string'
+                ? event.content.slice(0, 100)
+                : '...',
+          }
+        : undefined,
+    );
     events.push(event);
   }
   return events;
 }
 
 describe.skipIf(!API_KEY)('Chat integration (live Anthropic API)', () => {
-  const SEED_VINE = `vine 1.0.0
+  const SEED_VINE = `vine 1.1.0
 ---
 [root] Release (notstarted)
 Ship the release.
@@ -48,10 +74,11 @@ Compile the source code.
       const service = new AnthropicChatService({
         apiKey: API_KEY,
         model: 'claude-sonnet-4-20250514',
+        logger: testLogger,
       });
 
       const graph = parse(SEED_VINE);
-      const orchestrator = new ChatOrchestrator(service, graph);
+      const orchestrator = new ChatOrchestrator(service, graph, testLogger);
 
       const events = await collectEvents(
         orchestrator.send(
@@ -95,9 +122,10 @@ Compile the source code.
     const service = new AnthropicChatService({
       apiKey: API_KEY,
       model: 'claude-sonnet-4-20250514',
+      logger: testLogger,
     });
 
-    const orchestrator = new ChatOrchestrator(service, null);
+    const orchestrator = new ChatOrchestrator(service, null, testLogger);
 
     const events = await collectEvents(
       orchestrator.send('Say "hello" and nothing else.'),

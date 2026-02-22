@@ -35,10 +35,13 @@
         btn.addEventListener('click', () => {
           const code = block.querySelector('code');
           const text = code?.textContent ?? block.textContent ?? '';
-          navigator.clipboard.writeText(text).then(() => {
-            btn.textContent = 'Copied!';
-            setTimeout(() => (btn.textContent = 'Copy'), 1500);
-          }).catch(() => {});
+          navigator.clipboard
+            .writeText(text)
+            .then(() => {
+              btn.textContent = 'Copied!';
+              setTimeout(() => (btn.textContent = 'Copy'), 1500);
+            })
+            .catch(() => {});
         });
         block.style.position = 'relative';
         block.appendChild(btn);
@@ -114,9 +117,15 @@
     font-weight: 600;
   }
 
-  .markdown-body :global(h1) { font-size: 1.3em; }
-  .markdown-body :global(h2) { font-size: 1.15em; }
-  .markdown-body :global(h3) { font-size: 1.05em; }
+  .markdown-body :global(h1) {
+    font-size: 1.3em;
+  }
+  .markdown-body :global(h2) {
+    font-size: 1.15em;
+  }
+  .markdown-body :global(h3) {
+    font-size: 1.05em;
+  }
 
   .markdown-body :global(blockquote) {
     border-left: 3px solid rgba(255, 255, 255, 0.3);

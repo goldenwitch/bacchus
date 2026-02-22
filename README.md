@@ -3,7 +3,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml/badge.svg)](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml)
 
-A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE/v1.0.0.md).
+A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE/v1.1.0.md).
 
 **Live at [grapesofgraph.com](https://grapesofgraph.com)** — automatically deployed on every push to `main`.
 
@@ -14,7 +14,7 @@ A tool for parsing, validating, querying, and visualizing task graphs in the [VI
 ```ts
 import { parse, getRoot, getDependencies, serialize } from '@bacchus/core';
 
-const graph = parse(`vine 1.0.0
+const graph = parse(`vine 1.1.0
 ---
 [root] Main Project (started)
 The root task depends on leaf.
@@ -54,6 +54,9 @@ const text = serialize(graph); // normalized .vine output
 | `getLeaves(graph)`                       | Tasks with no dependencies.                       |
 | `getDescendants(graph, id)`              | All tasks transitively depending on a task.       |
 | `getSummary(graph)`                      | Aggregate stats (totals, status counts, root).    |
+| **Reference Nodes (v1.1.0)**             |                                                   |
+| `isVineRef(task)`                        | Returns true if a task is a reference node.       |
+| `expandVineRef(parent, refId, child)`    | Expand a ref node by inlining a child graph.      |
 
 ### Error Handling
 
@@ -66,18 +69,20 @@ Both extend `VineError`.
 
 ### VINE Format
 
-The `.vine` format is versioned. Every v1.0.0+ file begins with a magic line (`vine 1.0.0`) so parsers can dispatch to the correct version-specific reader.
+The `.vine` format is versioned. Every file begins with a magic line (`vine <version>`) so parsers can dispatch to the correct version-specific reader. The current version is **v1.1.0**.
 
-- **Preamble**: `vine 1.0.0`, optional `title:` and `delimiter:` metadata, terminated by `---`
+- **Preamble**: `vine 1.1.0`, optional `title:`, `delimiter:`, and `prefix:` metadata, terminated by `---`
 - **Header**: `[id] Short Name (status)` — status is one of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`
+- **Reference node** (v1.1.0): `ref [id] Name (URI)` — a placeholder that references an external `.vine` file
 - **Description**: plain lines (no prefix) — newlines preserved
 - **Dependency**: `-> other-id`
 - **Decision**: `> Note text`
 - **Attachments**: `@artifact <mime> <uri>`, `@guidance <mime> <uri>`, `@file <mime> <uri>`
+- **Task IDs**: alphanumeric, hyphens, and (v1.1.0) slash-separated segments (e.g. `ds/components`)
 - **Root**: the **first** task in the file
 - **Block delimiter**: `---` (configurable via metadata)
 
-See the [VINE v1.0.0 spec](docs/VINE/v1.0.0.md) for the full specification and ABNF grammar.
+See the [VINE v1.1.0 spec](docs/VINE/v1.1.0.md) for the full specification. v1.0.0 files remain valid and are parsed by the same library.
 
 ### VINE Versioning
 
@@ -163,7 +168,7 @@ The [`examples/`](examples/) folder contains `.vine` files you can drag into the
 | `01-single-task.vine`     | One node, no edges — the simplest graph.     |
 | `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).  |
 | `03-diamond.vine`         | Two parallel branches merging into one task. |
-| `04-all-statuses.vine`    | Every status keyword (all 6) in action.  |
+| `04-all-statuses.vine`    | Every status keyword (all 6) in action.      |
 | `05-decisions.vine`       | Tasks annotated with `>` decision notes.     |
 | `06-project-bacchus.vine` | A realistic 13-task project graph.           |
 
@@ -227,15 +232,15 @@ Safe to re-run at any time.
 
 ### Tooling
 
-| Area            | Stack                                                      |
-| --------------- | ---------------------------------------------------------- |
-| Package manager | Yarn 4 (Berry), PnP mode, workspaces                       |
-| Language        | TypeScript 5.x, strict mode, zero `any`                    |
-| Linting         | ESLint + @typescript-eslint (strict preset)                |
-| Formatting      | Prettier                                                   |
-| Testing         | Vitest (>90% line coverage target)                         |
-| Build           | tsc (type-check only), Vite (UI), ESM-only                 |
-| Pre-commit      | Husky + lint-staged                                        |
-| CI/CD           | GitHub Actions — type-check, lint, test, build, deploy     |
-| Hosting         | Cloudflare Pages — https://grapesofgraph.com               |
-| Editor          | VS Code + ZipFS extension + Yarn SDK                       |
+| Area            | Stack                                                  |
+| --------------- | ------------------------------------------------------ |
+| Package manager | Yarn 4 (Berry), PnP mode, workspaces                   |
+| Language        | TypeScript 5.x, strict mode, zero `any`                |
+| Linting         | ESLint + @typescript-eslint (strict preset)            |
+| Formatting      | Prettier                                               |
+| Testing         | Vitest (>90% line coverage target)                     |
+| Build           | tsc (type-check only), Vite (UI), ESM-only             |
+| Pre-commit      | Husky + lint-staged                                    |
+| CI/CD           | GitHub Actions — type-check, lint, test, build, deploy |
+| Hosting         | Cloudflare Pages — https://grapesofgraph.com           |
+| Editor          | VS Code + ZipFS extension + Yarn SDK                   |

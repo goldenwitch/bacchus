@@ -35,7 +35,9 @@ describe('serialize', () => {
     const descIdx = lines.indexOf('Some description text.');
     const depIdx = lines.indexOf('-> leaf');
     const decIdx = lines.indexOf('> Decision one.');
-    const attIdx = lines.indexOf('@artifact text/html https://example.com/demo.html');
+    const attIdx = lines.indexOf(
+      '@artifact text/html https://example.com/demo.html',
+    );
 
     expect(descIdx).toBeGreaterThan(-1);
     expect(depIdx).toBeGreaterThan(descIdx);
@@ -55,7 +57,7 @@ describe('serialize', () => {
     const graph = parse(VINE_EXAMPLE);
     const output = serialize(graph);
 
-    expect(output.startsWith('vine 1.0.0\n')).toBe(true);
+    expect(output.startsWith('vine 1.1.0\n')).toBe(true);
     // Preamble includes title metadata
     expect(output).toContain('title: Project Bacchus\n');
   });
@@ -171,11 +173,72 @@ describe('serialize', () => {
     expect(output).not.toContain('delimiter:');
   });
 
+  it('serializes ref node with header format: ref [id] Name (URI)', () => {
+    const input = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      'ref [ext] External (./other.vine)',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+
+    expect(output).toContain('ref [ext] External (./other.vine)');
+    // URI should NOT appear as a separate body line
+    const lines = output.split('\n');
+    const headerIdx = lines.findIndex((l) => l.startsWith('ref ['));
+    expect(lines[headerIdx + 1] ?? '').not.toBe('./other.vine');
+  });
+
+  it('emits prefix in preamble metadata', () => {
+    const input = [
+      'vine 1.1.0',
+      'prefix: ds',
+      '---',
+      '[root] Root (complete)',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+
+    expect(output).toContain('prefix: ds\n');
+  });
+
+  it('round-trips ref node with deps and decisions', () => {
+    const input = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext',
+      '---',
+      '[dep] Dep (complete)',
+      '---',
+      'ref [ext] External (./lib.vine)',
+      'A reference to the library.',
+      '-> dep',
+      '> Use v2 or v3?',
+    ].join('\n');
+
+    const graph = parse(input);
+    const output = serialize(graph);
+    const reparsed = parse(output);
+
+    const ext = reparsed.tasks.get('ext');
+    expect((ext as import('../src/types.js').RefTask).vine).toBe('./lib.vine');
+    expect(ext!.description).toBe('A reference to the library.');
+    expect(ext!.dependencies).toEqual(['dep']);
+    expect(ext!.decisions).toEqual(['Use v2 or v3?']);
+  });
+
   it('throws VineError when order references a missing task', () => {
     const graph: VineGraph = {
       version: '1.0.0',
       title: undefined,
       delimiter: '---',
+      prefix: undefined,
       tasks: new Map(),
       order: ['ghost'],
     };

@@ -1,3 +1,8 @@
+<script module lang="ts">
+  declare const __APP_VERSION__: string;
+  declare const __APP_COMMIT__: string;
+</script>
+
 <script lang="ts">
   import type { VineGraph } from '@bacchus/core';
   import {
@@ -23,7 +28,11 @@
   let chatOpen = $state(false);
 
   // Camera state — updated from GraphView
-  let cameraTransform: { x: number; y: number; k: number } = $state({ x: 0, y: 0, k: 1 });
+  let cameraTransform: { x: number; y: number; k: number } = $state({
+    x: 0,
+    y: 0,
+    k: 1,
+  });
   let focusedTaskId: string | null = $state(null);
 
   // Keep the session's graph in sync with the app graph
@@ -48,13 +57,15 @@
         chatSession.vineId = rootId;
 
         // Try to restore a previous session for the new vineId
-        void loadSession(rootId).then((saved) => {
-          if (saved && saved.displayMessages.length > 0) {
-            chatSession.displayMessages = [...saved.displayMessages];
-            chatSession.initOrchestrator(vineGraph);
-            chatSession.setChatMessages([...saved.chatMessages]);
-          }
-        }).catch(() => {});
+        void loadSession(rootId)
+          .then((saved) => {
+            if (saved && saved.displayMessages.length > 0) {
+              chatSession.displayMessages = [...saved.displayMessages];
+              chatSession.initOrchestrator(vineGraph);
+              chatSession.setChatMessages([...saved.chatMessages]);
+            }
+          })
+          .catch(() => {});
       }
     } else {
       // Leaving graph view — save current session
@@ -94,7 +105,11 @@
       void saveAppState({
         vineId,
         vineText,
-        camera: { x: cameraTransform.x, y: cameraTransform.y, k: cameraTransform.k },
+        camera: {
+          x: cameraTransform.x,
+          y: cameraTransform.y,
+          k: cameraTransform.k,
+        },
         focusedTaskId,
         chatOpen,
         inputDraft: chatSession.inputDraft,
@@ -123,7 +138,11 @@
         void saveAppState({
           vineId,
           vineText,
-          camera: { x: cameraTransform.x, y: cameraTransform.y, k: cameraTransform.k },
+          camera: {
+            x: cameraTransform.x,
+            y: cameraTransform.y,
+            k: cameraTransform.k,
+          },
           focusedTaskId,
           chatOpen,
           inputDraft: chatSession.inputDraft,
@@ -332,11 +351,6 @@
   {/if}
   <span class="version-watermark">v{__APP_VERSION__} ({__APP_COMMIT__})</span>
 </main>
-
-<script module lang="ts">
-  declare const __APP_VERSION__: string;
-  declare const __APP_COMMIT__: string;
-</script>
 
 <style>
   main {

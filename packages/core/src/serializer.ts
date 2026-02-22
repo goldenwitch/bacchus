@@ -4,12 +4,15 @@ import { VineError } from './errors.js';
 /**
  * Serialize a {@link VineGraph} back to `.vine` text.
  *
- * The output follows the VINE v1.0.0 canonical form:
- *   preamble (magic + metadata + terminator) → task blocks separated by
+ * The output follows the VINE v1.0.0 / v1.1.0 canonical form:
+ *   preamble (magic + metadata + terminator) → node blocks separated by
  *   the graph delimiter → trailing newline.
  *
- * Field order within each block:
+ * Field order within each task block:
  *   header → description → dependencies (sorted) → decisions → attachments.
+ *
+ * Reference blocks (v1.1.0):
+ *   header (`~[id] Name`) → URI → description → dependencies → decisions.
  */
 export function serialize(graph: VineGraph): string {
   // ── Preamble ──────────────────────────────────────────────────────
@@ -21,6 +24,9 @@ export function serialize(graph: VineGraph): string {
   // Metadata — alphabetical key order, only meaningful values
   if (graph.delimiter !== '---') {
     preambleLines.push(`delimiter: ${graph.delimiter}`);
+  }
+  if (graph.prefix !== undefined) {
+    preambleLines.push(`prefix: ${graph.prefix}`);
   }
   if (graph.title !== undefined) {
     preambleLines.push(`title: ${graph.title}`);
@@ -42,31 +48,53 @@ export function serialize(graph: VineGraph): string {
 
     const lines: string[] = [];
 
-    // Header
-    lines.push(`[${task.id}] ${task.shortName} (${task.status})`);
+    if (task.kind === 'ref') {
+      // ── Reference node ──────────────────────────────────────────
+      lines.push(`ref [${task.id}] ${task.shortName} (${task.vine})`);
 
-    // Description — split on newlines so internal blank lines are preserved
-    if (task.description !== '') {
-      for (const descLine of task.description.split('\n')) {
-        lines.push(descLine);
+      // Description
+      if (task.description !== '') {
+        for (const descLine of task.description.split('\n')) {
+          lines.push(descLine);
+        }
       }
-    }
 
-    // Dependencies — sorted alphabetically
-    for (const dep of [...task.dependencies].sort()) {
-      lines.push(`-> ${dep}`);
-    }
+      // Dependencies — sorted alphabetically
+      for (const dep of [...task.dependencies].sort()) {
+        lines.push(`-> ${dep}`);
+      }
 
-    // Decisions — original order
-    for (const decision of task.decisions) {
-      lines.push(`> ${decision}`);
-    }
+      // Decisions — original order
+      for (const decision of task.decisions) {
+        lines.push(`> ${decision}`);
+      }
+    } else {
+      // ── Concrete task node ──────────────────────────────────────
+      // Header — status is guaranteed defined for concrete tasks
+      lines.push(`[${task.id}] ${task.shortName} (${task.status})`);
+      // Description — split on newlines so internal blank lines are preserved
+      if (task.description !== '') {
+        for (const descLine of task.description.split('\n')) {
+          lines.push(descLine);
+        }
+      }
 
-    // Attachments — grouped by class: artifact → guidance → file
-    const classOrder: AttachmentClass[] = ['artifact', 'guidance', 'file'];
-    for (const cls of classOrder) {
-      for (const att of task.attachments.filter((a) => a.class === cls)) {
-        lines.push(`@${att.class} ${att.mime} ${att.uri}`);
+      // Dependencies — sorted alphabetically
+      for (const dep of [...task.dependencies].sort()) {
+        lines.push(`-> ${dep}`);
+      }
+
+      // Decisions — original order
+      for (const decision of task.decisions) {
+        lines.push(`> ${decision}`);
+      }
+
+      // Attachments — grouped by class: artifact → guidance → file
+      const classOrder: AttachmentClass[] = ['artifact', 'guidance', 'file'];
+      for (const cls of classOrder) {
+        for (const att of task.attachments.filter((a) => a.class === cls)) {
+          lines.push(`@${att.class} ${att.mime} ${att.uri}`);
+        }
       }
     }
 
@@ -74,5 +102,10 @@ export function serialize(graph: VineGraph): string {
   }
 
   // ── Assemble ──────────────────────────────────────────────────────
-  return preambleLines.join('\n') + '\n' + blocks.join(`\n${graph.delimiter}\n`) + '\n';
+  return (
+    preambleLines.join('\n') +
+    '\n' +
+    blocks.join(`\n${graph.delimiter}\n`) +
+    '\n'
+  );
 }

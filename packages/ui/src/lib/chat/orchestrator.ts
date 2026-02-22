@@ -5,6 +5,7 @@ import type {
   ChatMessage,
   ToolCall,
   ToolResult,
+  ChatLogger,
 } from './types.js';
 import { GRAPH_TOOLS, executeToolCall } from './tools.js';
 import { buildToolFeedback, type ToolFeedbackDetail } from './toolFeedback.js';
@@ -35,7 +36,8 @@ function buildSystemPrompt(graph: VineGraph | null): string {
   const vineSpec = `You are a task planning assistant for Bacchus, a tool that visualizes task graphs in the VINE format.
 
 ## VINE Format
-Every .vine file starts with a magic line (vine 1.0.0) and a preamble section.
+Every .vine file starts with a magic line (vine 1.1.0) and a preamble section.
+Optional preamble keys: title, delimiter, prefix (for ID namespacing during expansion).
 Task blocks are separated by delimiter lines (--- by default):
   [id] Short Name (status)
   Description text
@@ -45,8 +47,15 @@ Task blocks are separated by delimiter lines (--- by default):
   @guidance mime/type uri
   @file mime/type uri
 
+Reference blocks point to external .vine files:
+  ref [id] Short Name (URI)
+  Description text
+  -> dependency-id
+  > Decision note
+Reference nodes have no status and cannot have attachments.
+
 Status keywords: complete, started, reviewing, planning, notstarted, blocked
-Task ids: alphanumeric and hyphens only, must be unique.
+Task ids: alphanumeric, hyphens, and forward slashes (for namespaced ids like ds/components), must be unique.
 The first task in the file is the root task.
 Constraints: no cycles, no islands (every task must connect to root), all dependency refs must exist.
 Tasks can have attachments: @artifact (products of work), @guidance (context/constraints), @file (other resources). Use the add_attachment and remove_attachment tools to manage them.
@@ -95,10 +104,16 @@ export class ChatOrchestrator {
   private readonly service: ChatService;
   private messages: ChatMessage[] = [];
   private graph: VineGraph | null;
+  private readonly logger: ChatLogger | undefined;
 
-  constructor(service: ChatService, graph: VineGraph | null) {
+  constructor(
+    service: ChatService,
+    graph: VineGraph | null,
+    logger?: ChatLogger,
+  ) {
     this.service = service;
     this.graph = graph;
+    this.logger = logger;
   }
 
   /**
@@ -146,6 +161,10 @@ export class ChatOrchestrator {
 
     while (rounds < MAX_TOOL_ROUNDS) {
       rounds++;
+      this.logger?.log('info', 'Orchestrator round start', {
+        round: rounds,
+        messageCount: this.messages.length,
+      });
 
       const systemPrompt = buildSystemPrompt(this.graph);
       let assistantText = '';
@@ -173,6 +192,7 @@ export class ChatOrchestrator {
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
+        this.logger?.log('error', 'Orchestrator error', { message });
         yield { type: 'error', message };
         return;
       }
@@ -186,18 +206,33 @@ export class ChatOrchestrator {
 
       // If no tool calls, the conversation turn is complete
       if (toolCalls.length === 0 || stopReason !== 'tool_use') {
+        this.logger?.log('info', 'Orchestrator done', { rounds, stopReason });
         yield { type: 'done' };
         return;
       }
+
+      this.logger?.log('info', 'Tool calls received', {
+        count: toolCalls.length,
+        tools: toolCalls.map((tc) => tc.name),
+      });
 
       // Execute tool calls and collect results
       const toolResults: ToolResult[] = [];
 
       for (const call of toolCalls) {
+        this.logger?.log('info', 'Executing tool', {
+          name: call.name,
+          input: call.input,
+        });
         // Capture pre-mutation graph for feedback detail
         const preGraph = this.graph;
         const execResult = executeToolCall(this.graph, call);
         const detail = buildToolFeedback(call, preGraph, execResult.result);
+        this.logger?.log('info', 'Tool result', {
+          name: call.name,
+          isError: execResult.isError,
+          result: execResult.result.slice(0, 200),
+        });
 
         // Update graph if the tool changed it
         if (execResult.graph !== this.graph) {
@@ -231,6 +266,7 @@ export class ChatOrchestrator {
       });
     }
 
+    this.logger?.log('warn', 'Max tool rounds exceeded', { rounds });
     yield {
       type: 'error',
       message:

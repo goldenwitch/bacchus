@@ -4,9 +4,10 @@ The `.vine` format is versioned. Each version lives in its own document under `d
 
 ## Versions
 
-| Version                      | Status  |
-| ---------------------------- | ------- |
-| [v1.0.0](VINE/v1.0.0.md)    | Current |
+| Version                  | Status  | Headline Features                                     |
+| ------------------------ | ------- | ----------------------------------------------------- |
+| [v1.1.0](VINE/v1.1.0.md) | Current | Reference nodes, prefix metadata, slash-separated IDs |
+| [v1.0.0](VINE/v1.0.0.md) |         |                                                       |
 
 ## Version Detection
 

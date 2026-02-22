@@ -1,17 +1,19 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import type { Task } from '@bacchus/core';
+import type { ConcreteTask } from '@bacchus/core';
 import Tooltip from '../../src/lib/components/Tooltip.svelte';
 
-function makeTask(overrides: Partial<Task> = {}): Task {
+function makeTask(overrides: Partial<ConcreteTask> = {}): ConcreteTask {
   return {
+    kind: 'task',
     id: 'test-task',
     shortName: 'Test Task',
     description: 'A test task description',
     status: 'started',
     dependencies: [],
     decisions: [],
+    attachments: [],
     ...overrides,
   };
 }

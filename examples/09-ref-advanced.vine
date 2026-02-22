@@ -1,0 +1,25 @@
+vine 1.1.0
+title: Platform Migration
+---
+[cutover] Production Cutover (notstarted)
+Execute the production switch.
+-> integration
+> Blue-green deployment or rolling update?
+---
+[integration] Integration Testing (notstarted)
+End-to-end test suite across all migrated services.
+-> backend-api
+-> frontend-app
+---
+ref [backend-api] Backend API (./api-service.vine)
+Migrate the backend services.
+-> planning
+> Which cloud provider for hosting?
+---
+ref [frontend-app] Frontend App (./frontend-app.vine)
+Rebuild the frontend on the new stack.
+-> planning
+---
+[planning] Migration Planning (started)
+Define scope, timeline, and rollback strategy.
+> Big-bang migration or incremental?

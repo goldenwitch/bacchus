@@ -85,3 +85,16 @@ export interface ChatService {
     systemPrompt: string,
   ): AsyncGenerator<ChatEvent, void, unknown>;
 }
+
+/**
+ * Optional structured logger for debugging chat interactions.
+ * When provided, the orchestrator and service log key events
+ * (API calls, tool executions, timing) for observability.
+ */
+export interface ChatLogger {
+  log(
+    level: 'info' | 'warn' | 'error',
+    message: string,
+    data?: Record<string, unknown>,
+  ): void;
+}

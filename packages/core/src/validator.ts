@@ -165,6 +165,25 @@ function checkNoIslands(graph: VineGraph): void {
   }
 }
 
+/**
+ * 5. Reference nodes must have a non-empty vine URI.
+ */
+function checkRefUriRequired(graph: VineGraph): void {
+  for (const [taskId, task] of graph.tasks) {
+    if (task.kind === 'ref') {
+      if (task.vine === '') {
+        fail(`Reference node "${taskId}" must have a non-empty vine URI.`, {
+          constraint: 'ref-uri-required',
+          taskId,
+        });
+      }
+    }
+  }
+}
+
+// Constraint 6 (no-ref-attachments) is now enforced at the type level:
+// RefTask has no `attachments` field, so no runtime check is needed.
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -180,10 +199,12 @@ function checkNoIslands(graph: VineGraph): void {
  *  2. valid-dependency-refs
  *  3. no-cycles
  *  4. no-islands
+ *  5. ref-uri-required
  */
 export function validate(graph: VineGraph): void {
   checkAtLeastOneTask(graph);
   checkValidDependencyRefs(graph);
   checkNoCycles(graph);
   checkNoIslands(graph);
+  checkRefUriRequired(graph);
 }

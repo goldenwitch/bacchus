@@ -1,4 +1,10 @@
-import type { VineGraph, Task, Status } from '@bacchus/core';
+import type {
+  VineGraph,
+  Task,
+  Status,
+  ConcreteTask,
+  RefTask,
+} from '@bacchus/core';
 import {
   addTask,
   removeTask,
@@ -10,6 +16,7 @@ import {
   serialize,
   isValidStatus,
   getTask,
+  expandVineRef,
 } from '@bacchus/core';
 import type { ToolCall, ToolDefinition } from './types.js';
 
@@ -45,7 +52,14 @@ export const GRAPH_TOOLS: readonly ToolDefinition[] = [
         },
         status: {
           type: 'string',
-          enum: ['complete', 'notstarted', 'planning', 'blocked', 'started', 'reviewing'],
+          enum: [
+            'complete',
+            'notstarted',
+            'planning',
+            'blocked',
+            'started',
+            'reviewing',
+          ],
           description: 'Task status (defaults to "notstarted")',
         },
         description: {
@@ -93,7 +107,14 @@ export const GRAPH_TOOLS: readonly ToolDefinition[] = [
         },
         status: {
           type: 'string',
-          enum: ['complete', 'notstarted', 'planning', 'blocked', 'started', 'reviewing'],
+          enum: [
+            'complete',
+            'notstarted',
+            'planning',
+            'blocked',
+            'started',
+            'reviewing',
+          ],
           description: 'The new status',
         },
       },
@@ -200,7 +221,8 @@ export const GRAPH_TOOLS: readonly ToolDefinition[] = [
         },
         mimeType: {
           type: 'string',
-          description: 'MIME type of the attachment (e.g., "application/pdf", "text/html").',
+          description:
+            'MIME type of the attachment (e.g., "application/pdf", "text/html").',
         },
         uri: {
           type: 'string',
@@ -226,6 +248,62 @@ export const GRAPH_TOOLS: readonly ToolDefinition[] = [
         },
       },
       required: ['taskId', 'uri'],
+    },
+  },
+  {
+    name: 'add_ref',
+    description:
+      'Add a reference node that points to an external .vine file. Reference nodes have no status and cannot have attachments.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'Unique id for the reference node',
+        },
+        shortName: {
+          type: 'string',
+          description: 'Short display name for the reference',
+        },
+        uri: {
+          type: 'string',
+          description: 'URI or path to the external .vine file',
+        },
+        dependencies: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of task ids this reference depends on',
+        },
+        decisions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Decision notes for the reference',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the reference',
+        },
+      },
+      required: ['id', 'shortName', 'uri'],
+    },
+  },
+  {
+    name: 'expand_ref',
+    description:
+      'Expand a reference node by inlining tasks from a child VINE graph. The child graph text is parsed and its tasks replace the reference node.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        refNodeId: {
+          type: 'string',
+          description: 'The id of the reference node to expand',
+        },
+        childVineText: {
+          type: 'string',
+          description: 'Complete VINE-format text of the child graph to inline',
+        },
+      },
+      required: ['refNodeId', 'childVineText'],
     },
   },
 ] as const;
@@ -277,10 +355,18 @@ export function executeToolCall(
           };
         }
         const input = call.input;
-        if (typeof input.id !== 'string' || typeof input.shortName !== 'string') {
-          return { graph, result: 'Invalid input: "id" and "shortName" must be strings.', isError: true };
+        if (
+          typeof input.id !== 'string' ||
+          typeof input.shortName !== 'string'
+        ) {
+          return {
+            graph,
+            result: 'Invalid input: "id" and "shortName" must be strings.',
+            isError: true,
+          };
         }
-        const task: Task = {
+        const task: ConcreteTask = {
+          kind: 'task',
           id: input.id,
           shortName: input.shortName,
           status:
@@ -308,10 +394,7 @@ export function executeToolCall(
           };
           const patchedTasks = new Map(graph.tasks);
           patchedTasks.set(rootId, patchedRoot);
-          const patchedGraph: VineGraph = {
-            tasks: patchedTasks,
-            order: graph.order,
-          };
+          const patchedGraph: VineGraph = { ...graph, tasks: patchedTasks };
           const updated = addTask(patchedGraph, task);
           return {
             graph: updated,
@@ -332,7 +415,11 @@ export function executeToolCall(
           return { graph, result: 'No graph loaded.', isError: true };
         }
         if (typeof call.input.id !== 'string') {
-          return { graph, result: 'Invalid input: "id" must be a string.', isError: true };
+          return {
+            graph,
+            result: 'Invalid input: "id" must be a string.',
+            isError: true,
+          };
         }
         const id = call.input.id;
         const updated = removeTask(graph, id);
@@ -348,10 +435,21 @@ export function executeToolCall(
           return { graph, result: 'No graph loaded.', isError: true };
         }
         if (typeof call.input.id !== 'string') {
-          return { graph, result: 'Invalid input: "id" must be a string.', isError: true };
+          return {
+            graph,
+            result: 'Invalid input: "id" must be a string.',
+            isError: true,
+          };
         }
-        if (typeof call.input.status !== 'string' || !isValidStatus(call.input.status)) {
-          return { graph, result: 'Invalid input: "status" must be a valid status.', isError: true };
+        if (
+          typeof call.input.status !== 'string' ||
+          !isValidStatus(call.input.status)
+        ) {
+          return {
+            graph,
+            result: 'Invalid input: "status" must be a valid status.',
+            isError: true,
+          };
         }
         const id = call.input.id;
         const status = call.input.status;
@@ -368,7 +466,11 @@ export function executeToolCall(
           return { graph, result: 'No graph loaded.', isError: true };
         }
         if (typeof call.input.id !== 'string') {
-          return { graph, result: 'Invalid input: "id" must be a string.', isError: true };
+          return {
+            graph,
+            result: 'Invalid input: "id" must be a string.',
+            isError: true,
+          };
         }
         const id = call.input.id;
         const fields: {
@@ -394,8 +496,16 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        if (typeof call.input.taskId !== 'string' || typeof call.input.dependencyId !== 'string') {
-          return { graph, result: 'Invalid input: "taskId" and "dependencyId" must be strings.', isError: true };
+        if (
+          typeof call.input.taskId !== 'string' ||
+          typeof call.input.dependencyId !== 'string'
+        ) {
+          return {
+            graph,
+            result:
+              'Invalid input: "taskId" and "dependencyId" must be strings.',
+            isError: true,
+          };
         }
         const taskId = call.input.taskId;
         const depId = call.input.dependencyId;
@@ -411,8 +521,16 @@ export function executeToolCall(
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
-        if (typeof call.input.taskId !== 'string' || typeof call.input.dependencyId !== 'string') {
-          return { graph, result: 'Invalid input: "taskId" and "dependencyId" must be strings.', isError: true };
+        if (
+          typeof call.input.taskId !== 'string' ||
+          typeof call.input.dependencyId !== 'string'
+        ) {
+          return {
+            graph,
+            result:
+              'Invalid input: "taskId" and "dependencyId" must be strings.',
+            isError: true,
+          };
         }
         const taskId = call.input.taskId;
         const depId = call.input.dependencyId;
@@ -426,7 +544,11 @@ export function executeToolCall(
 
       case 'replace_graph': {
         if (typeof call.input.vineText !== 'string') {
-          return { graph, result: 'Invalid input: "vineText" must be a string.', isError: true };
+          return {
+            graph,
+            result: 'Invalid input: "vineText" must be a string.',
+            isError: true,
+          };
         }
         const vineText = call.input.vineText;
         const newGraph = parse(vineText);
@@ -448,10 +570,21 @@ export function executeToolCall(
           uri: string;
         };
         const task = getTask(graph, taskId);
+        if (task.kind !== 'task') {
+          return {
+            graph,
+            result: `Cannot add attachment to reference node "${taskId}".`,
+            isError: true,
+          };
+        }
         const newAttachment = { class: attachmentClass, mime: mimeType, uri };
         const existingAttachments = task.attachments;
         if (existingAttachments.some((a) => a.uri === uri)) {
-          return { graph, result: `Attachment with URI "${uri}" already exists on task "${taskId}".`, isError: true };
+          return {
+            graph,
+            result: `Attachment with URI "${uri}" already exists on task "${taskId}".`,
+            isError: true,
+          };
         }
         const updated = updateTask(graph, taskId, {
           attachments: [...existingAttachments, newAttachment],
@@ -462,16 +595,112 @@ export function executeToolCall(
           isError: false,
         };
       }
+      case 'add_ref': {
+        if (!graph) {
+          return {
+            graph,
+            result:
+              'No graph loaded. Use replace_graph first to create the initial graph.',
+            isError: true,
+          };
+        }
+        const input = call.input;
+        if (
+          typeof input.id !== 'string' ||
+          typeof input.shortName !== 'string' ||
+          typeof input.uri !== 'string'
+        ) {
+          return {
+            graph,
+            result:
+              'Invalid input: "id", "shortName", and "uri" must be strings.',
+            isError: true,
+          };
+        }
+        const refTask: RefTask = {
+          kind: 'ref',
+          id: input.id,
+          shortName: input.shortName,
+          description:
+            typeof input.description === 'string' ? input.description : '',
+          dependencies: Array.isArray(input.dependencies)
+            ? (input.dependencies as string[])
+            : [],
+          decisions: Array.isArray(input.decisions)
+            ? (input.decisions as string[])
+            : [],
+          vine: input.uri,
+        };
+        const rootId = graph.order[0];
+        const root = graph.tasks.get(rootId);
+        if (root && rootId !== refTask.id) {
+          const patchedRoot: Task = {
+            ...root,
+            dependencies: [...root.dependencies, refTask.id],
+          };
+          const patchedTasks = new Map(graph.tasks);
+          patchedTasks.set(rootId, patchedRoot);
+          const patchedGraph: VineGraph = { ...graph, tasks: patchedTasks };
+          const updated = addTask(patchedGraph, refTask);
+          return {
+            graph: updated,
+            result: `Added reference "${input.id}" \u2192 ${input.uri}`,
+            isError: false,
+          };
+        }
+        const updated = addTask(graph, refTask);
+        return {
+          graph: updated,
+          result: `Added reference "${input.id}" \u2192 ${input.uri}`,
+          isError: false,
+        };
+      }
+
+      case 'expand_ref': {
+        if (!graph) {
+          return { graph, result: 'No graph loaded.', isError: true };
+        }
+        if (
+          typeof call.input.refNodeId !== 'string' ||
+          typeof call.input.childVineText !== 'string'
+        ) {
+          return {
+            graph,
+            result:
+              'Invalid input: "refNodeId" and "childVineText" must be strings.',
+            isError: true,
+          };
+        }
+        const childGraph = parse(call.input.childVineText);
+        const expanded = expandVineRef(graph, call.input.refNodeId, childGraph);
+        return {
+          graph: expanded,
+          result: `Expanded reference "${call.input.refNodeId}" (${String(childGraph.order.length)} tasks inlined)`,
+          isError: false,
+        };
+      }
+
       case 'remove_attachment': {
         if (!graph) {
           return { graph, result: 'No graph loaded.', isError: true };
         }
         const { taskId, uri } = call.input as { taskId: string; uri: string };
         const task = getTask(graph, taskId);
+        if (task.kind !== 'task') {
+          return {
+            graph,
+            result: `Cannot remove attachment from reference node "${taskId}".`,
+            isError: true,
+          };
+        }
         const existingAttachments = task.attachments;
         const filtered = existingAttachments.filter((a) => a.uri !== uri);
         if (filtered.length === existingAttachments.length) {
-          return { graph, result: `No attachment with URI "${uri}" found on task "${taskId}".`, isError: true };
+          return {
+            graph,
+            result: `No attachment with URI "${uri}" found on task "${taskId}".`,
+            isError: true,
+          };
         }
         const updated = updateTask(graph, taskId, { attachments: filtered });
         return {

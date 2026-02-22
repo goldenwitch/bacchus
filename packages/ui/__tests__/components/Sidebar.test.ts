@@ -1,14 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
-import type { Task, VineGraph } from '@bacchus/core';
+import type { Task, VineGraph, ConcreteTask } from '@bacchus/core';
 import Sidebar from '../../src/lib/components/Sidebar.svelte';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeTask(overrides: Partial<Task> = {}): Task {
+function makeTask(overrides: Partial<ConcreteTask> = {}): ConcreteTask {
   return {
+    kind: 'task',
     id: 'test-task',
     shortName: 'Test Task',
     description: 'A test description for the task.',
@@ -22,7 +23,14 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 function makeGraph(tasks: Task[] = []): VineGraph {
   const map = new Map(tasks.map((t) => [t.id, t]));
-  return { tasks: map, order: tasks.map((t) => t.id), version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks: map,
+    order: tasks.map((t) => t.id),
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------

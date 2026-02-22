@@ -4,12 +4,12 @@
   --font-bubble: 'Fredoka', system-ui, sans-serif;
 
   /* Luxury polychromatic palette — emerald / gold / silver / purple / crimson */
-  --color-complete: #50C878;
-  --color-started: #E2B93B;
-  --color-notstarted: #A0A8B4;
-  --color-planning: #9B72CF;
-  --color-blocked: #DC3F52;
-  --color-reviewing: #E8A317;
+  --color-complete: #50c878;
+  --color-started: #e2b93b;
+  --color-notstarted: #a0a8b4;
+  --color-planning: #9b72cf;
+  --color-blocked: #dc3f52;
+  --color-reviewing: #e8a317;
 
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
@@ -17,31 +17,31 @@
   --text-primary: #f8fafc;
   --text-secondary: #e2e8f0;
   --text-tertiary: #cbd5e1;
-  --text-muted: #A0A8B4;
+  --text-muted: #a0a8b4;
   --text-dimmed: #64748b;
   --border-color: #334155;
   --border-subtle: rgba(148, 163, 184, 0.15);
-  --accent-green: #50C878;
+  --accent-green: #50c878;
   --accent-green-dark: #0f172a;
   --toolbar-bg: rgba(15, 23, 42, 0.85);
   --sidebar-bg: rgba(15, 23, 42, 0.92);
   --hover-bg: rgba(148, 163, 184, 0.08);
   --hover-bg-strong: rgba(148, 163, 184, 0.1);
-  --focus-ring: #4A90D9;
+  --focus-ring: #4a90d9;
   --legend-bg: rgba(15, 23, 42, 0.9);
   --hint-bg: rgba(15, 23, 42, 0.7);
   --disabled-bg: #475569;
 
   /* Status dark variants (node fills) — deep luxury tones */
-  --color-complete-dark: #1E6B3E;
-  --color-started-dark: #A68520;
-  --color-notstarted-dark: #4A5058;
-  --color-planning-dark: #5E3D8F;
-  --color-blocked-dark: #8F2233;
-  --color-reviewing-dark: #A06B0F;
+  --color-complete-dark: #1e6b3e;
+  --color-started-dark: #a68520;
+  --color-notstarted-dark: #4a5058;
+  --color-planning-dark: #5e3d8f;
+  --color-blocked-dark: #8f2233;
+  --color-reviewing-dark: #a06b0f;
 
   /* UI chrome */
-  --color-root-ring: #D4A017;
+  --color-root-ring: #d4a017;
   --color-edge: #475569;
   --color-edge-dim: #64748b;
   --color-node-text-dark: #1e293b;
@@ -50,8 +50,8 @@
   --color-tooltip-shadow: rgba(0, 0, 0, 0.4);
 
   /* Error colors — crimson */
-  --color-error: #DC3F52;
-  --color-error-text: #F2808D;
+  --color-error: #dc3f52;
+  --color-error-text: #f2808d;
   --color-error-bg: rgba(220, 63, 82, 0.08);
   --color-error-border: rgba(220, 63, 82, 0.3);
 
@@ -65,8 +65,8 @@
   --color-strata-line: rgba(148, 163, 184, 0.45);
 
   /* Vine edge colors — royal purple & emerald */
-  --color-vine: #6A3D9A;
-  --color-vine-leaf: #2E7D4F;
+  --color-vine: #6a3d9a;
+  --color-vine-leaf: #2e7d4f;
 
   /* Glass node effects */
   --color-glass-highlight: rgba(255, 255, 255, 0.28);
@@ -94,39 +94,39 @@
 }
 
 [data-theme='light'] {
-  --bg-primary: #E8F5F0;
-  --bg-secondary: #DCEEE7;
-  --bg-tertiary: #C8DDD2;
+  --bg-primary: #e8f5f0;
+  --bg-secondary: #dceee7;
+  --bg-tertiary: #c8ddd2;
   --text-primary: #0f172a;
   --text-secondary: #1e293b;
   --text-tertiary: #475569;
   --text-muted: #64748b;
-  --text-dimmed: #A0A8B4;
-  --border-color: #B0C4B8;
+  --text-dimmed: #a0a8b4;
+  --border-color: #b0c4b8;
   --border-subtle: rgba(100, 116, 139, 0.35);
-  --accent-green: #1B8A4A;
+  --accent-green: #1b8a4a;
   --accent-green-dark: #ffffff;
   --toolbar-bg: rgba(248, 250, 252, 0.85);
   --sidebar-bg: rgba(248, 250, 252, 0.95);
   --hover-bg: rgba(100, 116, 139, 0.08);
   --hover-bg-strong: rgba(100, 116, 139, 0.15);
-  --focus-ring: #1E5AA8;
+  --focus-ring: #1e5aa8;
   --legend-bg: rgba(248, 250, 252, 0.92);
   --hint-bg: rgba(248, 250, 252, 0.8);
-  --disabled-bg: #A0A8B4;
+  --disabled-bg: #a0a8b4;
 
   /* Status dark variants (node fills) — vivid for light backgrounds */
-  --color-complete-dark: #50C878;
-  --color-started-dark: #D4A017;
-  --color-notstarted-dark: #B0B8C0;
-  --color-planning-dark: #9B72CF;
-  --color-blocked-dark: #DC3F52;
-  --color-reviewing-dark: #E8A317;
+  --color-complete-dark: #50c878;
+  --color-started-dark: #d4a017;
+  --color-notstarted-dark: #b0b8c0;
+  --color-planning-dark: #9b72cf;
+  --color-blocked-dark: #dc3f52;
+  --color-reviewing-dark: #e8a317;
 
   /* UI chrome */
-  --color-root-ring: #B8860B;
-  --color-edge: #8A9EA6;
-  --color-edge-dim: #B0C4B8;
+  --color-root-ring: #b8860b;
+  --color-edge: #8a9ea6;
+  --color-edge-dim: #b0c4b8;
   --color-node-text-dark: #1e293b;
   --color-node-text-light: #ffffff;
   --color-text-shadow: rgba(0, 0, 0, 0.3);
@@ -134,8 +134,8 @@
   --color-strata-line: rgba(71, 85, 105, 0.45);
 
   /* Vine edge colors — emerald tones */
-  --color-vine: #2E8B57;
-  --color-vine-leaf: #2D6A3F;
+  --color-vine: #2e8b57;
+  --color-vine-leaf: #2d6a3f;
 
   /* Glass node effects */
   --color-glass-highlight: rgba(255, 255, 255, 0.4);
@@ -156,8 +156,8 @@
   --node-inner-shadow-start: 70;
 
   /* Error colors — crimson */
-  --color-error: #C41E3A;
-  --color-error-text: #A01830;
+  --color-error: #c41e3a;
+  --color-error-text: #a01830;
   --color-error-bg: rgba(196, 30, 58, 0.08);
   --color-error-border: rgba(196, 30, 58, 0.3);
 

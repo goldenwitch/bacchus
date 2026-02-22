@@ -1,10 +1,35 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicChatService } from '../../src/lib/chat/anthropic.js';
 import type {
   ChatEvent,
   ChatMessage,
   ToolDefinition,
 } from '../../src/lib/chat/types.js';
+
+// ---------------------------------------------------------------------------
+// Module mock — replaces @anthropic-ai/sdk with a controllable constructor
+// and lightweight error classes that satisfy instanceof checks.
+// ---------------------------------------------------------------------------
+
+vi.mock('@anthropic-ai/sdk', () => {
+  class APIError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  }
+  class AuthenticationError extends APIError {
+    constructor(message: string) {
+      super(401, message);
+    }
+  }
+
+  const MockAnthropic = vi.fn();
+  Object.assign(MockAnthropic, { APIError, AuthenticationError });
+  return { default: MockAnthropic };
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,24 +49,13 @@ const TOOLS: ToolDefinition[] = [
 
 const SYSTEM_PROMPT = 'You are a helpful assistant.';
 
-/** Encode a string as a Uint8Array chunk. */
-function encode(text: string): Uint8Array {
-  return new TextEncoder().encode(text);
-}
-
-/** Build a ReadableStream that emits the given chunks sequentially. */
-function sseStream(...chunks: string[]): ReadableStream<Uint8Array> {
-  let index = 0;
-  return new ReadableStream<Uint8Array>({
-    pull(controller) {
-      if (index < chunks.length) {
-        controller.enqueue(encode(chunks[index]!));
-        index++;
-      } else {
-        controller.close();
-      }
-    },
-  });
+/** Build an async iterable that yields the given SDK stream events. */
+async function* mockStream(
+  events: Record<string, unknown>[],
+): AsyncGenerator<Record<string, unknown>> {
+  for (const event of events) {
+    yield event;
+  }
 }
 
 /** Collect all ChatEvents from an async generator. */
@@ -55,121 +69,115 @@ async function collectEvents(
   return events;
 }
 
-/** Build a minimal successful fetch Response wrapping an SSE stream. */
-function okResponse(body: ReadableStream<Uint8Array>): Response {
-  return {
-    ok: true,
-    status: 200,
-    body,
-    headers: new Headers(),
-    statusText: 'OK',
-    redirected: false,
-    type: 'basic',
-    url: '',
-    text: () => Promise.resolve(''),
-    json: () => Promise.resolve({}),
-    blob: () => Promise.resolve(new Blob()),
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
-    formData: () => Promise.resolve(new FormData()),
-    bodyUsed: false,
-    clone: () => okResponse(body),
-    bytes: () => Promise.resolve(new Uint8Array()),
-  } as Response;
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('AnthropicChatService', () => {
-  const originalFetch = globalThis.fetch;
+  let mockCreate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    globalThis.fetch = vi.fn();
-  });
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
+    vi.clearAllMocks();
+    mockCreate = vi.fn();
+    vi.mocked(Anthropic).mockImplementation(
+      () =>
+        ({
+          messages: { create: mockCreate },
+        }) as unknown as Anthropic,
+    );
   });
 
   // -----------------------------------------------------------------------
-  // Constructor & request structure
+  // Constructor & SDK initialization
   // -----------------------------------------------------------------------
 
-  it('uses default model and API URL', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+  it('passes correct options to Anthropic constructor', async () => {
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    const messages: ChatMessage[] = [{ role: 'user', content: 'hello' }];
+    await collectEvents(service.sendMessage([], [], SYSTEM_PROMPT));
 
-    await collectEvents(service.sendMessage(messages, TOOLS, SYSTEM_PROMPT));
-
-    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0]!;
-    expect(url).toBe('https://api.anthropic.com/v1/messages');
-
-    const body = JSON.parse((init as RequestInit).body as string);
-    expect(body.model).toBe('claude-opus-4-6');
-    expect(body.stream).toBe(true);
-    expect(body.system).toBe(SYSTEM_PROMPT);
-    expect(body.max_tokens).toBe(4096);
+    expect(vi.mocked(Anthropic).mock.calls[0]![0]).toEqual({
+      apiKey: 'sk-test',
+      baseURL: 'https://api.anthropic.com',
+      timeout: 120_000,
+      dangerouslyAllowBrowser: true,
+      maxRetries: 0,
+    });
   });
 
-  it('uses custom model and API URL', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+  it('passes custom options to Anthropic constructor and create', async () => {
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({
       apiKey: 'sk-test',
       model: 'claude-haiku-3',
       apiUrl: 'https://custom.api.com',
+      requestTimeoutMs: 60_000,
     });
-
-    await collectEvents(service.sendMessage([], TOOLS, SYSTEM_PROMPT));
-
-    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0]!;
-    expect(url).toBe('https://custom.api.com/v1/messages');
-    const body = JSON.parse((init as RequestInit).body as string);
-    expect(body.model).toBe('claude-haiku-3');
-  });
-
-  it('sends correct headers', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
-
-    const service = new AnthropicChatService({ apiKey: 'sk-my-key' });
     await collectEvents(service.sendMessage([], [], SYSTEM_PROMPT));
 
-    const init = vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
-    expect(headers['x-api-key']).toBe('sk-my-key');
-    expect(headers['anthropic-version']).toBe('2023-06-01');
-    expect(headers['Content-Type']).toBe('application/json');
-    expect(headers['anthropic-dangerous-direct-browser-access']).toBe('true');
+    const ctorArgs = vi.mocked(Anthropic).mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(ctorArgs.baseURL).toBe('https://custom.api.com');
+    expect(ctorArgs.timeout).toBe(60_000);
+
+    expect(mockCreate.mock.calls[0]![0].model).toBe('claude-haiku-3');
   });
 
   // -----------------------------------------------------------------------
-  // mapMessages (tested via fetch body inspection)
+  // Request structure
   // -----------------------------------------------------------------------
 
-  it('maps a plain user message', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+  it('sends correct parameters to messages.create', async () => {
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const messages: ChatMessage[] = [{ role: 'user', content: 'hello' }];
+    await collectEvents(service.sendMessage(messages, TOOLS, SYSTEM_PROMPT));
 
+    const args = mockCreate.mock.calls[0]![0];
+    expect(args).toEqual(
+      expect.objectContaining({
+        model: 'claude-opus-4-6',
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        stream: true,
+      }),
+    );
+    expect(args.messages).toEqual([{ role: 'user', content: 'hello' }]);
+    expect(args.tools).toEqual([
+      {
+        name: 'add_task',
+        description: 'Add a task',
+        input_schema: {
+          type: 'object',
+          properties: { id: { type: 'string' } },
+          required: ['id'],
+        },
+      },
+    ]);
+  });
+
+  // -----------------------------------------------------------------------
+  // mapMessages (tested via mockCreate args inspection)
+  // -----------------------------------------------------------------------
+
+  it('maps a plain user message', async () => {
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
+
+    const service = new AnthropicChatService({ apiKey: 'sk-test' });
+    const messages: ChatMessage[] = [{ role: 'user', content: 'hello' }];
     await collectEvents(service.sendMessage(messages, [], SYSTEM_PROMPT));
 
-    const body = JSON.parse(
-      (vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit)
-        .body as string,
-    );
-    expect(body.messages).toEqual([{ role: 'user', content: 'hello' }]);
+    const args = mockCreate.mock.calls[0]![0];
+    expect(args.messages).toEqual([{ role: 'user', content: 'hello' }]);
   });
 
   it('maps a message with tool calls to tool_use blocks', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const messages: ChatMessage[] = [
@@ -179,14 +187,10 @@ describe('AnthropicChatService', () => {
         toolCalls: [{ id: 'tc1', name: 'add_task', input: { id: 'foo' } }],
       },
     ];
-
     await collectEvents(service.sendMessage(messages, [], SYSTEM_PROMPT));
 
-    const body = JSON.parse(
-      (vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit)
-        .body as string,
-    );
-    expect(body.messages).toEqual([
+    const args = mockCreate.mock.calls[0]![0];
+    expect(args.messages).toEqual([
       {
         role: 'assistant',
         content: [
@@ -203,8 +207,7 @@ describe('AnthropicChatService', () => {
   });
 
   it('maps assistant tool calls without text content', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const messages: ChatMessage[] = [
@@ -214,15 +217,11 @@ describe('AnthropicChatService', () => {
         toolCalls: [{ id: 'tc1', name: 'add_task', input: { id: 'bar' } }],
       },
     ];
-
     await collectEvents(service.sendMessage(messages, [], SYSTEM_PROMPT));
 
-    const body = JSON.parse(
-      (vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit)
-        .body as string,
-    );
+    const args = mockCreate.mock.calls[0]![0];
     // Should not include a text block when content is empty
-    expect(body.messages).toEqual([
+    expect(args.messages).toEqual([
       {
         role: 'assistant',
         content: [
@@ -238,8 +237,7 @@ describe('AnthropicChatService', () => {
   });
 
   it('maps tool results to user messages with tool_result blocks', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const messages: ChatMessage[] = [
@@ -249,14 +247,10 @@ describe('AnthropicChatService', () => {
         toolResults: [{ toolCallId: 'tc1', result: '{"ok": true}' }],
       },
     ];
-
     await collectEvents(service.sendMessage(messages, [], SYSTEM_PROMPT));
 
-    const body = JSON.parse(
-      (vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit)
-        .body as string,
-    );
-    expect(body.messages).toEqual([
+    const args = mockCreate.mock.calls[0]![0];
+    expect(args.messages).toEqual([
       {
         role: 'user',
         content: [
@@ -267,8 +261,7 @@ describe('AnthropicChatService', () => {
   });
 
   it('maps tool results with isError flag', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const messages: ChatMessage[] = [
@@ -280,14 +273,10 @@ describe('AnthropicChatService', () => {
         ],
       },
     ];
-
     await collectEvents(service.sendMessage(messages, [], SYSTEM_PROMPT));
 
-    const body = JSON.parse(
-      (vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit)
-        .body as string,
-    );
-    expect(body.messages[0].content[0].is_error).toBe(true);
+    const args = mockCreate.mock.calls[0]![0];
+    expect(args.messages[0].content[0].is_error).toBe(true);
   });
 
   // -----------------------------------------------------------------------
@@ -295,17 +284,13 @@ describe('AnthropicChatService', () => {
   // -----------------------------------------------------------------------
 
   it('maps tool definitions to Anthropic format', async () => {
-    const stream = sseStream('data: {"type":"message_stop"}\n\n');
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
+    mockCreate.mockResolvedValue(mockStream([{ type: 'message_stop' }]));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     await collectEvents(service.sendMessage([], TOOLS, SYSTEM_PROMPT));
 
-    const body = JSON.parse(
-      (vi.mocked(globalThis.fetch).mock.calls[0]![1] as RequestInit)
-        .body as string,
-    );
-    expect(body.tools).toEqual([
+    const args = mockCreate.mock.calls[0]![0];
+    expect(args.tools).toEqual([
       {
         name: 'add_task',
         description: 'Add a task',
@@ -322,46 +307,10 @@ describe('AnthropicChatService', () => {
   // Error handling
   // -----------------------------------------------------------------------
 
-  it('throws on non-OK response with plain text body', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValue({
-      ok: false,
-      status: 429,
-      text: () => Promise.resolve('Rate limited'),
-    } as unknown as Response);
-
-    const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    await expect(
-      collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
-    ).rejects.toThrow('Anthropic API error 429: Rate limited');
-  });
-
-  it('parses JSON error body and extracts message', async () => {
-    const errorJson = JSON.stringify({
-      type: 'error',
-      error: { type: 'rate_limit_error', message: 'Too many requests' },
-    });
-    vi.mocked(globalThis.fetch).mockResolvedValue({
-      ok: false,
-      status: 429,
-      text: () => Promise.resolve(errorJson),
-    } as unknown as Response);
-
-    const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    await expect(
-      collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
-    ).rejects.toThrow('Anthropic API error 429: Too many requests');
-  });
-
-  it('throws a friendly message on 401 authentication error', async () => {
-    const errorJson = JSON.stringify({
-      type: 'error',
-      error: { type: 'authentication_error', message: 'invalid x-api-key' },
-    });
-    vi.mocked(globalThis.fetch).mockResolvedValue({
-      ok: false,
-      status: 401,
-      text: () => Promise.resolve(errorJson),
-    } as unknown as Response);
+  it('throws a friendly message on authentication error', async () => {
+    const AuthError = (Anthropic as unknown as Record<string, unknown>)
+      .AuthenticationError as new (msg: string) => Error;
+    mockCreate.mockRejectedValue(new AuthError('invalid x-api-key'));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     await expect(
@@ -371,31 +320,50 @@ describe('AnthropicChatService', () => {
     );
   });
 
-  it('throws when response body is null', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValue({
-      ok: true,
-      status: 200,
-      body: null,
-    } as unknown as Response);
+  it('throws on API error with status and message', async () => {
+    const ApiError = (Anthropic as unknown as Record<string, unknown>)
+      .APIError as new (status: number, msg: string) => Error;
+    mockCreate.mockRejectedValue(new ApiError(429, 'Too many requests'));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     await expect(
       collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
-    ).rejects.toThrow('Response body is null');
+    ).rejects.toThrow('Anthropic API error 429: Too many requests');
+  });
+
+  it('re-throws non-API errors', async () => {
+    mockCreate.mockRejectedValue(new Error('Network failure'));
+
+    const service = new AnthropicChatService({ apiKey: 'sk-test' });
+    await expect(
+      collectEvents(service.sendMessage([], [], SYSTEM_PROMPT)),
+    ).rejects.toThrow('Network failure');
   });
 
   // -----------------------------------------------------------------------
-  // parseSSEStream — text streaming
+  // Stream event mapping — text
   // -----------------------------------------------------------------------
 
-  it('yields text events from SSE text_delta', async () => {
-    const stream = sseStream(
-      'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Hello "}}\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"world"}}\n\n' +
-        'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
+  it('yields text events from text_delta', async () => {
+    mockCreate.mockResolvedValue(
+      mockStream([
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'text_delta', text: 'Hello ' },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'text_delta', text: 'world' },
+        },
+        {
+          type: 'message_delta',
+          delta: { stop_reason: 'end_turn' },
+          usage: { output_tokens: 10 },
+        },
+      ]),
     );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const events = await collectEvents(
@@ -410,18 +378,40 @@ describe('AnthropicChatService', () => {
   });
 
   // -----------------------------------------------------------------------
-  // parseSSEStream — tool use streaming
+  // Stream event mapping — tool use
   // -----------------------------------------------------------------------
 
-  it('yields tool_call events from SSE tool_use blocks', async () => {
-    const stream = sseStream(
-      'data: {"type":"content_block_start","content_block":{"type":"tool_use","id":"tc_1","name":"add_task"}}\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"input_json_delta","partial_json":"{\\"id\\":"}}\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"input_json_delta","partial_json":"\\"foo\\"}"}}\n\n' +
-        'data: {"type":"content_block_stop"}\n\n' +
-        'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}\n\n',
+  it('yields tool_call events from tool_use blocks', async () => {
+    mockCreate.mockResolvedValue(
+      mockStream([
+        {
+          type: 'content_block_start',
+          index: 0,
+          content_block: {
+            type: 'tool_use',
+            id: 'tc_1',
+            name: 'add_task',
+            input: {},
+          },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '{"id":' },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '"foo"}' },
+        },
+        { type: 'content_block_stop', index: 0 },
+        {
+          type: 'message_delta',
+          delta: { stop_reason: 'tool_use' },
+          usage: { output_tokens: 10 },
+        },
+      ]),
     );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const events = await collectEvents(
@@ -437,14 +427,23 @@ describe('AnthropicChatService', () => {
     ]);
   });
 
-  it('handles content_block_stop without active tool (text block)', async () => {
-    const stream = sseStream(
-      'data: {"type":"content_block_start","content_block":{"type":"text","text":""}}\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"hi"}}\n\n' +
-        'data: {"type":"content_block_stop"}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
+  it('handles content_block_stop without active tool', async () => {
+    mockCreate.mockResolvedValue(
+      mockStream([
+        {
+          type: 'content_block_start',
+          index: 0,
+          content_block: { type: 'text', text: '' },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'text_delta', text: 'hi' },
+        },
+        { type: 'content_block_stop', index: 0 },
+        { type: 'message_stop' },
+      ]),
     );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const events = await collectEvents(
@@ -456,84 +455,31 @@ describe('AnthropicChatService', () => {
   });
 
   // -----------------------------------------------------------------------
-  // parseSSEStream — edge cases
+  // Edge cases
   // -----------------------------------------------------------------------
 
-  it('handles SSE data split across multiple chunks', async () => {
-    // The SSE line is split across two chunks
-    const stream = sseStream(
-      'data: {"type":"content_block_del',
-      'ta","delta":{"type":"text_delta","text":"chunked"}}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
-    );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
-
-    const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    const events = await collectEvents(
-      service.sendMessage([], [], SYSTEM_PROMPT),
-    );
-
-    expect(events).toEqual([{ type: 'text', content: 'chunked' }]);
-  });
-
-  it('skips malformed JSON in SSE data', async () => {
-    const stream = sseStream(
-      'data: not-json\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
-    );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
-
-    const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    const events = await collectEvents(
-      service.sendMessage([], [], SYSTEM_PROMPT),
-    );
-
-    expect(events).toEqual([{ type: 'text', content: 'ok' }]);
-  });
-
-  it('skips empty data and [DONE] sentinel', async () => {
-    const stream = sseStream(
-      'data: \n\n' +
-        'data: [DONE]\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"after"}}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
-    );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
-
-    const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    const events = await collectEvents(
-      service.sendMessage([], [], SYSTEM_PROMPT),
-    );
-
-    expect(events).toEqual([{ type: 'text', content: 'after' }]);
-  });
-
-  it('ignores non-data SSE lines', async () => {
-    const stream = sseStream(
-      'event: message\n' +
-        'retry: 5000\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"works"}}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
-    );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
-
-    const service = new AnthropicChatService({ apiKey: 'sk-test' });
-    const events = await collectEvents(
-      service.sendMessage([], [], SYSTEM_PROMPT),
-    );
-
-    expect(events).toEqual([{ type: 'text', content: 'works' }]);
-  });
-
   it('handles tool with malformed JSON input gracefully', async () => {
-    const stream = sseStream(
-      'data: {"type":"content_block_start","content_block":{"type":"tool_use","id":"tc_x","name":"add_task"}}\n\n' +
-        'data: {"type":"content_block_delta","delta":{"type":"input_json_delta","partial_json":"{bad"}}\n\n' +
-        'data: {"type":"content_block_stop"}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
+    mockCreate.mockResolvedValue(
+      mockStream([
+        {
+          type: 'content_block_start',
+          index: 0,
+          content_block: {
+            type: 'tool_use',
+            id: 'tc_x',
+            name: 'add_task',
+            input: {},
+          },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '{bad' },
+        },
+        { type: 'content_block_stop', index: 0 },
+        { type: 'message_stop' },
+      ]),
     );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const events = await collectEvents(
@@ -550,11 +496,16 @@ describe('AnthropicChatService', () => {
   });
 
   it('message_delta without stop_reason is ignored', async () => {
-    const stream = sseStream(
-      'data: {"type":"message_delta","delta":{"usage":{"output_tokens":10}}}\n\n' +
-        'data: {"type":"message_stop"}\n\n',
+    mockCreate.mockResolvedValue(
+      mockStream([
+        {
+          type: 'message_delta',
+          delta: { stop_reason: null },
+          usage: { output_tokens: 10 },
+        },
+        { type: 'message_stop' },
+      ]),
     );
-    vi.mocked(globalThis.fetch).mockResolvedValue(okResponse(stream));
 
     const service = new AnthropicChatService({ apiKey: 'sk-test' });
     const events = await collectEvents(

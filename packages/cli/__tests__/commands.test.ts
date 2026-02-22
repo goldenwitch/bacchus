@@ -12,7 +12,7 @@ import {
   VineParseError,
   VineValidationError,
 } from '@bacchus/core';
-import type { Task, VineGraph } from '@bacchus/core';
+import type { Task, VineGraph, ConcreteTask } from '@bacchus/core';
 
 /**
  * Patch the root task's dependencies to include a new id, so that
@@ -169,7 +169,8 @@ describe('round-trip: add task', () => {
 
     let graph = readGraph(filePath);
 
-    const newTask: Task = {
+    const newTask: ConcreteTask = {
+      kind: 'task',
       id: 'api',
       shortName: 'API Layer',
       description: 'REST API endpoints.',
@@ -200,7 +201,8 @@ describe('round-trip: add task', () => {
     const original = readGraph(filePath);
     const originalIds = [...original.order];
 
-    const newTask: Task = {
+    const newTask: ConcreteTask = {
+      kind: 'task',
       id: 'testing',
       shortName: 'Test Suite',
       description: 'Automated tests.',

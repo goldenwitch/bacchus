@@ -1,7 +1,10 @@
-import type { VineGraph, Task } from '@bacchus/core';
+import type { VineGraph, Task, ConcreteTask } from '@bacchus/core';
 
-function makeTask(overrides: Partial<Task> & { id: string }): Task {
+function makeTask(
+  overrides: Partial<ConcreteTask> & { id: string },
+): ConcreteTask {
   return {
+    kind: 'task',
     id: overrides.id,
     shortName: overrides.shortName ?? overrides.id,
     description: overrides.description ?? `Description for ${overrides.id}`,
@@ -37,7 +40,14 @@ export function simpleGraph(): VineGraph {
       dependencies: ['mid'],
     }),
   );
-  return { tasks, order: ['root', 'mid', 'leaf'], version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks,
+    order: ['root', 'mid', 'leaf'],
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 /** 6 tasks, one per status */
@@ -92,7 +102,14 @@ export function fiveStatusGraph(): VineGraph {
       dependencies: ['task-e'],
     }),
   );
-  return { tasks, order: ['task-a', 'task-b', 'review', 'task-c', 'task-d', 'task-e'], version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks,
+    order: ['task-a', 'task-b', 'review', 'task-c', 'task-d', 'task-e'],
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 /** 1 standalone task */
@@ -102,7 +119,14 @@ export function singleTaskGraph(): VineGraph {
     'only',
     makeTask({ id: 'only', shortName: 'Single Task', status: 'complete' }),
   );
-  return { tasks, order: ['only'], version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks,
+    order: ['only'],
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 /** 4 tasks in a diamond: leaf → left + right → root */
@@ -139,7 +163,14 @@ export function diamondGraph(): VineGraph {
       dependencies: ['left', 'right'],
     }),
   );
-  return { tasks, order: ['root', 'left', 'right', 'leaf'], version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks,
+    order: ['root', 'left', 'right', 'leaf'],
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 /** 2 tasks with decisions on root */
@@ -163,7 +194,14 @@ export function decisionsGraph(): VineGraph {
       ],
     }),
   );
-  return { tasks, order: ['root', 'dep'], version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks,
+    order: ['root', 'dep'],
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 /** Tasks with 2-char and 30-char names */
@@ -191,5 +229,12 @@ export function longNamesGraph(): VineGraph {
       dependencies: ['long-name'],
     }),
   );
-  return { tasks, order: ['root', 'long-name', 'short-name'], version: '1.0.0', title: undefined, delimiter: '---' };
+  return {
+    tasks,
+    order: ['root', 'long-name', 'short-name'],
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }

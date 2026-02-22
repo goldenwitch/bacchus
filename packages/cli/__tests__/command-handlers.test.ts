@@ -89,7 +89,9 @@ describe('validate command', () => {
     const prog = wrapCommand(validateCommand);
     await prog.parseAsync(['node', 'test', 'validate', file]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Parse error'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Parse error'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -98,7 +100,9 @@ describe('validate command', () => {
     const prog = wrapCommand(validateCommand);
     await prog.parseAsync(['node', 'test', 'validate', file]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+    );
     expect(process.exitCode).toBe(1);
   });
 });
@@ -123,7 +127,9 @@ describe('show command', () => {
     const prog = wrapCommand(showCommand);
     await prog.parseAsync(['node', 'test', 'show', file]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Parse error'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Parse error'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -132,7 +138,9 @@ describe('show command', () => {
     const prog = wrapCommand(showCommand);
     await prog.parseAsync(['node', 'test', 'show', file]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+    );
     expect(process.exitCode).toBe(1);
   });
 });
@@ -154,7 +162,14 @@ describe('list command', () => {
   it('filters by status', async () => {
     const file = writeVine('test.vine', SAMPLE_VINE);
     const prog = wrapCommand(listCommand);
-    await prog.parseAsync(['node', 'test', 'list', file, '--status', 'complete']);
+    await prog.parseAsync([
+      'node',
+      'test',
+      'list',
+      file,
+      '--status',
+      'complete',
+    ]);
 
     expect(logSpy).toHaveBeenCalled();
     expect(process.exitCode).toBeUndefined();
@@ -174,16 +189,29 @@ describe('list command', () => {
     const prog = wrapCommand(listCommand);
     await prog.parseAsync(['node', 'test', 'list', file, '--status', 'bogus']);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid status'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid status'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
   it('warns when --status and --search are both provided', async () => {
     const file = writeVine('test.vine', SAMPLE_VINE);
     const prog = wrapCommand(listCommand);
-    await prog.parseAsync(['node', 'test', 'list', file, '--status', 'complete', '--search', 'x']);
+    await prog.parseAsync([
+      'node',
+      'test',
+      'list',
+      file,
+      '--status',
+      'complete',
+      '--search',
+      'x',
+    ]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('mutually exclusive'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('mutually exclusive'),
+    );
   });
 
   it('reports file not found', async () => {
@@ -191,7 +219,9 @@ describe('list command', () => {
     const prog = wrapCommand(listCommand);
     await prog.parseAsync(['node', 'test', 'list', file]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -200,7 +230,9 @@ describe('list command', () => {
     const prog = wrapCommand(listCommand);
     await prog.parseAsync(['node', 'test', 'list', file]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Parse error'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Parse error'),
+    );
     expect(process.exitCode).toBe(1);
   });
 });
@@ -215,13 +247,21 @@ describe('add command', () => {
     const file = writeVine('test.vine', SAMPLE_VINE);
     const prog = wrapCommand(addCommand);
     await prog.parseAsync([
-      'node', 'test', 'add', file,
-      '--id', 'orphan',
-      '--name', 'Orphan',
-      '--depends-on', 'setup',
+      'node',
+      'test',
+      'add',
+      file,
+      '--id',
+      'orphan',
+      '--name',
+      'Orphan',
+      '--depends-on',
+      'setup',
     ]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Validation error'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Validation error'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -229,13 +269,21 @@ describe('add command', () => {
     const file = writeVine('test.vine', SAMPLE_VINE);
     const prog = wrapCommand(addCommand);
     await prog.parseAsync([
-      'node', 'test', 'add', file,
-      '--id', 'x',
-      '--name', 'X',
-      '--status', 'bogus',
+      'node',
+      'test',
+      'add',
+      file,
+      '--id',
+      'x',
+      '--name',
+      'X',
+      '--status',
+      'bogus',
     ]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid status'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid status'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -243,12 +291,19 @@ describe('add command', () => {
     const file = writeVine('test.vine', SAMPLE_VINE);
     const prog = wrapCommand(addCommand);
     await prog.parseAsync([
-      'node', 'test', 'add', file,
-      '--id', 'bad id!',
-      '--name', 'Bad ID',
+      'node',
+      'test',
+      'add',
+      file,
+      '--id',
+      'bad id!',
+      '--name',
+      'Bad ID',
     ]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid task id'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid task id'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -256,13 +311,21 @@ describe('add command', () => {
     const file = join(tempDir, 'nonexistent.vine');
     const prog = wrapCommand(addCommand);
     await prog.parseAsync([
-      'node', 'test', 'add', file,
-      '--id', 'x',
-      '--name', 'X',
-      '--depends-on', 'setup',
+      'node',
+      'test',
+      'add',
+      file,
+      '--id',
+      'x',
+      '--name',
+      'X',
+      '--depends-on',
+      'setup',
     ]);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+    );
     expect(process.exitCode).toBe(1);
   });
 });
@@ -293,7 +356,9 @@ describe('status command', () => {
     const prog = wrapCommand(statusCommand);
     await prog.parseAsync(['node', 'test', 'status', file, 'auth', 'bogus']);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid status'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid status'),
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -302,7 +367,9 @@ describe('status command', () => {
     const prog = wrapCommand(statusCommand);
     await prog.parseAsync(['node', 'test', 'status', file, 'auth', 'complete']);
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('File not found'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+    );
     expect(process.exitCode).toBe(1);
   });
 });
@@ -316,7 +383,9 @@ describe('handleCommandError', () => {
     const err = new VineParseError('bad token', 5);
     handleCommandError(err, 'test.vine');
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Parse error'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Parse error'),
+    );
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('line 5'));
     expect(process.exitCode).toBe(1);
   });
@@ -325,7 +394,9 @@ describe('handleCommandError', () => {
     const err = new VineValidationError('cycle found', 'no-cycles', []);
     handleCommandError(err, 'test.vine');
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Validation error'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Validation error'),
+    );
     expect(process.exitCode).toBe(1);
   });
 

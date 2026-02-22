@@ -13,7 +13,10 @@ import {
   type PersistedAppState,
 } from '../src/lib/persistence.js';
 
-function makeAppState(vineId: string, overrides?: Partial<PersistedAppState>): PersistedAppState {
+function makeAppState(
+  vineId: string,
+  overrides?: Partial<PersistedAppState>,
+): PersistedAppState {
   return {
     vineId,
     vineText: `vine 1.0.0\n---\n[root] Root (notstarted)\nA task.\n`,
@@ -63,9 +66,15 @@ describe('persistence — app state', () => {
     // Use timestamps far in the future to ensure these are the most recent
     // even with other test data in the shared IDB.
     const future = Date.now() + 1_000_000;
-    await saveAppState(makeAppState('app-latest-a', { savedAt: future + 1000 }));
-    await saveAppState(makeAppState('app-latest-b', { savedAt: future + 3000 }));
-    await saveAppState(makeAppState('app-latest-c', { savedAt: future + 2000 }));
+    await saveAppState(
+      makeAppState('app-latest-a', { savedAt: future + 1000 }),
+    );
+    await saveAppState(
+      makeAppState('app-latest-b', { savedAt: future + 3000 }),
+    );
+    await saveAppState(
+      makeAppState('app-latest-c', { savedAt: future + 2000 }),
+    );
 
     const latest = await loadLatestAppState();
     expect(latest).toBeDefined();
@@ -82,7 +91,11 @@ describe('persistence — app state', () => {
 
 describe('persistence — sessions', () => {
   it('saves and loads a session', async () => {
-    await saveSession('p-sess-1', [{ type: 'user', content: 'hi' }], [{ role: 'user', content: 'hi' }]);
+    await saveSession(
+      'p-sess-1',
+      [{ type: 'user', content: 'hi' }],
+      [{ role: 'user', content: 'hi' }],
+    );
     const loaded = await loadSession('p-sess-1');
     expect(loaded).toBeDefined();
     expect(loaded?.vineId).toBe('p-sess-1');
@@ -134,7 +147,12 @@ describe('persistence — migrateFromLocalStorage', () => {
   it('skips if already migrated', async () => {
     localStorage.setItem(MIGRATION_FLAG, '1');
     // Even with old data present, migration should be a no-op.
-    localStorage.setItem(OLD_STORAGE_KEY, JSON.stringify([{ vineId: 'migrated-skip', displayMessages: [], chatMessages: [] }]));
+    localStorage.setItem(
+      OLD_STORAGE_KEY,
+      JSON.stringify([
+        { vineId: 'migrated-skip', displayMessages: [], chatMessages: [] },
+      ]),
+    );
 
     await migrateFromLocalStorage();
     // Old data should still be there (not cleaned up since migration was skipped).
@@ -143,7 +161,11 @@ describe('persistence — migrateFromLocalStorage', () => {
 
   it('migrates valid sessions from localStorage to IDB', async () => {
     const sessions = [
-      { vineId: 'migrated-1', displayMessages: [{ type: 'user', content: 'hello' }], chatMessages: [{ role: 'user', content: 'hello' }] },
+      {
+        vineId: 'migrated-1',
+        displayMessages: [{ type: 'user', content: 'hello' }],
+        chatMessages: [{ role: 'user', content: 'hello' }],
+      },
       { vineId: 'migrated-2', displayMessages: [], chatMessages: [] },
     ];
     localStorage.setItem(OLD_STORAGE_KEY, JSON.stringify(sessions));

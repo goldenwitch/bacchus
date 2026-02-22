@@ -1,26 +1,34 @@
 import { describe, it, expect } from 'vitest';
 import { validate } from '../src/validator.js';
 import { VineValidationError } from '../src/errors.js';
-import type { VineGraph } from '../src/types.js';
+import type { VineGraph, Task, RefTask } from '../src/types.js';
 
 function makeGraph(tasks: Array<{ id: string; deps?: string[] }>): VineGraph {
-  const taskMap = new Map();
+  const taskMap = new Map<string, Task>();
   const order: string[] = [];
 
   for (const t of tasks) {
     taskMap.set(t.id, {
+      kind: 'task',
       id: t.id,
       shortName: t.id,
       description: '',
       status: 'complete' as const,
       dependencies: t.deps ?? [],
       decisions: [],
-      attachments: [] as readonly [],
+      attachments: [],
     });
     order.push(t.id);
   }
 
-  return { version: '1.0.0', title: undefined, delimiter: '---', tasks: taskMap, order };
+  return {
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+    tasks: taskMap,
+    order,
+  };
 }
 
 describe('validate', () => {
@@ -126,5 +134,57 @@ describe('validate', () => {
     const graph = makeGraph([{ id: 'root' }]);
 
     expect(() => validate(graph)).not.toThrow();
+  });
+
+  it('throws ref-uri-required when ref node has empty vine', () => {
+    const graph = makeGraph([
+      { id: 'root', deps: ['ref-node'] },
+      { id: 'ref-node' },
+    ]);
+    // Manually make ref-node a ref with empty vine
+    const tasks = new Map(graph.tasks);
+    const refNode: RefTask = {
+      kind: 'ref',
+      id: 'ref-node',
+      shortName: 'ref-node',
+      description: '',
+      dependencies: [],
+      decisions: [],
+      vine: '',
+    };
+    tasks.set('ref-node', refNode);
+    const refGraph: VineGraph = { ...graph, tasks };
+
+    try {
+      validate(refGraph);
+      expect.unreachable('should have thrown');
+    } catch (e) {
+      expect(e).toBeInstanceOf(VineValidationError);
+      expect((e as VineValidationError).constraint).toBe('ref-uri-required');
+    }
+  });
+
+  // "ref node has status set" is now a compile-time error — RefTask has no status field.
+  // "ref node has attachments" is now a compile-time error — RefTask has no attachments field.
+
+  it('passes for valid ref node', () => {
+    const graph = makeGraph([
+      { id: 'root', deps: ['ref-node'] },
+      { id: 'ref-node' },
+    ]);
+    const tasks = new Map(graph.tasks);
+    const refNode: RefTask = {
+      kind: 'ref',
+      id: 'ref-node',
+      shortName: 'ref-node',
+      description: '',
+      dependencies: [],
+      decisions: [],
+      vine: './other.vine',
+    };
+    tasks.set('ref-node', refNode);
+    const refGraph: VineGraph = { ...graph, tasks };
+
+    expect(() => validate(refGraph)).not.toThrow();
   });
 });

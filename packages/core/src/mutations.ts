@@ -1,4 +1,4 @@
-import type { Status, Task, VineGraph } from './types.js';
+import type { ConcreteTask, Status, Task, VineGraph } from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 
@@ -14,7 +14,14 @@ function buildGraph(
   order: readonly string[],
   source: VineGraph,
 ): VineGraph {
-  return { version: source.version, title: source.title, delimiter: source.delimiter, tasks, order };
+  return {
+    version: source.version,
+    title: source.title,
+    delimiter: source.delimiter,
+    prefix: source.prefix,
+    tasks,
+    order,
+  };
 }
 
 /**
@@ -107,9 +114,16 @@ export function setStatus(
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
+  if (task.kind === 'ref') {
+    throw new VineError(`Cannot set status on reference node "${id}".`);
+  }
 
-  const updated: Task = { ...task, status };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const updated: ConcreteTask = { ...task, status };
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }
@@ -124,15 +138,24 @@ export function setStatus(
 export function updateTask(
   graph: VineGraph,
   id: string,
-  fields: Partial<Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>>,
+  fields: Partial<
+    Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>
+  >,
 ): VineGraph {
   const task = graph.tasks.get(id);
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
+  if (task.kind === 'ref' && fields.attachments !== undefined) {
+    throw new VineError(`Cannot set attachments on reference node "${id}".`);
+  }
 
-  const updated: Task = { ...task, ...fields };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const updated: Task = { ...task, ...fields } as Task;
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }
@@ -163,7 +186,11 @@ export function addDependency(
     ...task,
     dependencies: [...task.dependencies, depId],
   };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }
@@ -194,7 +221,11 @@ export function removeDependency(
     ...task,
     dependencies: task.dependencies.filter((d) => d !== depId),
   };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }

@@ -18,15 +18,15 @@ This document is a reusable checklist for implementing a new `.vine` format vers
 
 All other code imports from here, so this must land first.
 
-| Task | Where |
-|------|-------|
-| Update `Status` union type | `types.ts` — add/remove/rename status keywords |
-| Update `VALID_STATUSES` array | `types.ts` — must match `Status` union |
-| Update `Task` interface | `types.ts` — add new fields (e.g., `attachments`) |
-| Add supporting types | `types.ts` — e.g., `Attachment`, `AttachmentClass` |
-| Update `VineGraph` interface | `types.ts` — add metadata fields (`version`, `title`, `delimiter`), update `order` JSDoc for root convention |
-| Update `ValidationConstraint` / `ValidationDetails` | `errors.ts` — add variants for new constraints if needed |
-| Update `index.ts` exports | `src/index.ts` — export new types |
+| Task                                                | Where                                                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Update `Status` union type                          | `types.ts` — add/remove/rename status keywords                                                               |
+| Update `VALID_STATUSES` array                       | `types.ts` — must match `Status` union                                                                       |
+| Update `Task` interface                             | `types.ts` — add new fields (e.g., `attachments`)                                                            |
+| Add supporting types                                | `types.ts` — e.g., `Attachment`, `AttachmentClass`                                                           |
+| Update `VineGraph` interface                        | `types.ts` — add metadata fields (`version`, `title`, `delimiter`), update `order` JSDoc for root convention |
+| Update `ValidationConstraint` / `ValidationDetails` | `errors.ts` — add variants for new constraints if needed                                                     |
+| Update `index.ts` exports                           | `src/index.ts` — export new types                                                                            |
 
 ---
 
@@ -34,17 +34,17 @@ All other code imports from here, so this must land first.
 
 **Package**: `@bacchus/core` · **File**: `src/parser.ts`
 
-| Task | Where |
-|------|-------|
-| Update `HEADER_RE` regex | Status alternation must match new `Status` union |
-| Add version detection | First line: `vine <semver>` → dispatch to version-specific parser |
-| Add preamble parsing | Read metadata lines until delimiter |
-| Update block splitting | Split on configured delimiter instead of blank lines |
-| Add new body-line prefixes | Prefix-priority dispatch for any new line types (e.g., `@artifact`) |
-| Update description joining | `\n` vs space — match the spec for the detected version |
-| Populate new `VineGraph` fields | `version`, `title`, `delimiter`, new `Task` fields |
-| Reject unknown versions | Files without a valid magic line or with an unsupported version are rejected |
-| Handle trailing newlines | Stripping the trailing empty line from `input.split('\n')` prevents phantom empty description lines in the last task block |
+| Task                            | Where                                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Update `HEADER_RE` regex        | Status alternation must match new `Status` union                                                                           |
+| Add version detection           | First line: `vine <semver>` → dispatch to version-specific parser                                                          |
+| Add preamble parsing            | Read metadata lines until delimiter                                                                                        |
+| Update block splitting          | Split on configured delimiter instead of blank lines                                                                       |
+| Add new body-line prefixes      | Prefix-priority dispatch for any new line types (e.g., `@artifact`)                                                        |
+| Update description joining      | `\n` vs space — match the spec for the detected version                                                                    |
+| Populate new `VineGraph` fields | `version`, `title`, `delimiter`, new `Task` fields                                                                         |
+| Reject unknown versions         | Files without a valid magic line or with an unsupported version are rejected                                               |
+| Handle trailing newlines        | Stripping the trailing empty line from `input.split('\n')` prevents phantom empty description lines in the last task block |
 
 ---
 
@@ -52,15 +52,15 @@ All other code imports from here, so this must land first.
 
 **Package**: `@bacchus/core` · **File**: `src/serializer.ts`
 
-| Task | Where |
-|------|-------|
-| Emit preamble | Magic line + metadata + preamble terminator |
-| Update block separator | Delimiter string instead of blank lines |
-| Emit new body-line types | Attachments, etc., in canonical order |
-| Update description output | Multi-line descriptions emitted as separate lines |
-| Canonical ordering | Dependencies sorted, attachments grouped by class, metadata keys alphabetized |
-| Conditional metadata | Only emit metadata keys when they differ from defaults (e.g., omit `delimiter:` when it is `---`) |
-| Version field in output | Ensure the magic line reflects the graph's version |
+| Task                      | Where                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| Emit preamble             | Magic line + metadata + preamble terminator                                                       |
+| Update block separator    | Delimiter string instead of blank lines                                                           |
+| Emit new body-line types  | Attachments, etc., in canonical order                                                             |
+| Update description output | Multi-line descriptions emitted as separate lines                                                 |
+| Canonical ordering        | Dependencies sorted, attachments grouped by class, metadata keys alphabetized                     |
+| Conditional metadata      | Only emit metadata keys when they differ from defaults (e.g., omit `delimiter:` when it is `---`) |
+| Version field in output   | Ensure the magic line reflects the graph's version                                                |
 
 ---
 
@@ -70,15 +70,15 @@ All other code imports from here, so this must land first.
 
 These files share a set of common assumptions. Audit every occurrence of:
 
-| Pattern to find | What to update |
-|----------------|----------------|
-| Old root convention (e.g., `order[order.length - 1]`) | Search for the **old** root derivation pattern and replace with the new one. When upgrading from root-last to root-first, search for `order.length` or `order\[.*length` |
-| Hardcoded status initializers (e.g., `{ complete: 0, started: 0, … }`) | Add new statuses to initializer objects (e.g., `search.ts` → `getSummary`) |
-| `addTask()` insertion index | Insert relative to root position (e.g., append to end when root is first) |
-| `removeTask()` root guard | Root ID derivation |
-| `updateTask()` fields whitelist | Allow new fields (e.g., `attachments`) |
-| `buildGraph()` helper (if present) | Internal helpers in `mutations.ts` that construct `VineGraph` objects must propagate new metadata fields (`version`, `title`, `delimiter`, etc.) from the source graph. Update the function signature and all call sites. |
-| Island-check BFS root | Must use correct root convention |
+| Pattern to find                                                        | What to update                                                                                                                                                                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Old root convention (e.g., `order[order.length - 1]`)                  | Search for the **old** root derivation pattern and replace with the new one. When upgrading from root-last to root-first, search for `order.length` or `order\[.*length`                                                  |
+| Hardcoded status initializers (e.g., `{ complete: 0, started: 0, … }`) | Add new statuses to initializer objects (e.g., `search.ts` → `getSummary`)                                                                                                                                                |
+| `addTask()` insertion index                                            | Insert relative to root position (e.g., append to end when root is first)                                                                                                                                                 |
+| `removeTask()` root guard                                              | Root ID derivation                                                                                                                                                                                                        |
+| `updateTask()` fields whitelist                                        | Allow new fields (e.g., `attachments`)                                                                                                                                                                                    |
+| `buildGraph()` helper (if present)                                     | Internal helpers in `mutations.ts` that construct `VineGraph` objects must propagate new metadata fields (`version`, `title`, `delimiter`, etc.) from the source graph. Update the function signature and all call sites. |
+| Island-check BFS root                                                  | Must use correct root convention                                                                                                                                                                                          |
 
 **Recommended**: create a `getRootId(graph)` helper in `graph.ts` (exported from `index.ts`) used everywhere, so root convention is a single line to change.
 
@@ -88,12 +88,12 @@ These files share a set of common assumptions. Audit every occurrence of:
 
 **Package**: `@bacchus/cli` · **Dir**: `packages/cli/src/`
 
-| Task | Where |
-|------|-------|
-| Status labels map | `commands/show.ts` — `STATUS_LABELS` record |
-| Status argument description | `commands/status.ts` — hardcoded status list in help text |
-| Task construction defaults | `commands/add.ts` — new fields need defaults (e.g., `attachments: []`) |
-| Command logic | Generally delegates to core — changes propagate transitively |
+| Task                        | Where                                                                  |
+| --------------------------- | ---------------------------------------------------------------------- |
+| Status labels map           | `commands/show.ts` — `STATUS_LABELS` record                            |
+| Status argument description | `commands/status.ts` — hardcoded status list in help text              |
+| Task construction defaults  | `commands/add.ts` — new fields need defaults (e.g., `attachments: []`) |
+| Command logic               | Generally delegates to core — changes propagate transitively           |
 
 ---
 
@@ -101,15 +101,15 @@ These files share a set of common assumptions. Audit every occurrence of:
 
 **Package**: `@bacchus/ui` · **Dir**: `packages/ui/src/`
 
-| Task | Where |
-|------|-------|
-| Status color/style map | `src/lib/status.ts` — `STATUS_MAP` entries |
-| CSS custom properties | `src/app.css` — `--color-<status>` variables for light + dark themes |
-| Root convention in layout | `src/lib/layout.ts` — `computeDepths()`, `createSimulation()` |
-| Root convention in components | `src/lib/components/GraphView.svelte` — `isRoot` derivation |
-| Chat tool schemas | `src/lib/chat/tools.ts` — status enums, root ID derivation, task construction |
-| Chat system prompt | `src/lib/chat/orchestrator.ts` — `buildSystemPrompt()` format description |
-| Chat tool feedback | `src/lib/chat/toolFeedback.ts` — `VALID_STATUSES` set |
+| Task                          | Where                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| Status color/style map        | `src/lib/status.ts` — `STATUS_MAP` entries                                    |
+| CSS custom properties         | `src/app.css` — `--color-<status>` variables for light + dark themes          |
+| Root convention in layout     | `src/lib/layout.ts` — `computeDepths()`, `createSimulation()`                 |
+| Root convention in components | `src/lib/components/GraphView.svelte` — `isRoot` derivation                   |
+| Chat tool schemas             | `src/lib/chat/tools.ts` — status enums, root ID derivation, task construction |
+| Chat system prompt            | `src/lib/chat/orchestrator.ts` — `buildSystemPrompt()` format description     |
+| Chat tool feedback            | `src/lib/chat/toolFeedback.ts` — `VALID_STATUSES` set                         |
 
 ---
 
@@ -147,34 +147,34 @@ Get-ChildItem -Recurse -Filter "*.vine" packages/
 
 ### Core tests (`packages/core/__tests__/`)
 
-| File | What to update |
-|------|----------------|
-| `fixtures/vine-example.ts` | Canonical fixture — rewrite to new format |
-| `parser.test.ts` | Inline VINE strings, order assertions, description join assertions, new feature tests |
-| `serializer.test.ts` | Expected output strings, delimiter assertions, preamble assertions |
-| `validator.test.ts` | `makeGraph()` helper root convention, order arrays in all test cases |
-| `mutations.test.ts` | `baseVine` inline string, `patchRootDeps()` root derivation, all `serialize()` expected outputs |
-| `graph.test.ts` | `getRoot` test description and assertions |
-| `search.test.ts` | `VINE_TEXT` fixture, `byStatus` assertions |
-| `roundtrip.test.ts` | All inline VINE strings, minimal graph format |
+| File                       | What to update                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
+| `fixtures/vine-example.ts` | Canonical fixture — rewrite to new format                                                       |
+| `parser.test.ts`           | Inline VINE strings, order assertions, description join assertions, new feature tests           |
+| `serializer.test.ts`       | Expected output strings, delimiter assertions, preamble assertions                              |
+| `validator.test.ts`        | `makeGraph()` helper root convention, order arrays in all test cases                            |
+| `mutations.test.ts`        | `baseVine` inline string, `patchRootDeps()` root derivation, all `serialize()` expected outputs |
+| `graph.test.ts`            | `getRoot` test description and assertions                                                       |
+| `search.test.ts`           | `VINE_TEXT` fixture, `byStatus` assertions                                                      |
+| `roundtrip.test.ts`        | All inline VINE strings, minimal graph format                                                   |
 
 ### CLI tests (`packages/cli/__tests__/`)
 
-| File | What to update |
-|------|----------------|
-| `commands.test.ts` | `SAMPLE_VINE`, `CYCLE_VINE`, `patchRootDeps()` root derivation + return value (must spread `...graph` to preserve metadata), order assertions, `byStatus` assertions, new fields on Task literals |
-| `command-handlers.test.ts` | `SAMPLE_VINE` |
+| File                       | What to update                                                                                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commands.test.ts`         | `SAMPLE_VINE`, `CYCLE_VINE`, `patchRootDeps()` root derivation + return value (must spread `...graph` to preserve metadata), order assertions, `byStatus` assertions, new fields on Task literals |
+| `command-handlers.test.ts` | `SAMPLE_VINE`                                                                                                                                                                                     |
 
 ### UI tests (`packages/ui/__tests__/`)
 
-| File | What to update |
-|------|----------------|
-| `fixtures/graphs.ts` | All `order` arrays (root convention), task objects (new fields) |
-| `status.test.ts` | `ALL_STATUSES` array, entry count assertion |
-| `chat/tools.test.ts` | `SAMPLE_VINE`, `MULTI_DEP_VINE` |
-| `chat/orchestrator.test.ts` | `SAMPLE_VINE` |
-| `chat/toolFeedback.test.ts` | `SAMPLE_VINE` |
-| `chat/integration.test.ts` | `SEED_VINE` |
+| File                        | What to update                                                  |
+| --------------------------- | --------------------------------------------------------------- |
+| `fixtures/graphs.ts`        | All `order` arrays (root convention), task objects (new fields) |
+| `status.test.ts`            | `ALL_STATUSES` array, entry count assertion                     |
+| `chat/tools.test.ts`        | `SAMPLE_VINE`, `MULTI_DEP_VINE`                                 |
+| `chat/orchestrator.test.ts` | `SAMPLE_VINE`                                                   |
+| `chat/toolFeedback.test.ts` | `SAMPLE_VINE`                                                   |
+| `chat/integration.test.ts`  | `SEED_VINE`                                                     |
 
 ### E2E fixtures (`packages/ui/e2e/fixtures/`)
 
@@ -184,15 +184,15 @@ Every `.vine` file must be rewritten. Inline VINE text in `chat-mocked.spec.ts` 
 
 ## Phase 9 — Documentation
 
-| File | What to update |
-|------|----------------|
-| `docs/VINE.md` | Should already be done (Phase 0). Verify migration table is complete. |
-| `docs/VINE-TS.md` | Type definitions, parser algorithm, serializer format, root convention |
-| `docs/CLI.md` | Status lists in command descriptions |
-| `docs/BacchusUI.md` | Status palette table, root identification, data flow descriptions |
-| `docs/UserGuide.md` | Status color descriptions |
-| `examples/README.md` | Example file descriptions |
-| `README.md` | Quick Start code sample, VINE Format summary, API table (`getRoot` description) |
+| File                 | What to update                                                                  |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `docs/VINE.md`       | Should already be done (Phase 0). Verify migration table is complete.           |
+| `docs/VINE-TS.md`    | Type definitions, parser algorithm, serializer format, root convention          |
+| `docs/CLI.md`        | Status lists in command descriptions                                            |
+| `docs/BacchusUI.md`  | Status palette table, root identification, data flow descriptions               |
+| `docs/UserGuide.md`  | Status color descriptions                                                       |
+| `examples/README.md` | Example file descriptions                                                       |
+| `README.md`          | Quick Start code sample, VINE Format summary, API table (`getRoot` description) |
 
 ---
 
@@ -223,11 +223,11 @@ Get-ChildItem examples/*.vine | ForEach-Object {
 
 ## Phase 11 — Version Bump
 
-| File | Field | New value |
-|------|-------|-----------|
+| File                         | Field     | New value                               |
+| ---------------------------- | --------- | --------------------------------------- |
 | `packages/core/package.json` | `version` | Match VINE spec version (e.g., `1.0.0`) |
-| `packages/cli/package.json` | `version` | Align with core |
-| `packages/ui/package.json` | `version` | Align with core |
+| `packages/cli/package.json`  | `version` | Align with core                         |
+| `packages/ui/package.json`   | `version` | Align with core                         |
 
 ---
 
@@ -235,12 +235,12 @@ Get-ChildItem examples/*.vine | ForEach-Object {
 
 These patterns surface the most common version-sensitive code across the codebase:
 
-| What | Grep |
-|------|------|
-| Root convention | `order\[.*length` or `order\[0\]` or `getRootId` |
-| Status enums | `complete.*started.*planning\|VALID_STATUSES\|Status.*=` |
-| Inline VINE text | `\[.*\].*\(complete\|started\|notstarted\|planning\|blocked\)` |
-| Block splitting | `splitBlocks\|blank.*line\|join.*\\n\\n` |
-| Description join | `join\(' '\)\|join.*space` |
-| VINE fixtures | `VINE_EXAMPLE\|SAMPLE_VINE\|VINE_TEXT\|SEED_VINE` |
-| Attachment handling | `@artifact\|@guidance\|@file\|attachment` |
+| What                | Grep                                                           |
+| ------------------- | -------------------------------------------------------------- |
+| Root convention     | `order\[.*length` or `order\[0\]` or `getRootId`               |
+| Status enums        | `complete.*started.*planning\|VALID_STATUSES\|Status.*=`       |
+| Inline VINE text    | `\[.*\].*\(complete\|started\|notstarted\|planning\|blocked\)` |
+| Block splitting     | `splitBlocks\|blank.*line\|join.*\\n\\n`                       |
+| Description join    | `join\(' '\)\|join.*space`                                     |
+| VINE fixtures       | `VINE_EXAMPLE\|SAMPLE_VINE\|VINE_TEXT\|SEED_VINE`              |
+| Attachment handling | `@artifact\|@guidance\|@file\|attachment`                      |

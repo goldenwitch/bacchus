@@ -12,13 +12,9 @@ function isErrnoException(e: unknown): e is NodeJS.ErrnoException {
  */
 export function handleCommandError(error: unknown, file: string): void {
   if (error instanceof VineParseError) {
-    console.error(
-      `Parse error (line ${String(error.line)}): ${error.message}`,
-    );
+    console.error(`Parse error (line ${String(error.line)}): ${error.message}`);
   } else if (error instanceof VineValidationError) {
-    console.error(
-      `Validation error [${error.constraint}]: ${error.message}`,
-    );
+    console.error(`Validation error [${error.constraint}]: ${error.message}`);
   } else if (error instanceof VineError) {
     console.error(error.message);
   } else if (isErrnoException(error) && error.code === 'ENOENT') {
