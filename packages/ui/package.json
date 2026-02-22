@@ -24,6 +24,7 @@
     "e2e:chat:live": "playwright test --config e2e/playwright.config.ts --project=chat-live"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@bacchus/core": "workspace:*",
     "d3-force": "^3.0.0",
     "d3-selection": "^3.0.0",
