@@ -161,7 +161,11 @@ describe('buildToolFeedback', () => {
 
   it('builds add_ref feedback', () => {
     const detail = buildToolFeedback(
-      call('add_ref', { id: 'ref-1', shortName: 'my-ref', uri: 'https://example.com/spec.vine' }),
+      call('add_ref', {
+        id: 'ref-1',
+        shortName: 'my-ref',
+        uri: 'https://example.com/spec.vine',
+      }),
       null,
       '',
     );
@@ -221,7 +225,10 @@ describe('buildToolFeedback', () => {
 
   it('builds remove_attachment feedback', () => {
     const detail = buildToolFeedback(
-      call('remove_attachment', { taskId: 'task-2', uri: 'https://example.com/doc.pdf' }),
+      call('remove_attachment', {
+        taskId: 'task-2',
+        uri: 'https://example.com/doc.pdf',
+      }),
       null,
       '',
     );

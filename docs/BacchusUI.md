@@ -33,14 +33,14 @@ The package ships **two things**:
 
 Each `Status` maps to a color, emoji, and CSS class. The palette uses luxury material tones — crimson, emerald, gold, silver, and royal purple:
 
-| Status       | Color (hex) | Emoji | CSS Class            | Meaning                                |
-| ------------ | ----------- | ----- | -------------------- | -------------------------------------- |
-| `complete`   | `#50C878`   | 🌿    | `.status-complete`   | Finished — rich emerald, lush            |
-| `started`    | `#E2B93B`   | 🔨    | `.status-started`    | In progress — antique gold, active       |
-| `reviewing`  | `#E8A317`   | 🔍    | `.status-reviewing`  | Awaiting review — warm amber             |
-| `notstarted` | `#A0A8B4`   | 📋    | `.status-notstarted` | Ready — polished silver, waiting         |
-| `planning`   | `#9B72CF`   | 💭    | `.status-planning`   | Thinking — royal purple, imaginative     |
-| `blocked`    | `#DC3F52`   | 🚧    | `.status-blocked`    | Stuck — crimson, needs attention         |
+| Status       | Color (hex) | Emoji | CSS Class            | Meaning                              |
+| ------------ | ----------- | ----- | -------------------- | ------------------------------------ |
+| `complete`   | `#50C878`   | 🌿    | `.status-complete`   | Finished — rich emerald, lush        |
+| `started`    | `#E2B93B`   | 🔨    | `.status-started`    | In progress — antique gold, active   |
+| `reviewing`  | `#E8A317`   | 🔍    | `.status-reviewing`  | Awaiting review — warm amber         |
+| `notstarted` | `#A0A8B4`   | 📋    | `.status-notstarted` | Ready — polished silver, waiting     |
+| `planning`   | `#9B72CF`   | 💭    | `.status-planning`   | Thinking — royal purple, imaginative |
+| `blocked`    | `#DC3F52`   | 🚧    | `.status-blocked`    | Stuck — crimson, needs attention     |
 
 Colors are defined as CSS custom properties on `:root` for easy theming.
 
@@ -517,15 +517,15 @@ Dev dependencies inherit from the workspace root (`typescript`, `vitest`, `eslin
 
 ### Test Suites
 
-| Suite            | Focus                                                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `layout.test.ts` | D3 simulation produces valid positions; root is near center; no overlapping nodes after settle; depth ring ordering holds.                        |
-| `camera.test.ts` | Bounding box computation for focus framing; scale/translate fits all nodes; edge case: root focused (no dependants).                              |
-| `sound.test.ts`  | `AudioContext` mock — `playPop`/`playHover`/`playWhoosh` create correct oscillator configs; mute state persists; graceful no-op when unavailable. |
-| `status.test.ts` | Every `Status` value has a mapped color, emoji, and CSS class; no missing entries; exhaustive switch coverage.                                    |
-| `physics.test.ts` | Physics parameter defaults, clamping, and reset behavior.                                                                                        |
-| `persistence.test.ts` | Session round-trip to localStorage, circular buffer eviction, per-graph keying.                                                              |
-| `chat/*.test.ts` | Anthropic API client, orchestrator tool loop, session state, session store, tool feedback rendering.                                              |
+| Suite                 | Focus                                                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout.test.ts`      | D3 simulation produces valid positions; root is near center; no overlapping nodes after settle; depth ring ordering holds.                        |
+| `camera.test.ts`      | Bounding box computation for focus framing; scale/translate fits all nodes; edge case: root focused (no dependants).                              |
+| `sound.test.ts`       | `AudioContext` mock — `playPop`/`playHover`/`playWhoosh` create correct oscillator configs; mute state persists; graceful no-op when unavailable. |
+| `status.test.ts`      | Every `Status` value has a mapped color, emoji, and CSS class; no missing entries; exhaustive switch coverage.                                    |
+| `physics.test.ts`     | Physics parameter defaults, clamping, and reset behavior.                                                                                         |
+| `persistence.test.ts` | Session round-trip to localStorage, circular buffer eviction, per-graph keying.                                                                   |
+| `chat/*.test.ts`      | Anthropic API client, orchestrator tool loop, session state, session store, tool feedback rendering.                                              |
 
 ### Visual / E2E Testing
 

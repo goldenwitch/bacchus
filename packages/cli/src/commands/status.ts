@@ -1,7 +1,12 @@
 import { Command } from 'commander';
 import { readGraph, writeGraph } from '../io.js';
 import { handleCommandError } from '../errors.js';
-import { setStatus, getTask, VALID_STATUSES, isValidStatus } from '@bacchus/core';
+import {
+  setStatus,
+  getTask,
+  VALID_STATUSES,
+  isValidStatus,
+} from '@bacchus/core';
 
 export const statusCommand = new Command('status')
   .description('Update the status of a task')

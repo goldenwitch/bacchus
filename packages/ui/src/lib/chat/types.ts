@@ -92,5 +92,9 @@ export interface ChatService {
  * (API calls, tool executions, timing) for observability.
  */
 export interface ChatLogger {
-  log(level: 'info' | 'warn' | 'error', message: string, data?: Record<string, unknown>): void;
+  log(
+    level: 'info' | 'warn' | 'error',
+    message: string,
+    data?: Record<string, unknown>,
+  ): void;
 }

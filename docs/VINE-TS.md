@@ -23,7 +23,13 @@ Package: `@bacchus/core` (`packages/core/`)
 ### `Status`
 
 ```ts
-type Status = 'complete' | 'started' | 'reviewing' | 'planning' | 'notstarted' | 'blocked';
+type Status =
+  | 'complete'
+  | 'started'
+  | 'reviewing'
+  | 'planning'
+  | 'notstarted'
+  | 'blocked';
 ```
 
 `VALID_STATUSES` is a `ReadonlySet<string>` containing all six values, used by the parser/validator.
@@ -72,9 +78,9 @@ type Task = ConcreteTask | RefTask;
 interface VineGraph {
   readonly tasks: ReadonlyMap<string, Task>;
   readonly order: readonly string[]; // task ids in file order; first element is always root
-  readonly version: string;           // e.g. '1.1.0'
+  readonly version: string; // e.g. '1.1.0'
   readonly title: string | undefined; // from preamble title: metadata
-  readonly delimiter: string;          // block delimiter, default '---'
+  readonly delimiter: string; // block delimiter, default '---'
   readonly prefix: string | undefined; // controls ID namespacing during expansion
 }
 ```
@@ -169,21 +175,21 @@ Parses a `.vine` string into a validated `VineGraph`. Throws `VineParseError` on
 3. **Block splitting**: Split the remaining text on the delimiter (default `---`). Trim whitespace, discard empty blocks.
 4. **For each block**:
    a. The first line is either a **task header** or a **reference node header**.
-      - **Task header**: `[id] Short Name (status)` — extract `id`, `shortName`, and `status` via the spec regex:
-        ```
-        ^\[([a-zA-Z0-9/-]+)\]\s+(.+?)\s+\((complete|started|reviewing|planning|notstarted|blocked)\)$
-        ```
-      - **Reference node header** (v1.1.0): `ref [id] Name (URI)` — extract `id`, `shortName`, and `vine` URI. The task's `status` is set to `undefined`.
-      - IDs may contain slash-separated segments (e.g. `ds/components`).
-   Throw `VineParseError` if neither pattern matches.
-   b. Classify remaining **body lines** by prefix:
+   - **Task header**: `[id] Short Name (status)` — extract `id`, `shortName`, and `status` via the spec regex:
+     ```
+     ^\[([a-zA-Z0-9/-]+)\]\s+(.+?)\s+\((complete|started|reviewing|planning|notstarted|blocked)\)$
+     ```
+   - **Reference node header** (v1.1.0): `ref [id] Name (URI)` — extract `id`, `shortName`, and `vine` URI. The task's `status` is set to `undefined`.
+   - IDs may contain slash-separated segments (e.g. `ds/components`).
+     Throw `VineParseError` if neither pattern matches.
+     b. Classify remaining **body lines** by prefix:
    - `-> ` → dependency (trim prefix, value is target task id)
    - `> ` → decision (trim prefix, rest is text)
    - `@artifact ` → attachment with class `artifact` (parse `<mime> <uri>`)
    - `@guidance ` → attachment with class `guidance` (parse `<mime> <uri>`)
    - `@file ` → attachment with class `file` (parse `<mime> <uri>`)
    - otherwise → description line
-   c. Join consecutive description lines with `\n` (newlines preserved).
+     c. Join consecutive description lines with `\n` (newlines preserved).
 5. **Build** a `Task` per block (including `attachments` array). Collect into a `Map<string, Task>` keyed by id.
    - On duplicate id insertion, throw `VineParseError`.
 6. **Preserve** insertion order as the `order` array.
@@ -211,11 +217,11 @@ Throws `VineValidationError` on the first constraint violation found.
 
 ### Constraints (checked in order)
 
-| #   | Constraint            | Check                                                                                                     | Error `constraint` value  |
-| --- | --------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------- |
-| 1   | At least one task     | `graph.tasks.size >= 1`                                                                                   | `'at-least-one-task'`     |
-| 2   | Valid dependency refs | Every `task.dependencies[i]` exists as a key in `graph.tasks`                                             | `'valid-dependency-refs'` |
-| 3   | No cycles             | DFS-based cycle detection across the full dependency graph                                                | `'no-cycles'`             |
+| #   | Constraint            | Check                                                                                                      | Error `constraint` value  |
+| --- | --------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
+| 1   | At least one task     | `graph.tasks.size >= 1`                                                                                    | `'at-least-one-task'`     |
+| 2   | Valid dependency refs | Every `task.dependencies[i]` exists as a key in `graph.tasks`                                              | `'valid-dependency-refs'` |
+| 3   | No cycles             | DFS-based cycle detection across the full dependency graph                                                 | `'no-cycles'`             |
 | 4   | No islands            | BFS/DFS from root (first id in `order`) following **reverse** dependency edges; every task must be visited | `'no-islands'`            |
 
 Unique ids are enforced by the parser at insertion time (throws `VineParseError` on duplicates), so the validator does not re-check them.
@@ -331,7 +337,13 @@ Single barrel export re-exporting the public surface:
 
 ```ts
 // Types
-export type { Status, Task, VineGraph, Attachment, AttachmentClass } from './types.js';
+export type {
+  Status,
+  Task,
+  VineGraph,
+  Attachment,
+  AttachmentClass,
+} from './types.js';
 
 // Errors
 export { VineError, VineParseError, VineValidationError } from './errors.js';
@@ -343,12 +355,7 @@ export { serialize } from './serializer.js';
 export { validate } from './validator.js';
 
 // Graph Queries
-export {
-  getTask,
-  getRoot,
-  getDependencies,
-  getDependants,
-} from './graph.js';
+export { getTask, getRoot, getDependencies, getDependants } from './graph.js';
 
 // Reference Node Helpers
 export { isVineRef } from './expansion.js';
@@ -444,7 +451,9 @@ function setStatus(graph: VineGraph, id: string, status: Status): VineGraph;
 function updateTask(
   graph: VineGraph,
   id: string,
-  updates: Partial<Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>>,
+  updates: Partial<
+    Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>
+  >,
 ): VineGraph;
 function addDependency(
   graph: VineGraph,

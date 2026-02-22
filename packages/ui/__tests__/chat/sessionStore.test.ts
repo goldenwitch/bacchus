@@ -35,8 +35,16 @@ describe('sessionStore', () => {
   });
 
   it('upserts existing sessions', async () => {
-    await saveSession('ss-upsert-1', [makeDisplay('first')], [makeChat('first')]);
-    await saveSession('ss-upsert-1', [makeDisplay('second')], [makeChat('second')]);
+    await saveSession(
+      'ss-upsert-1',
+      [makeDisplay('first')],
+      [makeChat('first')],
+    );
+    await saveSession(
+      'ss-upsert-1',
+      [makeDisplay('second')],
+      [makeChat('second')],
+    );
 
     const loaded = await loadSession('ss-upsert-1');
     expect(loaded?.displayMessages[0]).toEqual(makeDisplay('second'));

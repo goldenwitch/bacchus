@@ -5,7 +5,9 @@
 
   let { task, x, y }: { task: Task | null; x: number; y: number } = $props();
 
-  const statusInfo = $derived(task && task.kind === 'task' ? STATUS_MAP[task.status] : null);
+  const statusInfo = $derived(
+    task && task.kind === 'task' ? STATUS_MAP[task.status] : null,
+  );
 
   let tooltipEl: HTMLDivElement | undefined = $state(undefined);
 

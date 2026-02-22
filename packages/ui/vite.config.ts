@@ -16,7 +16,9 @@ export default defineConfig(({ mode }) => {
   const version: string = pkg.version ?? '0.0.0';
   let gitSha = 'unknown';
   try {
-    gitSha = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
+    gitSha = execSync('git rev-parse --short HEAD', {
+      encoding: 'utf-8',
+    }).trim();
   } catch {
     // CI or shallow clone — fall back gracefully
   }

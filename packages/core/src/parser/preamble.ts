@@ -69,10 +69,7 @@ export function parsePreamble(lines: string[]): Preamble {
   }
 
   if (terminatorIndex === -1) {
-    throw new VineParseError(
-      'Missing preamble terminator "---"',
-      lines.length,
-    );
+    throw new VineParseError('Missing preamble terminator "---"', lines.length);
   }
 
   return {

@@ -19,7 +19,13 @@ export class AnthropicChatService implements ChatService {
   private readonly requestTimeoutMs: number;
   private readonly logger?: ChatLogger;
 
-  constructor(options: { apiKey: string; model?: string; apiUrl?: string; requestTimeoutMs?: number; logger?: ChatLogger }) {
+  constructor(options: {
+    apiKey: string;
+    model?: string;
+    apiUrl?: string;
+    requestTimeoutMs?: number;
+    logger?: ChatLogger;
+  }) {
     this.apiKey = options.apiKey;
     this.model = options.model ?? 'claude-opus-4-6';
     this.apiUrl = options.apiUrl ?? 'https://api.anthropic.com';
@@ -41,7 +47,11 @@ export class AnthropicChatService implements ChatService {
       stream: true,
     };
 
-    this.logger?.log('info', 'Sending API request', { model: this.model, messageCount: messages.length, toolCount: tools.length });
+    this.logger?.log('info', 'Sending API request', {
+      model: this.model,
+      messageCount: messages.length,
+      toolCount: tools.length,
+    });
 
     const response = await fetch(`${this.apiUrl}/v1/messages`, {
       method: 'POST',
@@ -59,14 +69,19 @@ export class AnthropicChatService implements ChatService {
       const errorText = await response.text();
       let detail = errorText;
       try {
-        const parsed = JSON.parse(errorText) as { error?: { message?: string } };
+        const parsed = JSON.parse(errorText) as {
+          error?: { message?: string };
+        };
         if (parsed.error?.message) {
           detail = parsed.error.message;
         }
       } catch {
         // Not JSON — use raw text
       }
-      this.logger?.log('error', 'API error', { status: response.status, detail });
+      this.logger?.log('error', 'API error', {
+        status: response.status,
+        detail,
+      });
       if (response.status === 401) {
         throw new Error(
           `Authentication failed — ${detail}. Check that your API key is valid.`,
@@ -77,7 +92,9 @@ export class AnthropicChatService implements ChatService {
       );
     }
 
-    this.logger?.log('info', 'API response received', { status: response.status });
+    this.logger?.log('info', 'API response received', {
+      status: response.status,
+    });
 
     if (!response.body) {
       throw new Error('Response body is null — streaming not supported');
@@ -211,7 +228,10 @@ export class AnthropicChatService implements ChatService {
               } catch {
                 // If JSON parsing fails, use empty input
               }
-              this.logger?.log('info', 'SSE tool_call', { id: currentToolId, name: currentToolName });
+              this.logger?.log('info', 'SSE tool_call', {
+                id: currentToolId,
+                name: currentToolName,
+              });
               yield {
                 type: 'tool_call',
                 call: {

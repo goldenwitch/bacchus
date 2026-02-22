@@ -39,7 +39,18 @@ async function collectEvents(
 ): Promise<OrchestratorEvent[]> {
   const events: OrchestratorEvent[] = [];
   for await (const event of gen) {
-    testLogger.log('info', `Event: ${event.type}`, 'content' in event ? { content: typeof event.content === 'string' ? event.content.slice(0, 100) : '...' } : undefined);
+    testLogger.log(
+      'info',
+      `Event: ${event.type}`,
+      'content' in event
+        ? {
+            content:
+              typeof event.content === 'string'
+                ? event.content.slice(0, 100)
+                : '...',
+          }
+        : undefined,
+    );
     events.push(event);
   }
   return events;

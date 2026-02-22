@@ -67,9 +67,14 @@ describe('parse', () => {
       const graph = parse(input);
       expect(graph.tasks.size).toBe(3);
       expect(graph.tasks.get('setup')!.kind).toBe('task');
-      expect((graph.tasks.get('setup')! as import('../src/types.js').ConcreteTask).status).toBe('complete');
+      expect(
+        (graph.tasks.get('setup')! as import('../src/types.js').ConcreteTask)
+          .status,
+      ).toBe('complete');
       expect(graph.tasks.get('ext')!.kind).toBe('ref');
-      expect((graph.tasks.get('ext')! as import('../src/types.js').RefTask).vine).toBe('./other.vine');
+      expect(
+        (graph.tasks.get('ext')! as import('../src/types.js').RefTask).vine,
+      ).toBe('./other.vine');
     });
 
     it('v1.0.0 file parses identically (backward compat)', () => {
@@ -235,12 +240,9 @@ describe('parse', () => {
     });
 
     it('discards empty trailing segments from trailing delimiter', () => {
-      const input = [
-        'vine 1.0.0',
-        '---',
-        '[root] Root (complete)',
-        '---',
-      ].join('\n');
+      const input = ['vine 1.0.0', '---', '[root] Root (complete)', '---'].join(
+        '\n',
+      );
 
       const graph = parse(input);
       expect(graph.tasks.size).toBe(1);
@@ -344,9 +346,21 @@ describe('parse', () => {
 
       expect(task).toBeDefined();
       expect(task!.attachments).toEqual([
-        { class: 'artifact', mime: 'application/pdf', uri: 'https://example.com/report.pdf' },
-        { class: 'guidance', mime: 'text/markdown', uri: 'https://example.com/guide.md' },
-        { class: 'file', mime: 'image/png', uri: 'https://example.com/sketch.png' },
+        {
+          class: 'artifact',
+          mime: 'application/pdf',
+          uri: 'https://example.com/report.pdf',
+        },
+        {
+          class: 'guidance',
+          mime: 'text/markdown',
+          uri: 'https://example.com/guide.md',
+        },
+        {
+          class: 'file',
+          mime: 'image/png',
+          uri: 'https://example.com/sketch.png',
+        },
       ]);
     });
 
@@ -383,7 +397,9 @@ describe('parse', () => {
       const ext = graph.tasks.get('ext');
       expect(ext).toBeDefined();
       expect(ext!.kind).toBe('ref');
-      expect((ext! as import('../src/types.js').RefTask).vine).toBe('./other.vine');
+      expect((ext! as import('../src/types.js').RefTask).vine).toBe(
+        './other.vine',
+      );
       expect(ext!.shortName).toBe('External');
     });
 

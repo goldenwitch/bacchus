@@ -98,7 +98,10 @@ describe('executeToolCall', () => {
       expect(result.graph).not.toBe(graph);
       expect(result.graph?.tasks.has('new-task')).toBe(true);
       expect(result.graph?.tasks.get('new-task')?.shortName).toBe('New Task');
-      expect((result.graph?.tasks.get('new-task') as ConcreteTask | undefined)?.status).toBe('planning');
+      expect(
+        (result.graph?.tasks.get('new-task') as ConcreteTask | undefined)
+          ?.status,
+      ).toBe('planning');
       expect(result.graph?.tasks.get('new-task')?.dependencies).toContain(
         'leaf',
       );
@@ -114,9 +117,10 @@ describe('executeToolCall', () => {
         call('add_task', { id: 'default-task', shortName: 'Default' }),
       );
       expect(result.isError).toBe(false);
-      expect((result.graph?.tasks.get('default-task') as ConcreteTask | undefined)?.status).toBe(
-        'notstarted',
-      );
+      expect(
+        (result.graph?.tasks.get('default-task') as ConcreteTask | undefined)
+          ?.status,
+      ).toBe('notstarted');
     });
 
     it('returns error for duplicate id', () => {
@@ -139,7 +143,14 @@ describe('executeToolCall', () => {
     });
 
     it('adds a task to an empty graph without root patching', () => {
-      const emptyGraph: VineGraph = { tasks: new Map(), order: [], version: '1.0.0', title: undefined, delimiter: '---', prefix: undefined };
+      const emptyGraph: VineGraph = {
+        tasks: new Map(),
+        order: [],
+        version: '1.0.0',
+        title: undefined,
+        delimiter: '---',
+        prefix: undefined,
+      };
       const result = executeToolCall(
         emptyGraph,
         call('add_task', { id: 'solo', shortName: 'Solo Task' }),
@@ -185,7 +196,9 @@ describe('executeToolCall', () => {
         call('set_status', { id: 'leaf', status: 'blocked' }),
       );
       expect(result.isError).toBe(false);
-      expect((result.graph?.tasks.get('leaf') as ConcreteTask | undefined)?.status).toBe('blocked');
+      expect(
+        (result.graph?.tasks.get('leaf') as ConcreteTask | undefined)?.status,
+      ).toBe('blocked');
     });
 
     it('returns error for unknown task', () => {
@@ -363,7 +376,9 @@ A simple leaf task.
       expect(task?.kind === 'ref' && task.vine).toBe('./child.vine');
       expect(result.result).toContain('Added reference');
       // Root should now depend on the ref node
-      expect(result.graph?.tasks.get('root')?.dependencies).toContain('child-ref');
+      expect(result.graph?.tasks.get('root')?.dependencies).toContain(
+        'child-ref',
+      );
     });
 
     it('returns error when no graph', () => {

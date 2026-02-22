@@ -35,7 +35,9 @@ describe('serialize', () => {
     const descIdx = lines.indexOf('Some description text.');
     const depIdx = lines.indexOf('-> leaf');
     const decIdx = lines.indexOf('> Decision one.');
-    const attIdx = lines.indexOf('@artifact text/html https://example.com/demo.html');
+    const attIdx = lines.indexOf(
+      '@artifact text/html https://example.com/demo.html',
+    );
 
     expect(descIdx).toBeGreaterThan(-1);
     expect(depIdx).toBeGreaterThan(descIdx);

@@ -76,8 +76,16 @@
   // Restore camera from persisted state (runs once)
   let cameraRestored = false;
   $effect(() => {
-    if (initialCamera && !cameraRestored && (initialCamera.k !== 1 || initialCamera.x !== 0 || initialCamera.y !== 0)) {
-      transform = { x: initialCamera.x, y: initialCamera.y, k: initialCamera.k };
+    if (
+      initialCamera &&
+      !cameraRestored &&
+      (initialCamera.k !== 1 || initialCamera.x !== 0 || initialCamera.y !== 0)
+    ) {
+      transform = {
+        x: initialCamera.x,
+        y: initialCamera.y,
+        k: initialCamera.k,
+      };
       cameraRestored = true;
     }
   });
@@ -260,7 +268,11 @@
           y: event.transform.y,
           k: event.transform.k,
         };
-        oncamerachange?.({ x: event.transform.x, y: event.transform.y, k: event.transform.k });
+        oncamerachange?.({
+          x: event.transform.x,
+          y: event.transform.y,
+          k: event.transform.k,
+        });
         dismissHints();
       });
 
@@ -294,7 +306,9 @@
   const focusedStatusColor = $derived.by(() => {
     if (!focusedTaskId) return 'var(--color-vine)';
     const task = getTask(graph, focusedTaskId);
-    return task.kind === 'task' ? getStatusColor(task.status) : 'var(--color-vine)';
+    return task.kind === 'task'
+      ? getStatusColor(task.status)
+      : 'var(--color-vine)';
   });
 
   // Derived focused and hovered tasks

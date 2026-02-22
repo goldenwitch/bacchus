@@ -17,7 +17,9 @@
     onfocus?: (taskId: string) => void;
   } = $props();
 
-  const statusInfo = $derived(task && task.kind === 'task' ? STATUS_MAP[task.status] : null);
+  const statusInfo = $derived(
+    task && task.kind === 'task' ? STATUS_MAP[task.status] : null,
+  );
   const deps = $derived(task ? getDependencies(graph, task.id) : []);
   const dependants = $derived(task ? getDependants(graph, task.id) : []);
 
@@ -112,11 +114,22 @@
           {#each task.attachments as att (att.uri)}
             <li class="attachment-item">
               <span class="attachment-icon">
-                {att.class === 'artifact' ? '📦' : att.class === 'guidance' ? '📘' : '📄'}
+                {att.class === 'artifact'
+                  ? '📦'
+                  : att.class === 'guidance'
+                    ? '📘'
+                    : '📄'}
               </span>
-              <span class="attachment-class">{att.class.charAt(0).toUpperCase() + att.class.slice(1)}</span>
+              <span class="attachment-class"
+                >{att.class.charAt(0).toUpperCase() + att.class.slice(1)}</span
+              >
               <span class="attachment-mime">{att.mime}</span>
-              <a class="attachment-uri" href={att.uri} target="_blank" rel="noopener noreferrer">
+              <a
+                class="attachment-uri"
+                href={att.uri}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {att.uri.length > 45 ? '…' + att.uri.slice(-42) : att.uri}
               </a>
             </li>
@@ -132,7 +145,9 @@
       {:else}
         {#each deps as dep (dep.id)}
           <button class="dep-item" onclick={() => onfocus?.(dep.id)}>
-            <span>{dep.kind === 'task' ? STATUS_MAP[dep.status].emoji : '🔗'}</span>
+            <span
+              >{dep.kind === 'task' ? STATUS_MAP[dep.status].emoji : '🔗'}</span
+            >
             <span>{dep.shortName}</span>
           </button>
         {/each}
@@ -146,7 +161,9 @@
       {:else}
         {#each dependants as dep (dep.id)}
           <button class="dep-item" onclick={() => onfocus?.(dep.id)}>
-            <span>{dep.kind === 'task' ? STATUS_MAP[dep.status].emoji : '🔗'}</span>
+            <span
+              >{dep.kind === 'task' ? STATUS_MAP[dep.status].emoji : '🔗'}</span
+            >
             <span>{dep.shortName}</span>
           </button>
         {/each}

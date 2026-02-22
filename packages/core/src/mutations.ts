@@ -14,7 +14,14 @@ function buildGraph(
   order: readonly string[],
   source: VineGraph,
 ): VineGraph {
-  return { version: source.version, title: source.title, delimiter: source.delimiter, prefix: source.prefix, tasks, order };
+  return {
+    version: source.version,
+    title: source.title,
+    delimiter: source.delimiter,
+    prefix: source.prefix,
+    tasks,
+    order,
+  };
 }
 
 /**
@@ -112,7 +119,11 @@ export function setStatus(
   }
 
   const updated: ConcreteTask = { ...task, status };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }
@@ -127,7 +138,9 @@ export function setStatus(
 export function updateTask(
   graph: VineGraph,
   id: string,
-  fields: Partial<Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>>,
+  fields: Partial<
+    Pick<Task, 'shortName' | 'description' | 'decisions' | 'attachments'>
+  >,
 ): VineGraph {
   const task = graph.tasks.get(id);
   if (!task) {
@@ -138,7 +151,11 @@ export function updateTask(
   }
 
   const updated: Task = { ...task, ...fields } as Task;
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }
@@ -169,7 +186,11 @@ export function addDependency(
     ...task,
     dependencies: [...task.dependencies, depId],
   };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }
@@ -200,7 +221,11 @@ export function removeDependency(
     ...task,
     dependencies: task.dependencies.filter((d) => d !== depId),
   };
-  const next = buildGraph(replaceTask(graph.tasks, updated), graph.order, graph);
+  const next = buildGraph(
+    replaceTask(graph.tasks, updated),
+    graph.order,
+    graph,
+  );
   validate(next);
   return next;
 }

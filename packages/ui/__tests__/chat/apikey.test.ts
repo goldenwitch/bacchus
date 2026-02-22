@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getApiKey, setApiKey, clearApiKey } from '../../src/lib/chat/apikey.js';
+import {
+  getApiKey,
+  setApiKey,
+  clearApiKey,
+} from '../../src/lib/chat/apikey.js';
 
 describe('apikey', () => {
   beforeEach(() => {

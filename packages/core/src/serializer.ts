@@ -102,5 +102,10 @@ export function serialize(graph: VineGraph): string {
   }
 
   // ── Assemble ──────────────────────────────────────────────────────
-  return preambleLines.join('\n') + '\n' + blocks.join(`\n${graph.delimiter}\n`) + '\n';
+  return (
+    preambleLines.join('\n') +
+    '\n' +
+    blocks.join(`\n${graph.delimiter}\n`) +
+    '\n'
+  );
 }

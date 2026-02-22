@@ -610,9 +610,13 @@ describe('updateTask', () => {
     ].join('\n');
     const refGraph = parse(refVine);
 
-    expect(() => updateTask(refGraph, 'ext', {
-      attachments: [{ class: 'artifact', mime: 'text/plain', uri: 'file.txt' }],
-    })).toThrow(VineError);
+    expect(() =>
+      updateTask(refGraph, 'ext', {
+        attachments: [
+          { class: 'artifact', mime: 'text/plain', uri: 'file.txt' },
+        ],
+      }),
+    ).toThrow(VineError);
   });
 
   it('allows updating description on a ref node', () => {
@@ -626,7 +630,9 @@ describe('updateTask', () => {
     ].join('\n');
     const refGraph = parse(refVine);
 
-    const updated = updateTask(refGraph, 'ext', { description: 'Updated ref desc.' });
+    const updated = updateTask(refGraph, 'ext', {
+      description: 'Updated ref desc.',
+    });
     expect(updated.tasks.get('ext')!.description).toBe('Updated ref desc.');
   });
 });

@@ -23,7 +23,14 @@ function makeTask(overrides: Partial<ConcreteTask> = {}): ConcreteTask {
 
 function makeGraph(tasks: Task[] = []): VineGraph {
   const map = new Map(tasks.map((t) => [t.id, t]));
-  return { tasks: map, order: tasks.map((t) => t.id), version: '1.0.0', title: undefined, delimiter: '---', prefix: undefined };
+  return {
+    tasks: map,
+    order: tasks.map((t) => t.id),
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -88,7 +88,14 @@ describe('filterByStatus', () => {
     const started = filterByStatus(refGraph, 'started');
     expect(started.map((t) => t.id)).toEqual(['root']);
     // ref node should not appear in any status filter
-    const allStatuses = ['complete', 'started', 'reviewing', 'planning', 'notstarted', 'blocked'] as const;
+    const allStatuses = [
+      'complete',
+      'started',
+      'reviewing',
+      'planning',
+      'notstarted',
+      'blocked',
+    ] as const;
     for (const s of allStatuses) {
       const result = filterByStatus(refGraph, s);
       expect(result.every((t) => t.kind === 'task')).toBe(true);

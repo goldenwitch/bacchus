@@ -1,6 +1,19 @@
 // Types
-export type { Attachment, AttachmentClass, ConcreteTask, RefTask, Status, Task, VineGraph } from './types.js';
-export { VALID_STATUSES, isValidStatus, isVineRef, isConcreteTask } from './types.js';
+export type {
+  Attachment,
+  AttachmentClass,
+  ConcreteTask,
+  RefTask,
+  Status,
+  Task,
+  VineGraph,
+} from './types.js';
+export {
+  VALID_STATUSES,
+  isValidStatus,
+  isVineRef,
+  isConcreteTask,
+} from './types.js';
 
 // Errors
 export { VineError, VineParseError, VineValidationError } from './errors.js';
@@ -12,7 +25,13 @@ export { serialize } from './serializer.js';
 export { validate } from './validator.js';
 
 // Graph Queries
-export { getTask, getRoot, getRootId, getDependencies, getDependants } from './graph.js';
+export {
+  getTask,
+  getRoot,
+  getRootId,
+  getDependencies,
+  getDependants,
+} from './graph.js';
 
 // Mutations
 export {

@@ -60,7 +60,9 @@ export function expandVineRef(
   // 1. Validate that refNodeId exists and is a reference node.
   const refNode = parentGraph.tasks.get(refNodeId);
   if (!refNode) {
-    throw new VineError(`Task "${refNodeId}" does not exist in the parent graph.`);
+    throw new VineError(
+      `Task "${refNodeId}" does not exist in the parent graph.`,
+    );
   }
   if (refNode.kind !== 'ref') {
     throw new VineError(`Task "${refNodeId}" is not a reference node.`);
@@ -82,7 +84,9 @@ export function expandVineRef(
   for (const [childId, remappedId] of idMap) {
     if (childId === childRootId) continue; // refNodeId slot is expected
     if (parentGraph.tasks.has(remappedId)) {
-      throw new VineError(`ID collision: "${remappedId}" already exists in the parent graph.`);
+      throw new VineError(
+        `ID collision: "${remappedId}" already exists in the parent graph.`,
+      );
     }
   }
 

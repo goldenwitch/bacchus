@@ -40,8 +40,18 @@ export type ToolFeedbackDetail =
       readonly kind: 'replace_graph';
       readonly taskCount: number;
     }
-  | { readonly kind: 'add_attachment'; readonly taskId: string; readonly attachmentClass: string; readonly mimeType: string; readonly uri: string }
-  | { readonly kind: 'remove_attachment'; readonly taskId: string; readonly uri: string }
+  | {
+      readonly kind: 'add_attachment';
+      readonly taskId: string;
+      readonly attachmentClass: string;
+      readonly mimeType: string;
+      readonly uri: string;
+    }
+  | {
+      readonly kind: 'remove_attachment';
+      readonly taskId: string;
+      readonly uri: string;
+    }
   | {
       readonly kind: 'add_ref';
       readonly id: string;

@@ -76,13 +76,13 @@ yarn dlx tsx packages/cli/src/cli.ts list examples/06-project-bacchus.vine --sea
 
 Adds a new task to a `.vine` file. **Modifies the file in-place.**
 
-| Flag                    | Required | Description                                                                               |
-| ----------------------- | -------- | ----------------------------------------------------------------------------------------- |
-| `--id <id>`             | Yes      | Unique task identifier.                                                                   |
-| `--name <name>`         | Yes      | Short task name.                                                                          |
+| Flag                    | Required | Description                                                                                            |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `--id <id>`             | Yes      | Unique task identifier.                                                                                |
+| `--name <name>`         | Yes      | Short task name.                                                                                       |
 | `--status <status>`     | No       | One of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`. Default: `notstarted`. |
-| `--description <text>`  | No       | Task description text.                                                                    |
-| `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                                              |
+| `--description <text>`  | No       | Task description text.                                                                                 |
+| `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                                                           |
 
 ```powershell
 yarn dlx tsx packages/cli/src/cli.ts add examples/03-diamond.vine \

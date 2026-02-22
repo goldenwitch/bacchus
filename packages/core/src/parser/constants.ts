@@ -15,7 +15,8 @@ export const HEADER_RE =
   /^\[([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*)\]\s+(.+?)\s+\((complete|notstarted|planning|blocked|started|reviewing)\)$/;
 
 /** Matches a reference node header: `ref [id] Short Name (uri)` */
-export const REF_HEADER_RE = /^ref\s+\[([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*)\]\s+(.+?)\s+\((\S+)\)$/;
+export const REF_HEADER_RE =
+  /^ref\s+\[([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*)\]\s+(.+?)\s+\((\S+)\)$/;
 
 /** The fixed line that terminates the preamble section. */
 export const PREAMBLE_TERMINATOR = '---';

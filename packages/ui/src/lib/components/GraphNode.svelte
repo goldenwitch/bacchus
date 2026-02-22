@@ -25,7 +25,9 @@
 
   const statusInfo = $derived.by(() => {
     void themeVersion();
-    return node.task.kind === 'task' ? STATUS_MAP[node.task.status] : STATUS_MAP['notstarted'];
+    return node.task.kind === 'task'
+      ? STATUS_MAP[node.task.status]
+      : STATUS_MAP['notstarted'];
   });
 
   const radius = $derived(computeNodeRadius(node.task.shortName.length));
@@ -37,9 +39,18 @@
 
   // Glass effect: lighten/darken the status fill for the gradient
   function adjustColor(hex: string, amount: number): string {
-    const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amount));
-    const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amount));
-    const b = Math.min(255, Math.max(0, parseInt(hex.slice(5, 7), 16) + amount));
+    const r = Math.min(
+      255,
+      Math.max(0, parseInt(hex.slice(1, 3), 16) + amount),
+    );
+    const g = Math.min(
+      255,
+      Math.max(0, parseInt(hex.slice(3, 5), 16) + amount),
+    );
+    const b = Math.min(
+      255,
+      Math.max(0, parseInt(hex.slice(5, 7), 16) + amount),
+    );
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
 
@@ -51,13 +62,17 @@
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
-  const lightenedColor = $derived(adjustColor(statusInfo.darkColor, nodeGlassLighten));
+  const lightenedColor = $derived(
+    adjustColor(statusInfo.darkColor, nodeGlassLighten),
+  );
   const darkenedColor = $derived(adjustColor(statusInfo.darkColor, -20));
 
   // Read CSS vars for node text controls (see app.css :root)
   function getCSSVar(name: string, fallback: number): number {
     if (typeof document === 'undefined') return fallback;
-    const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const val = getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim();
     return val ? Number(val) : fallback;
   }
 
@@ -319,15 +334,34 @@
       </filter>
 
       <!-- Radial gradient: lighter center biased top-left → translucent base → translucent edge -->
-      <radialGradient id={glassGradId} cx="{nodeGlassCx}%" cy="{nodeGlassCy}%" r="60%">
+      <radialGradient
+        id={glassGradId}
+        cx="{nodeGlassCx}%"
+        cy="{nodeGlassCy}%"
+        r="60%"
+      >
         <stop offset="0%" stop-color={lightenedColor} />
-        <stop offset="60%" stop-color={hexToRGBA(statusInfo.darkColor, nodeGradientMidAlpha)} />
-        <stop offset="100%" stop-color={hexToRGBA(darkenedColor, nodeGradientEdgeAlpha)} />
+        <stop
+          offset="60%"
+          stop-color={hexToRGBA(statusInfo.darkColor, nodeGradientMidAlpha)}
+        />
+        <stop
+          offset="100%"
+          stop-color={hexToRGBA(darkenedColor, nodeGradientEdgeAlpha)}
+        />
       </radialGradient>
 
       <!-- Specular highlight — bright white crescent near top-left -->
-      <radialGradient id="specular-{node.id}" cx="{nodeSpecularCx}%" cy="{nodeSpecularCy}%" r="{nodeSpecularRadius}%">
-        <stop offset="0%" stop-color="rgba(255,255,255,{nodeSpecularOpacity})" />
+      <radialGradient
+        id="specular-{node.id}"
+        cx="{nodeSpecularCx}%"
+        cy="{nodeSpecularCy}%"
+        r="{nodeSpecularRadius}%"
+      >
+        <stop
+          offset="0%"
+          stop-color="rgba(255,255,255,{nodeSpecularOpacity})"
+        />
         <stop offset="100%" stop-color="rgba(255,255,255,0)" />
       </radialGradient>
 
@@ -339,7 +373,13 @@
       </radialGradient>
 
       <!-- Iridescent rainbow rim gradient -->
-      <linearGradient id="iridescentRim-{node.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient
+        id="iridescentRim-{node.id}"
+        x1="0%"
+        y1="0%"
+        x2="100%"
+        y2="100%"
+      >
         <stop offset="0%" stop-color="rgba(255,180,200,0.35)" />
         <stop offset="25%" stop-color="rgba(180,160,255,0.35)" />
         <stop offset="50%" stop-color="rgba(140,220,255,0.35)" />
@@ -348,8 +388,20 @@
       </linearGradient>
 
       <!-- Text glow: soft coloured halo behind label for contrast -->
-      <filter id="textGlow-{node.id}" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="0" stdDeviation={nodeTextGlowRadius} flood-color={darkenedColor} flood-opacity={nodeTextGlowOpacity} />
+      <filter
+        id="textGlow-{node.id}"
+        x="-20%"
+        y="-20%"
+        width="140%"
+        height="140%"
+      >
+        <feDropShadow
+          dx="0"
+          dy="0"
+          stdDeviation={nodeTextGlowRadius}
+          flood-color={darkenedColor}
+          flood-opacity={nodeTextGlowOpacity}
+        />
       </filter>
     </defs>
 
@@ -372,7 +424,9 @@
       stroke-width="2.5"
       filter="url(#{filterId})"
       opacity="0.6"
-      class={node.task.kind === 'task' && node.task.status === 'started' ? 'anim-glow-pulse' : ''}
+      class={node.task.kind === 'task' && node.task.status === 'started'
+        ? 'anim-glow-pulse'
+        : ''}
     />
 
     <!-- Inner fill circle with gradient -->
@@ -381,7 +435,9 @@
       fill="url(#{glassGradId})"
       stroke={statusInfo.color}
       stroke-width="1"
-      class={node.task.kind === 'task' && node.task.status === 'complete' ? 'anim-completion-shimmer' : ''}
+      class={node.task.kind === 'task' && node.task.status === 'complete'
+        ? 'anim-completion-shimmer'
+        : ''}
     />
 
     <!-- Specular highlight overlay -->
@@ -472,8 +528,8 @@
           text-anchor="middle"
           dominant-baseline="central"
           font-size={radius * 0.28}
-          style="pointer-events:none"
-        >📎</text>
+          style="pointer-events:none">📎</text
+        >
         {#if node.task.attachments.length > 1}
           <text
             x={radius * 0.65 + radius * 0.18}
@@ -482,8 +538,8 @@
             dominant-baseline="central"
             font-size={radius * 0.18}
             fill="white"
-            style="pointer-events:none"
-          >{node.task.attachments.length}</text>
+            style="pointer-events:none">{node.task.attachments.length}</text
+          >
         {/if}
       </g>
     {/if}

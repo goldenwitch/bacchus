@@ -40,7 +40,10 @@ export function parse(input: string): VineGraph {
   const blocks = splitBlocks(lines, bodyStartIndex, delimiter);
 
   if (blocks.length === 0) {
-    throw new VineParseError('Empty input — no task blocks found', bodyStartIndex + 1);
+    throw new VineParseError(
+      'Empty input — no task blocks found',
+      bodyStartIndex + 1,
+    );
   }
 
   // Step 4 — parse blocks and collect into a Map, preserving order.

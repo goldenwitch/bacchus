@@ -18,7 +18,9 @@ function graphToPlain(graph: VineGraph) {
           ...task,
           dependencies: [...task.dependencies],
           decisions: [...task.decisions],
-          ...(task.kind === 'task' ? { attachments: [...task.attachments] } : {}),
+          ...(task.kind === 'task'
+            ? { attachments: [...task.attachments] }
+            : {}),
         },
       ]),
     ),

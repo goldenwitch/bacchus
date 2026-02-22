@@ -25,7 +25,9 @@ export async function saveSession(
   await idbSaveSession(vineId, displayMessages, chatMessages);
 }
 
-export async function loadSession(vineId: string): Promise<SavedSession | null> {
+export async function loadSession(
+  vineId: string,
+): Promise<SavedSession | null> {
   const result = await idbLoadSession(vineId);
   return result ?? null;
 }

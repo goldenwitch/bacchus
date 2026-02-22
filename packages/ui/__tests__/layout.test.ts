@@ -440,7 +440,11 @@ describe('applyPhysicsConfig', () => {
     // Let it settle
     for (let i = 0; i < 300; i++) sim.tick();
 
-    const newConfig = { ...getDefaults(), chargeStrength: -200, layerSpacing: 120 };
+    const newConfig = {
+      ...getDefaults(),
+      chargeStrength: -200,
+      layerSpacing: 120,
+    };
     applyPhysicsConfig(sim, newConfig, 800, 600);
 
     expect(sim.alpha()).toBeGreaterThan(0); // reheated
@@ -484,8 +488,16 @@ describe('applyPhysicsConfig', () => {
     const { nodes, links } = buildSimData();
     const sim = createSimulation(nodes, links, 800, 600);
 
-    const config1 = { ...getDefaults(), chargeStrength: -100, layerSpacing: 60 };
-    const config2 = { ...getDefaults(), chargeStrength: -300, layerSpacing: 150 };
+    const config1 = {
+      ...getDefaults(),
+      chargeStrength: -100,
+      layerSpacing: 60,
+    };
+    const config2 = {
+      ...getDefaults(),
+      chargeStrength: -300,
+      layerSpacing: 150,
+    };
 
     applyPhysicsConfig(sim, config1, 800, 600);
     for (let i = 0; i < 50; i++) sim.tick();

@@ -12,7 +12,11 @@ const DB_VERSION = 1;
 export interface PersistedAppState {
   readonly vineId: string;
   readonly vineText: string;
-  readonly camera: { readonly x: number; readonly y: number; readonly k: number };
+  readonly camera: {
+    readonly x: number;
+    readonly y: number;
+    readonly k: number;
+  };
   readonly focusedTaskId: string | null;
   readonly chatOpen: boolean;
   readonly inputDraft: string;
@@ -63,7 +67,9 @@ export async function saveAppState(state: PersistedAppState): Promise<void> {
   }
 }
 
-export async function loadAppState(vineId: string): Promise<PersistedAppState | undefined> {
+export async function loadAppState(
+  vineId: string,
+): Promise<PersistedAppState | undefined> {
   try {
     const db = await getDb();
     return (await db.get('appState', vineId)) as PersistedAppState | undefined;
@@ -75,12 +81,16 @@ export async function loadAppState(vineId: string): Promise<PersistedAppState | 
 /**
  * Load the most recently saved app state (any vineId).
  */
-export async function loadLatestAppState(): Promise<PersistedAppState | undefined> {
+export async function loadLatestAppState(): Promise<
+  PersistedAppState | undefined
+> {
   try {
     const db = await getDb();
     const all = (await db.getAll('appState')) as PersistedAppState[];
     if (all.length === 0) return undefined;
-    all.sort((a: PersistedAppState, b: PersistedAppState) => b.savedAt - a.savedAt);
+    all.sort(
+      (a: PersistedAppState, b: PersistedAppState) => b.savedAt - a.savedAt,
+    );
     return all[0];
   } catch {
     return undefined;
@@ -119,7 +129,9 @@ export async function saveSession(
   }
 }
 
-export async function loadSession(vineId: string): Promise<PersistedSession | undefined> {
+export async function loadSession(
+  vineId: string,
+): Promise<PersistedSession | undefined> {
   try {
     const db = await getDb();
     return (await db.get('sessions', vineId)) as PersistedSession | undefined;

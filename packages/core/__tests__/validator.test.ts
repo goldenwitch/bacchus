@@ -21,7 +21,14 @@ function makeGraph(tasks: Array<{ id: string; deps?: string[] }>): VineGraph {
     order.push(t.id);
   }
 
-  return { version: '1.0.0', title: undefined, delimiter: '---', prefix: undefined, tasks: taskMap, order };
+  return {
+    version: '1.0.0',
+    title: undefined,
+    delimiter: '---',
+    prefix: undefined,
+    tasks: taskMap,
+    order,
+  };
 }
 
 describe('validate', () => {
@@ -130,10 +137,21 @@ describe('validate', () => {
   });
 
   it('throws ref-uri-required when ref node has empty vine', () => {
-    const graph = makeGraph([{ id: 'root', deps: ['ref-node'] }, { id: 'ref-node' }]);
+    const graph = makeGraph([
+      { id: 'root', deps: ['ref-node'] },
+      { id: 'ref-node' },
+    ]);
     // Manually make ref-node a ref with empty vine
     const tasks = new Map(graph.tasks);
-    const refNode: RefTask = { kind: 'ref', id: 'ref-node', shortName: 'ref-node', description: '', dependencies: [], decisions: [], vine: '' };
+    const refNode: RefTask = {
+      kind: 'ref',
+      id: 'ref-node',
+      shortName: 'ref-node',
+      description: '',
+      dependencies: [],
+      decisions: [],
+      vine: '',
+    };
     tasks.set('ref-node', refNode);
     const refGraph: VineGraph = { ...graph, tasks };
 
@@ -150,9 +168,20 @@ describe('validate', () => {
   // "ref node has attachments" is now a compile-time error — RefTask has no attachments field.
 
   it('passes for valid ref node', () => {
-    const graph = makeGraph([{ id: 'root', deps: ['ref-node'] }, { id: 'ref-node' }]);
+    const graph = makeGraph([
+      { id: 'root', deps: ['ref-node'] },
+      { id: 'ref-node' },
+    ]);
     const tasks = new Map(graph.tasks);
-    const refNode: RefTask = { kind: 'ref', id: 'ref-node', shortName: 'ref-node', description: '', dependencies: [], decisions: [], vine: './other.vine' };
+    const refNode: RefTask = {
+      kind: 'ref',
+      id: 'ref-node',
+      shortName: 'ref-node',
+      description: '',
+      dependencies: [],
+      decisions: [],
+      vine: './other.vine',
+    };
     tasks.set('ref-node', refNode);
     const refGraph: VineGraph = { ...graph, tasks };
 

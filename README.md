@@ -168,7 +168,7 @@ The [`examples/`](examples/) folder contains `.vine` files you can drag into the
 | `01-single-task.vine`     | One node, no edges — the simplest graph.     |
 | `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).  |
 | `03-diamond.vine`         | Two parallel branches merging into one task. |
-| `04-all-statuses.vine`    | Every status keyword (all 6) in action.  |
+| `04-all-statuses.vine`    | Every status keyword (all 6) in action.      |
 | `05-decisions.vine`       | Tasks annotated with `>` decision notes.     |
 | `06-project-bacchus.vine` | A realistic 13-task project graph.           |
 
@@ -232,15 +232,15 @@ Safe to re-run at any time.
 
 ### Tooling
 
-| Area            | Stack                                                      |
-| --------------- | ---------------------------------------------------------- |
-| Package manager | Yarn 4 (Berry), PnP mode, workspaces                       |
-| Language        | TypeScript 5.x, strict mode, zero `any`                    |
-| Linting         | ESLint + @typescript-eslint (strict preset)                |
-| Formatting      | Prettier                                                   |
-| Testing         | Vitest (>90% line coverage target)                         |
-| Build           | tsc (type-check only), Vite (UI), ESM-only                 |
-| Pre-commit      | Husky + lint-staged                                        |
-| CI/CD           | GitHub Actions — type-check, lint, test, build, deploy     |
-| Hosting         | Cloudflare Pages — https://grapesofgraph.com               |
-| Editor          | VS Code + ZipFS extension + Yarn SDK                       |
+| Area            | Stack                                                  |
+| --------------- | ------------------------------------------------------ |
+| Package manager | Yarn 4 (Berry), PnP mode, workspaces                   |
+| Language        | TypeScript 5.x, strict mode, zero `any`                |
+| Linting         | ESLint + @typescript-eslint (strict preset)            |
+| Formatting      | Prettier                                               |
+| Testing         | Vitest (>90% line coverage target)                     |
+| Build           | tsc (type-check only), Vite (UI), ESM-only             |
+| Pre-commit      | Husky + lint-staged                                    |
+| CI/CD           | GitHub Actions — type-check, lint, test, build, deploy |
+| Hosting         | Cloudflare Pages — https://grapesofgraph.com           |
+| Editor          | VS Code + ZipFS extension + Yarn SDK                   |
