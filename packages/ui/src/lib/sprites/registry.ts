@@ -62,6 +62,19 @@ export function getAllSprites(): ReadonlyMap<string, string> {
 }
 
 /**
+ * Resolve the `<symbol id="...">` from a cached sprite's SVG text.
+ *
+ * Returns `'sprite-default'` as a safe fallback when the key is not
+ * loaded or the SVG has no parseable symbol element.
+ */
+export function getSymbolId(key: string): string {
+  const svgText = spriteCache.get(key);
+  if (!svgText) return 'sprite-default';
+  const match = /<symbol[^>]*\bid="([^"]+)"/.exec(svgText);
+  return match ? match[1] : 'sprite-default';
+}
+
+/**
  * Load a custom sprite from a URI.
  *
  * Fetches the SVG file, validates it contains a <symbol> element,

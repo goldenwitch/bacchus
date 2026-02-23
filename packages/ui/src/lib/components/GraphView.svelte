@@ -32,6 +32,14 @@
     saveStrataOverride,
     DEFAULT_STRATA_LINES,
   } from '../physics.js';
+  import type { VisualsConfig, VisualsSliderKey } from '../visuals.js';
+  import {
+    loadOverrides as loadVisualsOverrides,
+    saveOverrides as saveVisualsOverrides,
+    clearOverrides as clearVisualsOverrides,
+    resolveConfig as resolveVisualsConfig,
+    injectVisualsCSS,
+  } from '../visuals.js';
   import GraphNode from './GraphNode.svelte';
   import GraphEdge from './GraphEdge.svelte';
   import { playWhoosh, playPop } from '../sound.js';
@@ -39,12 +47,12 @@
   import Tooltip from './Tooltip.svelte';
   import Toolbar from './Toolbar.svelte';
   import Legend from './Legend.svelte';
-  import PhysicsPanel from './PhysicsPanel.svelte';
-  import ChatPanel from './ChatPanel.svelte';
+  import LeftPanelAccordion from './LeftPanelAccordion.svelte';
   import type { ChatSession } from '../chat/session.js';
   import {
     initSpriteRegistry,
     extractSymbolDefs,
+    loadSprite,
   } from '../sprites/registry.js';
   import { generateTintFilters } from '../sprites/tint.js';
 
@@ -110,7 +118,10 @@
   let mouseY = $state(0);
 
   // Sprite system: generate SVG defs for symbol definitions and tint filters
+  // spriteVersion is bumped after async sprite loads to trigger re-derivation.
+  let spriteVersion = $state(0);
   const spriteDefs = $derived.by(() => {
+    void spriteVersion; // reactive dependency
     const symbols = extractSymbolDefs();
     const filters = generateTintFilters();
     return [...symbols, ...filters].join('\n');
@@ -156,6 +167,27 @@
   let physicsOverrides: Partial<PhysicsConfig> = $state(loadOverrides());
   let physicsConfig: PhysicsConfig = $state(resolveConfig(physicsOverrides));
   let showStrataLines = $state(loadStrataOverride());
+
+  // Visuals controls state
+  let visualsOverrides: Partial<VisualsConfig> = $state(loadVisualsOverrides());
+  let visualsConfig: VisualsConfig = $state(
+    resolveVisualsConfig(visualsOverrides),
+  );
+
+  // Inject visuals CSS custom properties on mount and config change
+  $effect(() => {
+    injectVisualsCSS(visualsConfig);
+  });
+
+  // If a sprite override was persisted, load it on startup
+  $effect(() => {
+    const uri = visualsConfig.globalSpriteOverride;
+    if (uri) {
+      loadSprite(uri).then(() => {
+        spriteVersion++;
+      });
+    }
+  });
 
   const prefersReducedMotion =
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -225,16 +257,17 @@
       visibleCount = sorted.length;
       entryComplete = true;
     } else {
+      const stagger = visualsConfig.entryStaggerDelay;
       sorted.forEach((_id, i) => {
         const t = setTimeout(() => {
           visibleCount = i + 1;
           playPop();
-        }, i * 80);
+        }, i * stagger);
         entryTimeouts.push(t);
       });
       const finalTimeout = setTimeout(() => {
         entryComplete = true;
-      }, sorted.length * 80);
+      }, sorted.length * stagger);
       entryTimeouts.push(finalTimeout);
     }
 
@@ -550,6 +583,28 @@
     }
   }
 
+  function handleVisualsChange(key: VisualsSliderKey, value: number) {
+    visualsOverrides = { ...visualsOverrides, [key]: value };
+    visualsConfig = resolveVisualsConfig(visualsOverrides);
+    saveVisualsOverrides(visualsOverrides);
+  }
+
+  async function handleVisualsSpriteChange(uri: string) {
+    visualsOverrides = { ...visualsOverrides, globalSpriteOverride: uri };
+    visualsConfig = resolveVisualsConfig(visualsOverrides);
+    saveVisualsOverrides(visualsOverrides);
+    if (uri) {
+      await loadSprite(uri);
+      spriteVersion++;
+    }
+  }
+
+  function handleVisualsReset() {
+    visualsOverrides = {};
+    visualsConfig = resolveVisualsConfig({});
+    clearVisualsOverrides();
+  }
+
   function handleFitView() {
     if (!svgEl || !zoomBehavior || displayNodes.length === 0) return;
     const w = svgEl.clientWidth;
@@ -679,6 +734,7 @@
             visible={visibleNodeSet === null ||
               (visibleNodeSet.has(link.sourceId) &&
                 visibleNodeSet.has(link.targetId))}
+            visuals={visualsConfig}
           />
         {/each}
       </g>
@@ -690,6 +746,7 @@
           dimmed={focusedTaskId !== null && !connectedIds.has(node.id)}
           isRoot={node.id === graph.order[0]}
           visible={visibleNodeSet === null || visibleNodeSet.has(node.id)}
+          visuals={visualsConfig}
           onfocus={(id) => {
             focusedTaskId = id;
           }}
@@ -739,27 +796,26 @@
     }}
     {chatOpen}
   />
-  <PhysicsPanel
-    config={physicsConfig}
-    onchange={handlePhysicsChange}
-    onreset={handlePhysicsReset}
+  <LeftPanelAccordion
+    chatAvailable={!!onupdate}
+    {chatOpen}
+    ontogglechat={ontoggle}
+    {graph}
+    {onupdate}
+    {chatSession}
+    physicsConfig={physicsConfig}
+    onphysicschange={handlePhysicsChange}
+    onphysicsreset={handlePhysicsReset}
     {showStrataLines}
     ontogglestrata={(show) => {
       showStrataLines = show;
       saveStrataOverride(show);
     }}
+    visualsConfig={visualsConfig}
+    onvisualschange={handleVisualsChange}
+    onspritechange={handleVisualsSpriteChange}
+    onvisualsreset={handleVisualsReset}
   />
-  {#if onupdate}
-    <ChatPanel
-      {graph}
-      {onupdate}
-      onclose={() => {
-        ontoggle();
-      }}
-      session={chatSession}
-      expanded={chatOpen}
-    />
-  {/if}
   <Legend />
 </div>
 

@@ -254,10 +254,10 @@ textarea {
 @keyframes glow-pulse {
   0%,
   100% {
-    opacity: 0.4;
+    opacity: var(--vis-glow-pulse-min, 0.4);
   }
   50% {
-    opacity: 0.8;
+    opacity: var(--vis-glow-pulse-max, 0.8);
   }
 }
 
@@ -310,10 +310,10 @@ textarea {
 @keyframes vine-leaf-sway {
   0%,
   100% {
-    transform: rotate(-3deg);
+    transform: rotate(calc(-1 * var(--vis-leaf-sway-angle, 3deg)));
   }
   50% {
-    transform: rotate(3deg);
+    transform: rotate(var(--vis-leaf-sway-angle, 3deg));
   }
 }
 
@@ -324,19 +324,19 @@ textarea {
 }
 
 .anim-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
+  animation: glow-pulse var(--vis-glow-pulse-duration, 2s) ease-in-out infinite;
 }
 
 .anim-completion-shimmer {
-  animation: completion-shimmer 6s linear infinite;
+  animation: completion-shimmer var(--vis-shimmer-duration, 6s) linear infinite;
 }
 
 .anim-edge-flow {
-  animation: edge-flow 2s linear infinite;
+  animation: edge-flow var(--vis-edge-flow-duration, 2s) linear infinite;
 }
 
 .anim-vine-leaf-sway {
-  animation: vine-leaf-sway 4s ease-in-out infinite;
+  animation: vine-leaf-sway var(--vis-leaf-sway-duration, 4s) ease-in-out infinite;
   transform-origin: 0% 50%;
 }
 

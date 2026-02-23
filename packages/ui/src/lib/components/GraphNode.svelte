@@ -2,8 +2,10 @@
   import { computeNodeRadius, type SimNode } from '../types.js';
   import { STATUS_MAP, themeVersion } from '../status.js';
   import { playPop, playHover } from '../sound.js';
-  import { getSpriteKey } from '../sprites/registry.js';
+  import { getSpriteKey, getSymbolId } from '../sprites/registry.js';
   import { getTintFilterId, getRefTintFilterId } from '../sprites/tint.js';
+  import type { VisualsConfig } from '../visuals.js';
+  import { getDefaults as getVisualsDefaults } from '../visuals.js';
 
   let {
     node,
@@ -11,6 +13,7 @@
     dimmed,
     isRoot = false,
     visible = true,
+    visuals = getVisualsDefaults(),
     onfocus,
     onhoverstart,
     onhoverend,
@@ -20,6 +23,7 @@
     dimmed: boolean;
     isRoot?: boolean;
     visible?: boolean;
+    visuals?: VisualsConfig;
     onfocus: (id: string) => void;
     onhoverstart: (id: string, event: PointerEvent) => void;
     onhoverend: () => void;
@@ -32,16 +36,26 @@
       : STATUS_MAP['notstarted'];
   });
 
-  const radius = $derived(computeNodeRadius(node.task.shortName.length));
+  const radius = $derived(
+    computeNodeRadius(
+      node.task.shortName.length,
+      visuals.nodeRadiusMin,
+      visuals.nodeRadiusMax,
+    ),
+  );
 
   const spriteKey = $derived(getSpriteKey(node.task));
+  const effectiveSpriteKey = $derived(
+    visuals.globalSpriteOverride || spriteKey,
+  );
+  const symbolId = $derived(getSymbolId(effectiveSpriteKey));
   const spriteTintFilter = $derived(
     node.task.kind === 'task'
       ? getTintFilterId(node.task.status)
       : getRefTintFilterId(),
   );
 
-  const opacity = $derived(dimmed ? 0.45 : 1.0);
+  const opacity = $derived(dimmed ? visuals.dimmedNodeOpacity : 1.0);
 
   // Glass effect: lighten/darken the status fill for the gradient
   function adjustColor(hex: string, amount: number): string {
@@ -285,7 +299,7 @@
     <defs>
       <!-- Glow blur for outer ring -->
       <filter id="glow-{node.id}" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" />
+        <feGaussianBlur in="SourceGraphic" stdDeviation={visuals.glowBlurRadius} />
       </filter>
       <!-- Text glow: soft coloured halo behind label for contrast -->
       <filter
@@ -318,12 +332,12 @@
 
     <!-- Outer glow ring -->
     <circle
-      r={radius + 6}
+      r={radius + visuals.glowRadiusOffset}
       fill="none"
       stroke={statusInfo.color}
-      stroke-width="2.5"
+      stroke-width={visuals.glowStrokeWidth}
       filter="url(#glow-{node.id})"
-      opacity="0.6"
+      opacity={visuals.glowBaseOpacity}
       class={node.task.kind === 'task' && node.task.status === 'started'
         ? 'anim-glow-pulse'
         : ''}
@@ -331,7 +345,7 @@
 
     <!-- Sprite-based bubble fill (tinted per status) -->
     <use
-      href="#sprite-default"
+      href="#{symbolId}"
       x={-radius}
       y={-radius}
       width={radius * 2}
@@ -357,7 +371,7 @@
     <circle
       cx={0}
       cy={-radius - 4}
-      r="12"
+      r={visuals.emojiBadgeRadius}
       fill="var(--bg-primary)"
       stroke={isRoot ? 'var(--color-root-ring)' : statusInfo.color}
       stroke-width="1.5"
@@ -365,7 +379,7 @@
     <text
       x={0}
       y={-radius - 4}
-      font-size="14"
+      font-size={visuals.emojiFontSize}
       text-anchor="middle"
       dominant-baseline="central"
       style="pointer-events: none;">{isRoot ? '👑' : statusInfo.emoji}</text
