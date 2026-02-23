@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { VineGraph } from '@bacchus/core';
-  import GlassAccordion from './GlassAccordion.svelte';
   import MarkdownMessage from './MarkdownMessage.svelte';
   import type { DisplayMessage } from '../chat/types.js';
   import { ChatSession } from '../chat/session.js';
@@ -9,15 +8,11 @@
   let {
     graph,
     onupdate,
-    onclose,
     session,
-    expanded = false,
   }: {
     graph: VineGraph | null;
     onupdate: (graph: VineGraph) => void;
-    onclose: () => void;
     session: ChatSession;
-    expanded?: boolean;
   } = $props();
 
   // ---------------------------------------------------------------------------
@@ -121,15 +116,7 @@
   }
 </script>
 
-<div class="chat-panel">
-  <GlassAccordion
-    icon="💬"
-    title="Chat Planner"
-    {expanded}
-    ontoggle={onclose}
-    ariaLabel="Toggle chat planner"
-  >
-    <div class="chat-body">
+<div class="chat-body">
       {#if !apiKey}
         <!-- API Key entry -->
         <div class="key-setup">
@@ -262,18 +249,9 @@
           </button>
         </div>
       {/if}
-    </div>
-  </GlassAccordion>
 </div>
 
 <style>
-  .chat-panel {
-    position: absolute;
-    left: 16px;
-    bottom: 16px;
-    z-index: 136;
-  }
-
   /* Body container */
   .chat-body {
     width: 340px;
@@ -526,9 +504,4 @@
     background: rgba(255, 255, 255, 0.2);
   }
 
-  @media (max-width: 639px) {
-    .chat-panel {
-      display: none;
-    }
-  }
 </style>

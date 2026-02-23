@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Task, VineGraph } from '@bacchus/core';
-  import { getDependencies, getDependants } from '@bacchus/core';
+  import { getDependencies, getDependants, getSpriteUri } from '@bacchus/core';
   import { fly } from 'svelte/transition';
   import { quintOut, quintIn } from 'svelte/easing';
   import { STATUS_MAP } from '../status.js';
@@ -22,6 +22,7 @@
   );
   const deps = $derived(task ? getDependencies(graph, task.id) : []);
   const dependants = $derived(task ? getDependants(graph, task.id) : []);
+  const spriteUri = $derived(task ? getSpriteUri(task) : undefined);
 
   // Compute pill text color with proper contrast against status background
   const pillTextColor = $derived.by(() => {
@@ -104,6 +105,13 @@
             <li>{decision}</li>
           {/each}
         </ul>
+      </div>
+    {/if}
+
+    {#if spriteUri}
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading">Custom Sprite</h3>
+        <p class="sprite-uri">🎨 {spriteUri}</p>
       </div>
     {/if}
 
@@ -401,6 +409,14 @@
 
   .attachment-uri:hover {
     text-decoration: underline;
+  }
+
+  .sprite-uri {
+    font-size: 0.8rem;
+    font-family: monospace;
+    color: var(--text-tertiary);
+    margin: 0;
+    word-break: break-all;
   }
 
   /* Mobile bottom-sheet layout */

@@ -36,6 +36,7 @@ interface BaseNode {
   readonly description: string;
   readonly dependencies: readonly string[];
   readonly decisions: readonly string[];
+  readonly annotations: ReadonlyMap<string, readonly string[]>;
 }
 
 /**
@@ -82,6 +83,12 @@ export interface VineGraph {
 }
 
 /**
+ * Empty annotations map, used as a default when constructing tasks without annotations.
+ */
+export const EMPTY_ANNOTATIONS: ReadonlyMap<string, readonly string[]> =
+  new Map<string, readonly string[]>();
+
+/**
  * All valid status values as a runtime-accessible tuple.
  */
 export const VALID_STATUSES: readonly Status[] = [
@@ -112,4 +119,12 @@ export function isVineRef(task: Task): task is RefTask {
  */
 export function isConcreteTask(task: Task): task is ConcreteTask {
   return task.kind === 'task';
+}
+
+/**
+ * Returns the first `@sprite` annotation URI from a task, or `undefined`
+ * if the task has no sprite annotation.
+ */
+export function getSpriteUri(task: Task): string | undefined {
+  return task.annotations.get('sprite')?.[0];
 }

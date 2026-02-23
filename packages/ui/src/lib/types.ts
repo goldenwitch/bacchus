@@ -35,7 +35,15 @@ export interface ViewportTransform {
 /**
  * Compute the display radius for a task bubble.
  * Shared by GraphNode.svelte and layout.ts to keep sizing consistent.
+ *
+ * @param nameLength - Length of the task's short name.
+ * @param min - Minimum radius (default 40).
+ * @param max - Maximum radius (default 60).
  */
-export function computeNodeRadius(nameLength: number): number {
-  return Math.min(60, Math.max(40, 20 + nameLength * 2.5));
+export function computeNodeRadius(
+  nameLength: number,
+  min = 40,
+  max = 60,
+): number {
+  return Math.min(max, Math.max(min, 20 + nameLength * 2.5));
 }

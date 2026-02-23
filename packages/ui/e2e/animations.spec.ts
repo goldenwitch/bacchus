@@ -17,7 +17,7 @@ test('label bob animation is applied to all node labels', async ({ page }) => {
 
 test('glow pulse animation on started nodes', async ({ page }) => {
   await loadGraph(page, 'five-status.vine');
-  // Only 'started' nodes should have the glow-pulse class
+  // Only 'started' nodes should have the glow-pulse class (on the outer glow <circle>)
   const glowPulse = page.locator('svg circle.anim-glow-pulse');
   const count = await glowPulse.count();
   expect(count).toBe(1);
@@ -25,7 +25,7 @@ test('glow pulse animation on started nodes', async ({ page }) => {
 
 test('completion shimmer on complete nodes', async ({ page }) => {
   await loadGraph(page, 'five-status.vine');
-  const shimmer = page.locator('svg circle.anim-completion-shimmer');
+  const shimmer = page.locator('svg use.anim-completion-shimmer');
   const count = await shimmer.count();
   expect(count).toBe(1);
 });

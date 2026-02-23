@@ -12,6 +12,7 @@ function makeTask(
     dependencies: overrides.dependencies ?? [],
     decisions: overrides.decisions ?? [],
     attachments: overrides.attachments ?? [],
+    annotations: overrides.annotations ?? new Map(),
   };
 }
 

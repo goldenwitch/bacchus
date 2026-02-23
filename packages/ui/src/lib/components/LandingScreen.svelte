@@ -6,6 +6,7 @@
   import UrlInput from './UrlInput.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
   import ChatPanel from './ChatPanel.svelte';
+  import GlassAccordion from './GlassAccordion.svelte';
   import type { ChatSession } from '../chat/session.js';
 
   let {
@@ -163,15 +164,21 @@ Define tables, indexes, and constraints.
       </div>
     {/if}
   </div>
-  <ChatPanel
-    graph={null}
-    onupdate={handleChatGraphUpdate}
-    onclose={() => {
-      ontoggle();
-    }}
-    session={chatSession}
-    expanded={chatOpen}
-  />
+  <div class="landing-chat">
+    <GlassAccordion
+      icon="💬"
+      title="Chat Planner"
+      expanded={chatOpen}
+      ontoggle={() => { ontoggle(); }}
+      ariaLabel="Toggle chat planner"
+    >
+      <ChatPanel
+        graph={null}
+        onupdate={handleChatGraphUpdate}
+        session={chatSession}
+      />
+    </GlassAccordion>
+  </div>
 </div>
 
 <style>
@@ -319,5 +326,18 @@ Define tables, indexes, and constraints.
     position: absolute;
     top: 16px;
     right: 16px;
+  }
+
+  .landing-chat {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 136;
+  }
+
+  @media (max-width: 639px) {
+    .landing-chat {
+      display: none;
+    }
   }
 </style>

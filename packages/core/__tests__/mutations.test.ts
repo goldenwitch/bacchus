@@ -11,6 +11,7 @@ import { parse } from '../src/parser.js';
 import { serialize } from '../src/serializer.js';
 import { VineError, VineValidationError } from '../src/errors.js';
 import type { Task, VineGraph, ConcreteTask } from '../src/types.js';
+import { EMPTY_ANNOTATIONS } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
 // Base graph
@@ -96,6 +97,7 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     };
     const result = addTask(patched, newTask);
 
@@ -138,6 +140,7 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     };
     const result = addTask(patched, newTask);
 
@@ -159,6 +162,7 @@ describe('addTask', () => {
       dependencies: ['leaf-a'],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     };
     addTask(patched, newTask);
 
@@ -176,6 +180,7 @@ describe('addTask', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     };
 
     expect(() => addTask(baseGraph, dup)).toThrow(VineError);
@@ -192,6 +197,7 @@ describe('addTask', () => {
       dependencies: ['does-not-exist'],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     };
 
     expect(() => addTask(patched, badTask)).toThrow(VineValidationError);
@@ -207,6 +213,7 @@ describe('addTask', () => {
       dependencies: [],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     };
 
     try {

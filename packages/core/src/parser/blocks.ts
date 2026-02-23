@@ -12,8 +12,14 @@ import type {
   Task,
 } from '../types.js';
 import type { RawBlock } from './constants.js';
-import { ATTACHMENT_CLASSES, HEADER_RE, REF_HEADER_RE } from './constants.js';
+import {
+  ATTACHMENT_CLASSES,
+  HEADER_RE,
+  REF_HEADER_RE,
+  ANNOTATION_RE,
+} from './constants.js';
 import { VineParseError } from '../errors.js';
+import { EMPTY_ANNOTATIONS } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Block splitting
@@ -118,6 +124,7 @@ interface ParsedTaskHeader {
   readonly shortName: string;
   readonly status: Status;
   readonly headerIndex: number;
+  readonly annotations: ReadonlyMap<string, readonly string[]>;
 }
 
 interface ParsedRefHeader {
@@ -126,6 +133,33 @@ interface ParsedRefHeader {
   readonly shortName: string;
   readonly vine: string;
   readonly headerIndex: number;
+  readonly annotations: ReadonlyMap<string, readonly string[]>;
+}
+
+/**
+ * Parse a raw annotation trailing string into a map of key → values.
+ *
+ * Behaviour per the {@link ANNOTATION_RE} regex (`@key(...)`):
+ *  - `@key`     — no parentheses → **not captured** (regex requires `(…)`)
+ *  - `@key()`   — empty parens  → `key → []`  (boolean-flag semantics)
+ *  - `@key(val)` — single value → `key → ['val']`
+ *  - `@key(a, b)` — multiple   → `key → ['a', 'b']`
+ */
+function parseAnnotations(raw: string): ReadonlyMap<string, readonly string[]> {
+  if (!raw || raw.trim() === '') return EMPTY_ANNOTATIONS;
+  const map = new Map<string, readonly string[]>();
+  const re = new RegExp(ANNOTATION_RE.source, 'g');
+  let match;
+  while ((match = re.exec(raw)) !== null) {
+    const key = match[1] ?? '';
+    const valuesRaw = match[2] ?? '';
+    const values = valuesRaw
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0);
+    map.set(key, values);
+  }
+  return map.size > 0 ? map : EMPTY_ANNOTATIONS;
 }
 
 /**
@@ -162,7 +196,8 @@ function parseHeader(block: RawBlock): ParsedHeader {
         lineNumber,
       );
     }
-    return { kind: 'ref', id, shortName, vine, headerIndex };
+    const annotations = parseAnnotations(match[4] ?? '');
+    return { kind: 'ref', id, shortName, vine, headerIndex, annotations };
   }
 
   // Otherwise, try concrete task header.
@@ -182,7 +217,8 @@ function parseHeader(block: RawBlock): ParsedHeader {
       lineNumber,
     );
   }
-  return { kind: 'task', id, shortName, status, headerIndex };
+  const annotations = parseAnnotations(match[4] ?? '');
+  return { kind: 'task', id, shortName, status, headerIndex, annotations };
 }
 
 // ---------------------------------------------------------------------------
@@ -272,6 +308,7 @@ export function parseBlock(block: RawBlock): Task {
       dependencies,
       decisions,
       vine: header.vine,
+      annotations: header.annotations,
     };
     return ref;
   }
@@ -285,6 +322,7 @@ export function parseBlock(block: RawBlock): Task {
     dependencies,
     decisions,
     attachments,
+    annotations: header.annotations,
   };
   return task;
 }

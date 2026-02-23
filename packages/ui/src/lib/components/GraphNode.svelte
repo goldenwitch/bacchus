@@ -2,6 +2,10 @@
   import { computeNodeRadius, type SimNode } from '../types.js';
   import { STATUS_MAP, themeVersion } from '../status.js';
   import { playPop, playHover } from '../sound.js';
+  import { getSpriteKey, getSymbolId } from '../sprites/registry.js';
+  import { getTintFilterId, getRefTintFilterId } from '../sprites/tint.js';
+  import type { VisualsConfig } from '../visuals.js';
+  import { getDefaults as getVisualsDefaults } from '../visuals.js';
 
   let {
     node,
@@ -9,6 +13,7 @@
     dimmed,
     isRoot = false,
     visible = true,
+    visuals = getVisualsDefaults(),
     onfocus,
     onhoverstart,
     onhoverend,
@@ -18,6 +23,7 @@
     dimmed: boolean;
     isRoot?: boolean;
     visible?: boolean;
+    visuals?: VisualsConfig;
     onfocus: (id: string) => void;
     onhoverstart: (id: string, event: PointerEvent) => void;
     onhoverend: () => void;
@@ -30,12 +36,26 @@
       : STATUS_MAP['notstarted'];
   });
 
-  const radius = $derived(computeNodeRadius(node.task.shortName.length));
+  const radius = $derived(
+    computeNodeRadius(
+      node.task.shortName.length,
+      visuals.nodeRadiusMin,
+      visuals.nodeRadiusMax,
+    ),
+  );
 
-  const opacity = $derived(dimmed ? 0.45 : 1.0);
+  const spriteKey = $derived(getSpriteKey(node.task));
+  const effectiveSpriteKey = $derived(
+    visuals.globalSpriteOverride || spriteKey,
+  );
+  const symbolId = $derived(getSymbolId(effectiveSpriteKey));
+  const spriteTintFilter = $derived(
+    node.task.kind === 'task'
+      ? getTintFilterId(node.task.status)
+      : getRefTintFilterId(),
+  );
 
-  const filterId = $derived(`glow-${node.id}`);
-  const glassGradId = $derived(`glassGrad-${node.id}`);
+  const opacity = $derived(dimmed ? visuals.dimmedNodeOpacity : 1.0);
 
   // Glass effect: lighten/darken the status fill for the gradient
   function adjustColor(hex: string, amount: number): string {
@@ -54,17 +74,6 @@
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   }
 
-  // Convert hex → rgba with alpha for translucent bubble effect
-  function hexToRGBA(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-
-  const lightenedColor = $derived(
-    adjustColor(statusInfo.darkColor, nodeGlassLighten),
-  );
   const darkenedColor = $derived(adjustColor(statusInfo.darkColor, -20));
 
   // Read CSS vars for node text controls (see app.css :root)
@@ -95,46 +104,6 @@
   const nodeTextGlowOpacity = $derived.by(() => {
     void themeVersion();
     return getCSSVar('--node-text-glow-opacity', 0.7);
-  });
-  const nodeGradientMidAlpha = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-gradient-mid-alpha', 0.85);
-  });
-  const nodeGradientEdgeAlpha = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-gradient-edge-alpha', 0.75);
-  });
-  const nodeSpecularOpacity = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-specular-opacity', 0.35);
-  });
-  const nodeSpecularRadius = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-specular-radius', 25);
-  });
-  const nodeSpecularCx = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-specular-cx', 35);
-  });
-  const nodeSpecularCy = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-specular-cy', 22);
-  });
-  const nodeGlassCx = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-glass-cx', 38);
-  });
-  const nodeGlassCy = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-glass-cy', 25);
-  });
-  const nodeGlassLighten = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-glass-lighten', 35);
-  });
-  const nodeInnerShadowStart = $derived.by(() => {
-    void themeVersion();
-    return getCSSVar('--node-inner-shadow-start', 70);
   });
 
   // Step 1: Wrap & truncate label text to fit inside the circle
@@ -326,67 +295,12 @@
   onfocusout={() => (isFocused = false)}
 >
   <g transform="scale({nodeScale})" style="transform-origin: 0px 0px;">
-    <!-- SVG filters and gradients -->
+    <!-- Per-node defs (text glow only — sprite defs are shared in GraphView) -->
     <defs>
-      <!-- Outer glow blur -->
-      <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" />
+      <!-- Glow blur for outer ring -->
+      <filter id="glow-{node.id}" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation={visuals.glowBlurRadius} />
       </filter>
-
-      <!-- Radial gradient: lighter center biased top-left → translucent base → translucent edge -->
-      <radialGradient
-        id={glassGradId}
-        cx="{nodeGlassCx}%"
-        cy="{nodeGlassCy}%"
-        r="60%"
-      >
-        <stop offset="0%" stop-color={lightenedColor} />
-        <stop
-          offset="60%"
-          stop-color={hexToRGBA(statusInfo.darkColor, nodeGradientMidAlpha)}
-        />
-        <stop
-          offset="100%"
-          stop-color={hexToRGBA(darkenedColor, nodeGradientEdgeAlpha)}
-        />
-      </radialGradient>
-
-      <!-- Specular highlight — bright white crescent near top-left -->
-      <radialGradient
-        id="specular-{node.id}"
-        cx="{nodeSpecularCx}%"
-        cy="{nodeSpecularCy}%"
-        r="{nodeSpecularRadius}%"
-      >
-        <stop
-          offset="0%"
-          stop-color="rgba(255,255,255,{nodeSpecularOpacity})"
-        />
-        <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-      </radialGradient>
-
-      <!-- Inner shadow — subtle darkening at bottom edge -->
-      <radialGradient id="innerShadow-{node.id}" cx="50%" cy="75%" r="50%">
-        <stop offset="0%" stop-color="rgba(0,0,0,0)" />
-        <stop offset="{nodeInnerShadowStart}%" stop-color="rgba(0,0,0,0)" />
-        <stop offset="100%" stop-color="rgba(0,0,0,0.28)" />
-      </radialGradient>
-
-      <!-- Iridescent rainbow rim gradient -->
-      <linearGradient
-        id="iridescentRim-{node.id}"
-        x1="0%"
-        y1="0%"
-        x2="100%"
-        y2="100%"
-      >
-        <stop offset="0%" stop-color="rgba(255,180,200,0.35)" />
-        <stop offset="25%" stop-color="rgba(180,160,255,0.35)" />
-        <stop offset="50%" stop-color="rgba(140,220,255,0.35)" />
-        <stop offset="75%" stop-color="rgba(160,255,200,0.35)" />
-        <stop offset="100%" stop-color="rgba(255,180,200,0.35)" />
-      </linearGradient>
-
       <!-- Text glow: soft coloured halo behind label for contrast -->
       <filter
         id="textGlow-{node.id}"
@@ -418,48 +332,34 @@
 
     <!-- Outer glow ring -->
     <circle
-      r={radius + 6}
+      r={radius + visuals.glowRadiusOffset}
       fill="none"
       stroke={statusInfo.color}
-      stroke-width="2.5"
-      filter="url(#{filterId})"
-      opacity="0.6"
+      stroke-width={visuals.glowStrokeWidth}
+      filter="url(#glow-{node.id})"
+      opacity={visuals.glowBaseOpacity}
       class={node.task.kind === 'task' && node.task.status === 'started'
         ? 'anim-glow-pulse'
         : ''}
     />
 
-    <!-- Inner fill circle with gradient -->
-    <circle
-      r={radius}
-      fill="url(#{glassGradId})"
-      stroke={statusInfo.color}
-      stroke-width="1"
+    <!-- Invisible hit-area: the <use> sprite has pointer-events:none (required
+         to avoid SVG filter compositing issues), so we need a transparent circle
+         to capture pointer events over the node body. fill="transparent" captures
+         events unlike fill="none" which does not. -->
+    <circle r={radius} fill="transparent" stroke="none" />
+
+    <!-- Sprite-based bubble fill (tinted per status) -->
+    <use
+      href="#{symbolId}"
+      x={-radius}
+      y={-radius}
+      width={radius * 2}
+      height={radius * 2}
+      filter="url(#{spriteTintFilter})"
       class={node.task.kind === 'task' && node.task.status === 'complete'
         ? 'anim-completion-shimmer'
         : ''}
-    />
-
-    <!-- Specular highlight overlay -->
-    <circle
-      r={radius}
-      fill="url(#specular-{node.id})"
-      style="pointer-events: none;"
-    />
-
-    <!-- Inner shadow overlay -->
-    <circle
-      r={radius}
-      fill="url(#innerShadow-{node.id})"
-      style="pointer-events: none;"
-    />
-
-    <!-- Iridescent rainbow rim -->
-    <circle
-      r={radius}
-      fill="none"
-      stroke="url(#iridescentRim-{node.id})"
-      stroke-width="2"
       style="pointer-events: none;"
     />
 
@@ -477,7 +377,7 @@
     <circle
       cx={0}
       cy={-radius - 4}
-      r="12"
+      r={visuals.emojiBadgeRadius}
       fill="var(--bg-primary)"
       stroke={isRoot ? 'var(--color-root-ring)' : statusInfo.color}
       stroke-width="1.5"
@@ -485,7 +385,7 @@
     <text
       x={0}
       y={-radius - 4}
-      font-size="14"
+      font-size={visuals.emojiFontSize}
       text-anchor="middle"
       dominant-baseline="central"
       style="pointer-events: none;">{isRoot ? '👑' : statusInfo.emoji}</text

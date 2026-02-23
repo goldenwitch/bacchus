@@ -1,0 +1,15 @@
+vine 1.2.0
+title: Sprite Example
+---
+[root] Launch App (planning) @sprite(./sprites/rocket.svg)
+The top-level project goal.
+-> backend
+-> frontend
+---
+[backend] Backend API (started)
+Build the REST API endpoints.
+-> root
+---
+ref [frontend] Frontend App (./frontend.vine) @sprite(./sprites/screen.svg)
+The user-facing React application.
+-> root

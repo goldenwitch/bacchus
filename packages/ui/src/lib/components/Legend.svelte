@@ -22,6 +22,12 @@
           <span class="legend-label">{info.label}</span>
         </div>
       {/each}
+      <!-- Reference node entry -->
+      <div class="legend-item">
+        <span class="legend-swatch" style="background: #5A6A7A;"></span>
+        <span class="legend-emoji">🔗</span>
+        <span class="legend-label">Reference</span>
+      </div>
     </div>
   </GlassAccordion>
 </div>

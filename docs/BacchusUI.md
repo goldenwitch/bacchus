@@ -52,9 +52,9 @@ Each task is rendered as a circular SVG `<g>` group:
 ┌─────────────────────────────────┐
 │  Outer Glow Ring                │  ← status color, soft blur filter
 │  ┌───────────────────────────┐  │
-│  │  Inner Fill Circle        │  │  ← darker shade of status color
+│  │  Sprite <use> Fill         │  │  ← animated SVG symbol, tinted per status
 │  │                           │  │
-│  │    📋  ← emoji badge      │  │  ← top-right of circle
+│  │    📋  ← emoji badge      │  │  ← top-centre of circle
 │  │                           │  │
 │  │   "Short Name"            │  │  ← floating label, subtle vertical bob
 │  │                           │  │
@@ -63,9 +63,9 @@ Each task is rendered as a circular SVG `<g>` group:
 ```
 
 - **Outer glow ring**: SVG `<circle>` with `stroke` in status color and an `feGaussianBlur` filter. For `started` tasks, an animated pulse (opacity oscillation via CSS `@keyframes`).
-- **Inner fill**: SVG `<circle>` filled with a darker variant of the status color (20% luminance reduction).
-- **Floating label**: SVG `<text>` centered on the bubble displaying `task.shortName`. Applies a gentle vertical bob animation (±2px, 3s cycle) via CSS `@keyframes`.
-- **Emoji badge**: SVG `<text>` positioned at the top-right quadrant of the circle.
+- **Sprite fill**: An `<use href="#sprite-default">` element referencing a shared animated SVG `<symbol>`. The base sprite is a grayscale bubble with breathing-pulse and shimmer animations. A per-status `feColorMatrix` tint filter recolors it to the status palette. Reference nodes receive a distinct slate blue-gray tint (#5A6A7A). Custom sprites can be loaded via the `@sprite(uri)` annotation in the `.vine` file.
+- **Floating label**: SVG `<text>` centered on the bubble displaying `task.shortName`. Applies a gentle vertical bob animation (±2px, 3s cycle) via CSS `@keyframes`. A per-node `feDropShadow` text glow filter ensures readability.
+- **Emoji badge**: SVG `<text>` positioned at the top-centre of the circle.
 - **Radius**: Base radius 40px, scaled by label length (clamped between 30px and 60px) to prevent text overflow.
 
 ### Edge Style

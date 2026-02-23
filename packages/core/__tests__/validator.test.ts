@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validate } from '../src/validator.js';
 import { VineValidationError } from '../src/errors.js';
 import type { VineGraph, Task, RefTask } from '../src/types.js';
+import { EMPTY_ANNOTATIONS } from '../src/types.js';
 
 function makeGraph(tasks: Array<{ id: string; deps?: string[] }>): VineGraph {
   const taskMap = new Map<string, Task>();
@@ -17,6 +18,7 @@ function makeGraph(tasks: Array<{ id: string; deps?: string[] }>): VineGraph {
       dependencies: t.deps ?? [],
       decisions: [],
       attachments: [],
+      annotations: EMPTY_ANNOTATIONS,
     });
     order.push(t.id);
   }
@@ -151,6 +153,7 @@ describe('validate', () => {
       dependencies: [],
       decisions: [],
       vine: '',
+      annotations: EMPTY_ANNOTATIONS,
     };
     tasks.set('ref-node', refNode);
     const refGraph: VineGraph = { ...graph, tasks };
@@ -181,6 +184,7 @@ describe('validate', () => {
       dependencies: [],
       decisions: [],
       vine: './other.vine',
+      annotations: EMPTY_ANNOTATIONS,
     };
     tasks.set('ref-node', refNode);
     const refGraph: VineGraph = { ...graph, tasks };

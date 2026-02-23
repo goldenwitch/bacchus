@@ -1,4 +1,7 @@
 <script lang="ts">
+  import type { VisualsConfig } from '../visuals.js';
+  import { getDefaults as getVisualsDefaults } from '../visuals.js';
+
   let {
     sourceX,
     sourceY,
@@ -10,6 +13,7 @@
     color = 'var(--color-vine)',
     sourceId = '',
     targetId = '',
+    visuals = getVisualsDefaults(),
   }: {
     sourceX: number;
     sourceY: number;
@@ -21,10 +25,17 @@
     color?: string;
     sourceId?: string;
     targetId?: string;
+    visuals?: VisualsConfig;
   } = $props();
 
   const opacity = $derived(
-    visible ? (highlighted ? 1.0 : dimmed ? 0.15 : 0.6) : 0,
+    visible
+      ? highlighted
+        ? visuals.highlightedEdgeOpacity
+        : dimmed
+          ? visuals.dimmedEdgeOpacity
+          : visuals.defaultEdgeOpacity
+      : 0,
   );
 
   // Stable marker id per edge instance using source/target IDs
@@ -94,9 +105,9 @@
     const cx = controlPoint.x,
       cy = controlPoint.y;
 
-    const segments = 8;
-    const amplitude = 5;
-    const frequency = 3;
+    const segments = visuals.vineSegments;
+    const amplitude = visuals.vineWaveAmplitude;
+    const frequency = visuals.vineWaveFrequency;
 
     const points: { x: number; y: number }[] = [];
     for (let i = 0; i <= segments; i++) {
@@ -216,7 +227,7 @@
   d={vinePath}
   fill="none"
   stroke={color}
-  stroke-width="2.5"
+  stroke-width={visuals.vineStrokeWidth}
   stroke-linecap="round"
   marker-end="url(#{markerId})"
   {opacity}
@@ -230,7 +241,7 @@
   <g
     transform="translate({deco.x.toFixed(1)}, {deco.y.toFixed(1)}) rotate({(
       deco.angle + (deco.side > 0 ? -45 : 135)
-    ).toFixed(1)}) scale(2.2)"
+    ).toFixed(1)}) scale({visuals.leafScale})"
     {opacity}
     style="pointer-events: none; transition: opacity 400ms;"
   >
@@ -243,13 +254,13 @@
         y2="0"
         stroke="var(--color-vine)"
         stroke-width="0.5"
-        opacity="0.4"
+        opacity={visuals.leafOpacity}
       />
       <!-- Grape leaf: 3-lobed shape -->
       <path
         d="M 3 0 C 4 -2, 6 -4.5, 9 -3.5 C 10.5 -2.5, 11 -1, 10.5 0 C 11 1, 10.5 2.5, 9 3.5 C 6 4.5, 4 2, 3 0 z"
         fill="var(--color-vine-leaf)"
-        opacity="0.4"
+        opacity={visuals.leafOpacity}
       />
       <!-- Center vein -->
       <line

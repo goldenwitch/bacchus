@@ -112,6 +112,7 @@ export function expandVineRef(
     dependencies: mergedDeps,
     decisions: mergedDecisions,
     attachments: childRoot.attachments,
+    annotations: childRoot.annotations,
   };
 
   // 7. Remap all non-root child tasks.
@@ -133,6 +134,7 @@ export function expandVineRef(
         dependencies: remappedDeps,
         decisions: childTask.decisions,
         vine: childTask.vine,
+        annotations: childTask.annotations,
       } satisfies RefTask);
     } else {
       remappedChildTasks.push({
@@ -144,6 +146,7 @@ export function expandVineRef(
         dependencies: remappedDeps,
         decisions: childTask.decisions,
         attachments: childTask.attachments,
+        annotations: childTask.annotations,
       } satisfies ConcreteTask);
     }
   }
