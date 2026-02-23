@@ -17,8 +17,8 @@ test('label bob animation is applied to all node labels', async ({ page }) => {
 
 test('glow pulse animation on started nodes', async ({ page }) => {
   await loadGraph(page, 'five-status.vine');
-  // Only 'started' nodes should have the glow-pulse class
-  const glowPulse = page.locator('svg use.anim-glow-pulse');
+  // Only 'started' nodes should have the glow-pulse class (on the outer glow <circle>)
+  const glowPulse = page.locator('svg circle.anim-glow-pulse');
   const count = await glowPulse.count();
   expect(count).toBe(1);
 });
