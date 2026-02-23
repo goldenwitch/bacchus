@@ -22,7 +22,8 @@
   "references": [
     { "path": "packages/core" },
     { "path": "packages/ui" },
-    { "path": "packages/cli" }
+    { "path": "packages/cli" },
+    { "path": "packages/mcp" }
   ],
   "include": []
 }

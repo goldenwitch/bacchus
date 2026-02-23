@@ -1,6 +1,6 @@
-# Environment (secrets)
-.env
-.env.local
+# Environment (secrets – covers Vite variants like .env.development, .env.*.local)
+.env*
+!.env.example
 
 # Dependencies
 node_modules/
@@ -46,4 +46,5 @@ Thumbs.db
 *.sln
 *.suo
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
