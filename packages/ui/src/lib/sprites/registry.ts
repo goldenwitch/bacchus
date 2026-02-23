@@ -1,5 +1,6 @@
 import type { Task } from '@bacchus/core';
 import { getSpriteUri } from '@bacchus/core';
+import { sanitizeSvg } from './sanitize.js';
 
 // Import the default sprite SVG as raw text (Vite raw import)
 import defaultSpriteSvg from './bubble.svg?raw';
@@ -19,6 +20,9 @@ const loadingSet = new Set<string>();
 
 /** Callbacks waiting for a sprite to load */
 const loadCallbacks = new Map<string, Array<() => void>>();
+
+/** Map of URIs that failed to load, with error messages */
+const spriteErrors = new Map<string, string>();
 
 /**
  * Initialize the registry with the built-in default sprite.
@@ -62,6 +66,31 @@ export function getAllSprites(): ReadonlyMap<string, string> {
 }
 
 /**
+ * Get the error message for a sprite that failed to load.
+ * Returns undefined if the sprite loaded successfully or hasn't been attempted.
+ */
+export function getSpriteError(key: string): string | undefined {
+  return spriteErrors.get(key);
+}
+
+/**
+ * Get all sprite load errors as a readonly map.
+ */
+export function getAllSpriteErrors(): ReadonlyMap<string, string> {
+  return spriteErrors;
+}
+
+/**
+ * Clear all cached sprites and errors. Used for testing.
+ */
+export function resetSpriteRegistry(): void {
+  spriteCache.clear();
+  spriteErrors.clear();
+  loadingSet.clear();
+  loadCallbacks.clear();
+}
+
+/**
  * Resolve the `<symbol id="...">` from a cached sprite's SVG text.
  *
  * Returns `'sprite-default'` as a safe fallback when the key is not
@@ -84,6 +113,7 @@ export function getSymbolId(key: string): string {
  * immediately or waits for the existing load.
  */
 export async function loadSprite(uri: string): Promise<void> {
+  spriteErrors.delete(uri);
   if (spriteCache.has(uri)) return;
 
   if (loadingSet.has(uri)) {
@@ -103,6 +133,7 @@ export async function loadSprite(uri: string): Promise<void> {
       console.warn(
         `Failed to load sprite from ${uri}: ${String(response.status)}`,
       );
+      spriteErrors.set(uri, `Failed to load: ${String(response.status)}`);
       return;
     }
 
@@ -116,12 +147,13 @@ export async function loadSprite(uri: string): Promise<void> {
       // Wrap the SVG content in a symbol with a generated ID
       const symbolId = `sprite-custom-${uri.replace(/[^a-zA-Z0-9]/g, '-')}`;
       const wrapped = `<svg xmlns="http://www.w3.org/2000/svg"><symbol id="${symbolId}" viewBox="0 0 100 100">${svgText}</symbol></svg>`;
-      spriteCache.set(uri, wrapped);
+      spriteCache.set(uri, sanitizeSvg(wrapped));
     } else {
-      spriteCache.set(uri, svgText);
+      spriteCache.set(uri, sanitizeSvg(svgText));
     }
   } catch (err) {
     console.warn(`Error loading sprite from ${uri}:`, err);
+    spriteErrors.set(uri, err instanceof Error ? err.message : 'Unknown error');
   } finally {
     loadingSet.delete(uri);
     // Notify waiters

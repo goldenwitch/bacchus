@@ -102,8 +102,8 @@ test.describe('Chat panel (live Anthropic API)', () => {
     await waitForToolCard(page);
     await waitForAssistantReply(page, 90_000);
 
-    // After graph creation the app switches to GraphView with SVG circles
-    await expect(page.locator('svg circle').first()).toBeVisible({
+    // After graph creation the app switches to GraphView with SVG nodes
+    await expect(page.locator('svg[role="group"] g[role="button"]').first()).toBeVisible({
       timeout: 10_000,
     });
 

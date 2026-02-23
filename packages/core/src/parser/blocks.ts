@@ -138,6 +138,12 @@ interface ParsedRefHeader {
 
 /**
  * Parse a raw annotation trailing string into a map of key → values.
+ *
+ * Behaviour per the {@link ANNOTATION_RE} regex (`@key(...)`):
+ *  - `@key`     — no parentheses → **not captured** (regex requires `(…)`)
+ *  - `@key()`   — empty parens  → `key → []`  (boolean-flag semantics)
+ *  - `@key(val)` — single value → `key → ['val']`
+ *  - `@key(a, b)` — multiple   → `key → ['a', 'b']`
  */
 function parseAnnotations(raw: string): ReadonlyMap<string, readonly string[]> {
   if (!raw || raw.trim() === '') return EMPTY_ANNOTATIONS;

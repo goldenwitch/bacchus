@@ -10,6 +10,7 @@
   import ResetButton from './primitives/ResetButton.svelte';
   import PanelBody from './primitives/PanelBody.svelte';
   import TextInput from './primitives/TextInput.svelte';
+  import { getAllSpriteErrors } from '../sprites/registry.js';
 
   let {
     config,
@@ -56,6 +57,8 @@
     spriteInput = '';
     onspritechange('');
   }
+
+  const spriteErrors = $derived(getAllSpriteErrors());
 </script>
 
 <PanelBody>
@@ -107,6 +110,13 @@
     {#if config.globalSpriteOverride}
       <div class="visuals-sprite-active">
         Active: <span class="visuals-sprite-uri">{config.globalSpriteOverride}</span>
+      </div>
+    {/if}
+    {#if spriteErrors.size > 0}
+      <div class="sprite-errors" role="alert">
+        {#each [...spriteErrors] as [uri, msg] (uri)}
+          <p class="sprite-error">⚠ Sprite <code>{uri}</code>: {msg}</p>
+        {/each}
       </div>
     {/if}
   </div>
@@ -175,5 +185,21 @@
 
   .visuals-sprite-uri {
     color: var(--focus-ring);
+  }
+
+  .sprite-errors {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .sprite-error {
+    color: var(--color-error, #e74c3c);
+    margin: 0.25rem 0;
+    word-break: break-all;
+  }
+
+  .sprite-error code {
+    font-size: inherit;
+    opacity: 0.85;
   }
 </style>

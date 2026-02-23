@@ -62,6 +62,20 @@ describe('annotations', () => {
       expect(ext.annotations.get('sprite')).toEqual(['./sprites/ext.svg']);
     });
 
+    it('empty parentheses yields empty array (boolean flag)', () => {
+      // @key() with no values should produce key → []
+      // This is distinct from @key(val) which produces key → ['val']
+      const input = [
+        'vine 1.2.0',
+        '---',
+        '[root] Root Task (started) @flag()',
+      ].join('\n');
+
+      const graph = parse(input);
+      const root = graph.tasks.get('root')!;
+      expect(root.annotations.get('flag')).toEqual([]);
+    });
+
     it('returns empty annotations when header has none', () => {
       const input = 'vine 1.1.0\n---\n[root] Root Task (started)';
       const graph = parse(input);

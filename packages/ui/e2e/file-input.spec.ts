@@ -24,14 +24,14 @@ test('file drop loads graph', async ({ page }) => {
 
   // Wait for graph to render
   await page.waitForSelector('svg', { timeout: 10000 });
-  await expect(page.locator('svg circle').first()).toBeVisible();
+  await expect(page.locator('svg[role="group"] g[role="button"]').first()).toBeVisible();
 });
 
 test('url parameter auto-loads', async ({ page }) => {
   await loadGraphViaUrl(page, 'simple.vine');
   // simple.vine has 3 tasks → expect circles to appear
-  await page.waitForSelector('svg circle', { timeout: 10000 });
-  await expect(page.locator('svg circle').first()).toBeVisible();
+  await page.waitForSelector('svg[role="group"] g[role="button"]', { timeout: 10000 });
+  await expect(page.locator('svg[role="group"] g[role="button"]').first()).toBeVisible();
 });
 
 test('parse error shows error card', async ({ page }) => {
@@ -109,8 +109,8 @@ test('url input load button fetches and renders graph', async ({ page }) => {
   await page.locator('button:text("Load")').click();
 
   // Wait for graph
-  await page.waitForSelector('svg circle', { timeout: 10000 });
-  await expect(page.locator('svg circle').first()).toBeVisible();
+  await page.waitForSelector('svg[role="group"] g[role="button"]', { timeout: 10000 });
+  await expect(page.locator('svg[role="group"] g[role="button"]').first()).toBeVisible();
 });
 
 test('url input Enter key triggers load', async ({ page }) => {
@@ -124,6 +124,6 @@ test('url input Enter key triggers load', async ({ page }) => {
   await urlInput.fill('http://localhost:5173/test-url/simple.vine');
   await urlInput.press('Enter');
 
-  await page.waitForSelector('svg circle', { timeout: 10000 });
-  await expect(page.locator('svg circle').first()).toBeVisible();
+  await page.waitForSelector('svg[role="group"] g[role="button"]', { timeout: 10000 });
+  await expect(page.locator('svg[role="group"] g[role="button"]').first()).toBeVisible();
 });

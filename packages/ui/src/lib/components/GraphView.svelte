@@ -693,7 +693,7 @@
   >
     <!-- Shared sprite symbols and tint filters -->
     <defs>
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -- spriteDefs is generated internally, not from user input -->
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -- spriteDefs is built from sanitized SVG (see sprites/sanitize.ts) -->
       {@html spriteDefs}
     </defs>
     <g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
