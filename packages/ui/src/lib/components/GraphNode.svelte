@@ -343,6 +343,12 @@
         : ''}
     />
 
+    <!-- Invisible hit-area: the <use> sprite has pointer-events:none (required
+         to avoid SVG filter compositing issues), so we need a transparent circle
+         to capture pointer events over the node body. fill="transparent" captures
+         events unlike fill="none" which does not. -->
+    <circle r={radius} fill="transparent" stroke="none" />
+
     <!-- Sprite-based bubble fill (tinted per status) -->
     <use
       href="#{symbolId}"

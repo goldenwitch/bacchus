@@ -111,11 +111,11 @@ describe('GraphNode', () => {
     const node = makeSimNode({ task: { shortName: 'Hi' } });
     const { container } = render(GraphNode, { props: defaultProps({ node }) });
     const circles = container.querySelectorAll('circle');
-    // circles[0]=outer glow, circles[1]=emoji badge
+    // circles[0]=outer glow, circles[1]=hit area, circles[2]=emoji badge
     const outerR = Number(circles[0].getAttribute('r'));
     expect(outerR).toBeGreaterThanOrEqual(36);
     expect(outerR).toBeLessThanOrEqual(66);
-    const badgeR = Number(circles[1].getAttribute('r'));
+    const badgeR = Number(circles[2].getAttribute('r'));
     expect(badgeR).toBe(12);
   });
 
