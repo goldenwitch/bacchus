@@ -15,7 +15,7 @@ Ensure the PR is marked ready and reviewers are assigned.
 -> ci-green
 > If already marked ready with reviewers assigned, this is a no-op.
 ---
-[ci-green] CI Pipeline Green (notstarted)
+[ci-green] CI Pipeline Green (started)
 All CI checks pass on the PR.
 - Monitor: `gh pr checks --watch --fail-fast`
 - On failure, inspect: `gh run view <run-id> --log-failed`
@@ -23,15 +23,15 @@ All CI checks pass on the PR.
 -> open-pr
 > CI triggers automatically on push to PR branch.
 ---
-[open-pr] Open Pull Request (notstarted)
+[open-pr] Open Pull Request (complete)
 Ensure a PR exists for the current branch against main.
 - Check: `gh pr view` (exits 0 if a PR already exists)
 - Create: `gh pr create --fill` (or with explicit --title/--body)
 - Update: `gh pr edit --title/--body` if description needs changes
 -> push
-> If a PR already exists and looks correct, this is a no-op.
+> PR #11 opened against main: https://github.com/goldenwitch/bacchus/pull/11
 ---
-[push] Push to Remote (notstarted)
+[push] Push to Remote (complete)
 Push local commits to the remote branch.
 - Push: `git push --set-upstream origin HEAD`
 - If already up to date, this is a no-op.
