@@ -77,6 +77,7 @@ Dependency edges connect a task to each of its dependencies:
 - **Arrow**: Small arrowhead marker at the dependency end, indicating direction (task → dependency).
 - **Flow animation**: Animated `stroke-dashoffset` producing a gentle flowing-dot effect along the edge direction. Speed: 30px/s.
 - **Opacity**: 0.6 at rest, 1.0 when connected to a focused node, 0.15 when dimmed.
+
 ### Reference Node Visual Treatment
 
 Reference nodes (`kind: 'ref'`) use a distinct visual treatment to differentiate them from concrete tasks:
@@ -94,6 +95,7 @@ Node rendering uses an animated SVG `<symbol>` sprite system:
 - **`@sprite(uri)` annotation**: Tasks can declare a custom sprite via the `@sprite(uri)` header annotation in the `.vine` file. The URI points to an SVG file containing a `<symbol>` element.
 - **Sprite registry** (`sprites/registry.ts`): Manages loaded sprites using Vite's `?raw` import for bundled SVGs. Custom sprites are fetched, sanitized (`sprites/sanitize.ts`), and registered at runtime.
 - **Per-status tinting** (`sprites/tint.ts`): An `feColorMatrix` SVG filter recolors the grayscale sprite to the node's status color (or slate blue-gray for reference nodes). Each status has a pre-computed matrix.
+
 ---
 
 ## Graph Layout

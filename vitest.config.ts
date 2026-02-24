@@ -27,7 +27,11 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       setupFiles: ['packages/ui/__tests__/setup.ts'],
-      exclude: ['**/e2e/**', '**/node_modules/**', '**/packages/vscode/__tests__/integration/**'],
+      exclude: [
+        '**/e2e/**',
+        '**/node_modules/**',
+        '**/packages/vscode/__tests__/integration/**',
+      ],
       server: {
         deps: {
           inline: ['@testing-library/svelte', '@testing-library/svelte-core'],

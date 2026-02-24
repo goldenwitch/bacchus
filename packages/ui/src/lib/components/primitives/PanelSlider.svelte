@@ -41,7 +41,7 @@
     {min}
     {max}
     {step}
-    value={value}
+    {value}
     oninput={(e) => onchange(Number(e.currentTarget.value))}
     aria-label={label}
   />

@@ -6,7 +6,15 @@ import { getDefaults, VISUALS_SLIDER_DEFS } from '../../src/lib/visuals.js';
 // Polyfill Element.animate for jsdom
 if (typeof Element.prototype.animate !== 'function') {
   Element.prototype.animate = function () {
-    return { cancel: () => {}, finish: () => {}, play: () => {}, pause: () => {}, reverse: () => {}, onfinish: null, finished: Promise.resolve() } as unknown as Animation;
+    return {
+      cancel: () => {},
+      finish: () => {},
+      play: () => {},
+      pause: () => {},
+      reverse: () => {},
+      onfinish: null,
+      finished: Promise.resolve(),
+    } as unknown as Animation;
   };
 }
 
@@ -20,8 +28,12 @@ function defaultProps() {
 }
 
 describe('VisualsPanel', () => {
-  afterEach(() => { cleanup(); });
-  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders all sliders', () => {
     const { container } = render(VisualsPanel, { props: defaultProps() });

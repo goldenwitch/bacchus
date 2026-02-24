@@ -10,7 +10,7 @@ import { startServer } from './server.js';
 
 const cwdIdx = process.argv.indexOf('--cwd');
 if (cwdIdx !== -1 && process.argv[cwdIdx + 1]) {
-  const dir = resolve(process.argv[cwdIdx + 1]!);
+  const dir = resolve(process.argv[cwdIdx + 1]);
   process.chdir(dir);
   setRoots([dir]);
 }

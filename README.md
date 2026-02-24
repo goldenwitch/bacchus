@@ -109,14 +109,14 @@ yarn dlx tsx packages/cli/src/cli.ts <command> [options]
 
 ### Commands
 
-| Command                            | Description                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------ |
-| `vine validate <file>`             | Check a `.vine` file for parse/validation errors.                                    |
-| `vine show <file>`                 | Print a graph summary (root, task count, status breakdown).                          |
-| `vine list <file>`                 | List all tasks. Supports `--status` and `--search` filters.                          |
-| `vine add <file>`                  | Add a task (`--id`, `--name`, optional `--status`, `--description`, `--depends-on`). |
+| Command                            | Description                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `vine validate <file>`             | Check a `.vine` file for parse/validation errors.                                      |
+| `vine show <file>`                 | Print a graph summary (root, task count, status breakdown).                            |
+| `vine list <file>`                 | List all tasks. Supports `--status` and `--search` filters.                            |
+| `vine add <file>`                  | Add a task (`--id`, `--name`, optional `--status`, `--description`, `--depends-on`).   |
 | `vine add-ref <file>`              | Add a ref node (`--id`, `--name`, `--vine`, optional `--description`, `--depends-on`). |
-| `vine status <file> <id> <status>` | Update a task's status.                                                              |
+| `vine status <file> <id> <status>` | Update a task's status.                                                                |
 
 ### Examples
 
@@ -160,25 +160,25 @@ node packages/mcp/dist/server.js --cwd /path/to/project
 
 ### Tools (17)
 
-| Category      | Tool                     | Description                               |
-| ------------- | ------------------------ | ----------------------------------------- |
-| **Read-only** | `vine_validate`          | Parse and validate a `.vine` file.        |
-|               | `vine_show`              | High-level graph summary.                 |
-|               | `vine_list`              | List tasks (optional status/search filters). |
-|               | `vine_get_task`          | Full detail for one task by ID.           |
-|               | `vine_get_descendants`   | Transitive downstream subtree.            |
-|               | `vine_search`            | Case-insensitive text search.             |
+| Category      | Tool                     | Description                                               |
+| ------------- | ------------------------ | --------------------------------------------------------- |
+| **Read-only** | `vine_validate`          | Parse and validate a `.vine` file.                        |
+|               | `vine_show`              | High-level graph summary.                                 |
+|               | `vine_list`              | List tasks (optional status/search filters).              |
+|               | `vine_get_task`          | Full detail for one task by ID.                           |
+|               | `vine_get_descendants`   | Transitive downstream subtree.                            |
+|               | `vine_search`            | Case-insensitive text search.                             |
 | **Execution** | `vine_next_tasks`        | Execution frontier: ready, completable, expandable tasks. |
-| **Mutations** | `vine_add_task`          | Add a task.                               |
-|               | `vine_remove_task`       | Remove a task and clean up edges.         |
-|               | `vine_set_status`        | Update a task's status.                   |
-|               | `vine_update_task`       | Update name/description/decisions.        |
-|               | `vine_add_dependency`    | Add a dependency edge.                    |
-|               | `vine_remove_dependency` | Remove a dependency edge.                 |
-| **Ref nodes** | `vine_add_ref`           | Add a reference node.                     |
-|               | `vine_expand_ref`        | Expand a ref by inlining a child graph.   |
-|               | `vine_update_ref_uri`    | Update a ref node's URI.                  |
-|               | `vine_get_refs`          | List all reference nodes.                 |
+| **Mutations** | `vine_add_task`          | Add a task.                                               |
+|               | `vine_remove_task`       | Remove a task and clean up edges.                         |
+|               | `vine_set_status`        | Update a task's status.                                   |
+|               | `vine_update_task`       | Update name/description/decisions.                        |
+|               | `vine_add_dependency`    | Add a dependency edge.                                    |
+|               | `vine_remove_dependency` | Remove a dependency edge.                                 |
+| **Ref nodes** | `vine_add_ref`           | Add a reference node.                                     |
+|               | `vine_expand_ref`        | Expand a ref by inlining a child graph.                   |
+|               | `vine_update_ref_uri`    | Update a ref node's URI.                                  |
+|               | `vine_get_refs`          | List all reference nodes.                                 |
 
 See [MCP.md](docs/MCP.md) for full documentation.
 
@@ -235,18 +235,18 @@ Drop a `.vine` file onto the landing page or enter a URL to visualize a task gra
 
 The [`examples/`](examples/) folder contains `.vine` files you can drag into the UI to explore different graph shapes:
 
-| File                      | What it shows                                     |
-| ------------------------- | ------------------------------------------------- |
-| `01-single-task.vine`     | One node, no edges — the simplest graph.          |
-| `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).       |
-| `03-diamond.vine`         | Two parallel branches merging into one task.      |
-| `04-all-statuses.vine`    | Every status keyword (all 6) in action.           |
-| `05-decisions.vine`       | Tasks annotated with `>` decision notes.          |
-| `06-project-bacchus.vine` | A realistic 13-task project graph.                |
-| `07-design-system.vine`   | Design system with prefix metadata and tokens.    |
-| `08-nested-vine.vine`     | Nested reference to an external `.vine` file.     |
-| `09-ref-advanced.vine`    | Multiple ref nodes with decisions and edges.      |
-| `10-sprites.vine`         | Custom `@sprite()` annotations (v1.2.0).         |
+| File                      | What it shows                                  |
+| ------------------------- | ---------------------------------------------- |
+| `01-single-task.vine`     | One node, no edges — the simplest graph.       |
+| `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).    |
+| `03-diamond.vine`         | Two parallel branches merging into one task.   |
+| `04-all-statuses.vine`    | Every status keyword (all 6) in action.        |
+| `05-decisions.vine`       | Tasks annotated with `>` decision notes.       |
+| `06-project-bacchus.vine` | A realistic 13-task project graph.             |
+| `07-design-system.vine`   | Design system with prefix metadata and tokens. |
+| `08-nested-vine.vine`     | Nested reference to an external `.vine` file.  |
+| `09-ref-advanced.vine`    | Multiple ref nodes with decisions and edges.   |
+| `10-sprites.vine`         | Custom `@sprite()` annotations (v1.2.0).       |
 
 Start the dev server and drag any file onto the landing page to visualize it.
 

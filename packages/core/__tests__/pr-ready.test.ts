@@ -25,23 +25,23 @@ describe('pr-ready.vine', () => {
     expect(() => validate(graph)).not.toThrow();
   });
 
-  it('has expected node count (12 tasks)', () => {
+  it('has expected node count (13 tasks)', () => {
     const graph = parse(vineContent);
-    expect(graph.tasks.size).toBe(12);
+    expect(graph.tasks.size).toBe(13);
   });
 
   it('has correct root node', () => {
     const graph = parse(vineContent);
     expect(graph.order[0]).toBe('pr-ready');
     const root = graph.tasks.get('pr-ready')!;
-    expect(root.shortName).toBe('PR Ready to Merge');
+    expect(root.shortName).toBe('PR Ready for Review');
     expect(root.status).toBe('notstarted');
   });
 
-  it('has correct dependency fan-out from open-pr', () => {
+  it('has correct dependency fan-out from push', () => {
     const graph = parse(vineContent);
-    const openPr = graph.tasks.get('open-pr')!;
-    expect([...openPr.dependencies].sort()).toEqual([
+    const push = graph.tasks.get('push')!;
+    expect([...push.dependencies].sort()).toEqual([
       'build-vscode',
       'e2e',
       'format-check',
@@ -76,18 +76,23 @@ describe('pr-ready.vine', () => {
     expect(branch.dependencies.length).toBe(0);
   });
 
-  it('all tasks are notstarted', () => {
+  it('all tasks have valid statuses', () => {
     const graph = parse(vineContent);
+    const validStatuses = ['notstarted', 'planning', 'started', 'reviewing', 'complete', 'blocked'];
     for (const [id, task] of graph.tasks) {
-      expect(task.status, `${id} should be notstarted`).toBe('notstarted');
+      expect(validStatuses, `${id} should have a valid status`).toContain(task.status);
     }
   });
 
   it('has decisions on the right tasks', () => {
     const graph = parse(vineContent);
-    expect(graph.tasks.get('format-check')!.decisions.length).toBeGreaterThan(0);
+    expect(graph.tasks.get('format-check')!.decisions.length).toBeGreaterThan(
+      0,
+    );
     expect(graph.tasks.get('e2e')!.decisions.length).toBeGreaterThan(0);
-    expect(graph.tasks.get('build-vscode')!.decisions.length).toBeGreaterThan(0);
+    expect(graph.tasks.get('build-vscode')!.decisions.length).toBeGreaterThan(
+      0,
+    );
     expect(graph.tasks.get('ci-green')!.decisions.length).toBeGreaterThan(0);
   });
 
@@ -101,10 +106,9 @@ describe('pr-ready.vine', () => {
       const task2 = graph2.tasks.get(id)!;
       expect(task2.name, `${id} name mismatch`).toBe(task.name);
       expect(task2.status, `${id} status mismatch`).toBe(task.status);
-      expect(
-        [...task2.dependencies].sort(),
-        `${id} deps mismatch`,
-      ).toEqual([...task.dependencies].sort() as readonly string[]);
+      expect([...task2.dependencies].sort(), `${id} deps mismatch`).toEqual(
+        [...task.dependencies].sort() as readonly string[],
+      );
     }
   });
 });

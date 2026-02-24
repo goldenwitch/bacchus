@@ -34,20 +34,20 @@ The Chat Planner is an AI-powered conversational interface for creating and edit
 
 The LLM interacts with the graph through structured tool calls rather than generating raw VINE text. Each tool maps to a validated `@bacchus/core` mutation function:
 
-| Tool                | Core Function        | Description                                                     |
-| ------------------- | -------------------- | --------------------------------------------------------------- |
-| `get_graph`         | `serialize()`        | Returns current graph as VINE text                              |
-| `add_task`          | `addTask()`          | Add a new task                                                  |
-| `remove_task`       | `removeTask()`       | Remove a task (not root)                                        |
-| `set_status`        | `setStatus()`        | Change task status                                              |
-| `update_task`       | `updateTask()`       | Update name/description/decisions                               |
-| `add_dependency`    | `addDependency()`    | Add a dependency edge                                           |
-| `remove_dependency` | `removeDependency()` | Remove a dependency edge                                        |
-| `replace_graph`     | `parse()`            | Replace entire graph with VINE text                             |
-| `add_attachment`    | `updateTask()`       | Adds an attachment (artifact, guidance, or file) to a task      |
-| `remove_attachment` | `updateTask()`       | Removes an attachment from a task by index                      |
+| Tool                | Core Function        | Description                                                              |
+| ------------------- | -------------------- | ------------------------------------------------------------------------ |
+| `get_graph`         | `serialize()`        | Returns current graph as VINE text                                       |
+| `add_task`          | `addTask()`          | Add a new task                                                           |
+| `remove_task`       | `removeTask()`       | Remove a task (not root)                                                 |
+| `set_status`        | `setStatus()`        | Change task status                                                       |
+| `update_task`       | `updateTask()`       | Update name/description/decisions                                        |
+| `add_dependency`    | `addDependency()`    | Add a dependency edge                                                    |
+| `remove_dependency` | `removeDependency()` | Remove a dependency edge                                                 |
+| `replace_graph`     | `parse()`            | Replace entire graph with VINE text                                      |
+| `add_attachment`    | `updateTask()`       | Adds an attachment (artifact, guidance, or file) to a task               |
+| `remove_attachment` | `updateTask()`       | Removes an attachment from a task by index                               |
 | `add_ref`           | `addRef()`           | Adds a reference node (proxy for external .vine file) with id, name, URI |
-| `expand_ref`        | `expandVineRef()`    | Expands a reference node by inlining a child VINE graph         |
+| `expand_ref`        | `expandVineRef()`    | Expands a reference node by inlining a child VINE graph                  |
 
 Every mutation is validated before returning — cycles, missing references, and structural violations are caught and returned as error strings so the LLM can self-correct.
 

@@ -1,4 +1,10 @@
-import type { ConcreteTask, RefTask, Status, Task, VineGraph } from './types.js';
+import type {
+  ConcreteTask,
+  RefTask,
+  Status,
+  Task,
+  VineGraph,
+} from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 

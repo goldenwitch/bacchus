@@ -18,12 +18,8 @@ export async function run() {
   );
 
   // Verify programmatic MCP server definition provider in manifest
-  const providers =
-    ext.packageJSON?.contributes?.mcpServerDefinitionProviders;
-  assert.ok(
-    providers,
-    'contributes.mcpServerDefinitionProviders should exist',
-  );
+  const providers = ext.packageJSON?.contributes?.mcpServerDefinitionProviders;
+  assert.ok(providers, 'contributes.mcpServerDefinitionProviders should exist');
   assert.ok(
     providers.some((p) => p.id === 'bacchus-vine.mcp'),
     'bacchus-vine.mcp provider should be declared',

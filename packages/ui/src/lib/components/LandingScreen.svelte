@@ -169,7 +169,9 @@ Define tables, indexes, and constraints.
       icon="💬"
       title="Chat Planner"
       expanded={chatOpen}
-      ontoggle={() => { ontoggle(); }}
+      ontoggle={() => {
+        ontoggle();
+      }}
       ariaLabel="Toggle chat planner"
     >
       <ChatPanel

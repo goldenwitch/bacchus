@@ -112,13 +112,13 @@ yarn dlx tsx packages/cli/src/cli.ts status examples/03-diamond.vine left comple
 
 Adds a reference node to a `.vine` file. Reference nodes are proxies for external `.vine` files. **Modifies the file in-place.**
 
-| Flag                    | Required | Description                                                           |
-| ----------------------- | -------- | --------------------------------------------------------------------- |
-| `--id <id>`             | Yes      | Unique reference node identifier.                                     |
-| `--name <name>`         | Yes      | Short display name for the ref node.                                  |
-| `--vine <uri>`          | Yes      | URI of the external `.vine` file (relative or absolute path).         |
-| `--description <text>`  | No       | Description text.                                                     |
-| `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                          |
+| Flag                    | Required | Description                                                   |
+| ----------------------- | -------- | ------------------------------------------------------------- |
+| `--id <id>`             | Yes      | Unique reference node identifier.                             |
+| `--name <name>`         | Yes      | Short display name for the ref node.                          |
+| `--vine <uri>`          | Yes      | URI of the external `.vine` file (relative or absolute path). |
+| `--description <text>`  | No       | Description text.                                             |
+| `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                  |
 
 ```powershell
 yarn dlx tsx packages/cli/src/cli.ts add-ref examples/03-diamond.vine \

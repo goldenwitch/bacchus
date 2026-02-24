@@ -6,7 +6,15 @@ import { getDefaults } from '../../src/lib/physics.js';
 // Polyfill Element.animate for jsdom
 if (typeof Element.prototype.animate !== 'function') {
   Element.prototype.animate = function () {
-    return { cancel: () => {}, finish: () => {}, play: () => {}, pause: () => {}, reverse: () => {}, onfinish: null, finished: Promise.resolve() } as unknown as Animation;
+    return {
+      cancel: () => {},
+      finish: () => {},
+      play: () => {},
+      pause: () => {},
+      reverse: () => {},
+      onfinish: null,
+      finished: Promise.resolve(),
+    } as unknown as Animation;
   };
 }
 
@@ -15,8 +23,12 @@ function defaultProps() {
 }
 
 describe('PhysicsPanel', () => {
-  afterEach(() => { cleanup(); });
-  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders all 12 sliders', () => {
     const { container } = render(PhysicsPanel, { props: defaultProps() });
@@ -55,7 +67,9 @@ describe('PhysicsPanel', () => {
 
   it('displays current config values', () => {
     const config = getDefaults(4);
-    const { container } = render(PhysicsPanel, { props: { ...defaultProps(), config } });
+    const { container } = render(PhysicsPanel, {
+      props: { ...defaultProps(), config },
+    });
     const valueSpans = container.querySelectorAll('.panel-slider-value');
     expect(valueSpans.length).toBe(12);
     for (const span of valueSpans) {

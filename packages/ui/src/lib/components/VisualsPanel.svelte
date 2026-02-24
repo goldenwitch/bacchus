@@ -109,7 +109,9 @@
     </button>
     {#if config.globalSpriteOverride}
       <div class="visuals-sprite-active">
-        Active: <span class="visuals-sprite-uri">{config.globalSpriteOverride}</span>
+        Active: <span class="visuals-sprite-uri"
+          >{config.globalSpriteOverride}</span
+        >
       </div>
     {/if}
     {#if spriteErrors.size > 0}

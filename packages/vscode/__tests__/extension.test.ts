@@ -29,7 +29,11 @@ vi.mock('vscode', () => ({
   },
   workspace: {
     workspaceFolders: [
-      { uri: { fsPath: '/mock/workspace', scheme: 'file' }, name: 'mock', index: 0 },
+      {
+        uri: { fsPath: '/mock/workspace', scheme: 'file' },
+        name: 'mock',
+        index: 0,
+      },
     ],
   },
   EventEmitter: vi.fn(() => ({
@@ -111,10 +115,10 @@ describe('activate', () => {
 
   it('provideMcpServerDefinitions returns a server pointing to dist/server.js', async () => {
     callActivate();
-    const provider =
-      mocks.registerMcpServerDefinitionProvider.mock.calls[0][1] as {
-        provideMcpServerDefinitions: () => Promise<unknown[]>;
-      };
+    const provider = mocks.registerMcpServerDefinitionProvider.mock
+      .calls[0][1] as {
+      provideMcpServerDefinitions: () => Promise<unknown[]>;
+    };
     const defs = await provider.provideMcpServerDefinitions();
     expect(defs).toHaveLength(1);
     expect(mocks.McpStdioServerDefinition).toHaveBeenCalledWith(
@@ -126,10 +130,10 @@ describe('activate', () => {
 
   it('sets cwd on the MCP server definition from the first workspace folder', async () => {
     callActivate();
-    const provider =
-      mocks.registerMcpServerDefinitionProvider.mock.calls[0][1] as {
-        provideMcpServerDefinitions: () => Promise<unknown[]>;
-      };
+    const provider = mocks.registerMcpServerDefinitionProvider.mock
+      .calls[0][1] as {
+      provideMcpServerDefinitions: () => Promise<unknown[]>;
+    };
     const defs = await provider.provideMcpServerDefinitions();
     const def = defs[0] as Record<string, unknown>;
     expect(def).toHaveProperty('cwd');
@@ -138,10 +142,10 @@ describe('activate', () => {
 
   it('resolveMcpServerDefinition passes the server through', async () => {
     callActivate();
-    const provider =
-      mocks.registerMcpServerDefinitionProvider.mock.calls[0][1] as {
-        resolveMcpServerDefinition: (s: unknown) => Promise<unknown>;
-      };
+    const provider = mocks.registerMcpServerDefinitionProvider.mock
+      .calls[0][1] as {
+      resolveMcpServerDefinition: (s: unknown) => Promise<unknown>;
+    };
     const sentinel = { label: 'test' };
     const resolved = await provider.resolveMcpServerDefinition(sentinel);
     expect(resolved).toBe(sentinel);

@@ -37,14 +37,14 @@ Manual test pass + stakeholder demo.
 
 **Key concepts:**
 
-| Syntax | Meaning |
-|---|---|
-| `[id]` | Unique identifier for the task |
-| `Name` | Short human-readable name |
-| `(status)` | One of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
-| `-> dep-id` | This task depends on `dep-id` (arrow points toward the dependency) |
-| `> text` | A decision or note attached to the task |
-| Lines after the header | Free-form description |
+| Syntax                 | Meaning                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `[id]`                 | Unique identifier for the task                                                 |
+| `Name`                 | Short human-readable name                                                      |
+| `(status)`             | One of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
+| `-> dep-id`            | This task depends on `dep-id` (arrow points toward the dependency)             |
+| `> text`               | A decision or note attached to the task                                        |
+| Lines after the header | Free-form description                                                          |
 
 The **first block** is always the root of the graph.
 
@@ -66,36 +66,36 @@ using natural language. The assistant will call the right tools automatically.
 
 ### Orientation — understand the graph
 
-| What you want | What to say | Tool the assistant calls |
-|---|---|---|
-| See the big picture | *"Summarize my sprint plan"* | `vine_show` |
-| List all tasks | *"What tasks are in the backlog?"* | `vine_list` |
-| Filter by status | *"Show me everything that's blocked"* | `vine_list` (with status filter) |
-| Find something | *"Which tasks mention the API?"* | `vine_search` |
-| Inspect one task | *"Tell me about the frontend task"* | `vine_get_task` |
-| See what's downstream | *"What depends on the backend task?"* | `vine_get_descendants` |
-| Check for errors | *"Is my vine file valid?"* | `vine_validate` |
-| See the execution frontier | *"What tasks can I start next?"* | `vine_next_tasks` |
+| What you want              | What to say                           | Tool the assistant calls         |
+| -------------------------- | ------------------------------------- | -------------------------------- |
+| See the big picture        | _"Summarize my sprint plan"_          | `vine_show`                      |
+| List all tasks             | _"What tasks are in the backlog?"_    | `vine_list`                      |
+| Filter by status           | _"Show me everything that's blocked"_ | `vine_list` (with status filter) |
+| Find something             | _"Which tasks mention the API?"_      | `vine_search`                    |
+| Inspect one task           | _"Tell me about the frontend task"_   | `vine_get_task`                  |
+| See what's downstream      | _"What depends on the backend task?"_ | `vine_get_descendants`           |
+| Check for errors           | _"Is my vine file valid?"_            | `vine_validate`                  |
+| See the execution frontier | _"What tasks can I start next?"_      | `vine_next_tasks`                |
 
 ### Work — change the graph
 
-| What you want | What to say | Tool the assistant calls |
-|---|---|---|
-| Add a task | *"Add a 'Deploy to staging' task that depends on qa"* | `vine_add_task` |
-| Remove a task | *"Remove the qa task"* | `vine_remove_task` |
-| Update a status | *"Mark backend as complete"* | `vine_set_status` |
-| Rename / re-describe | *"Rename frontend to 'Dashboard UI'"* | `vine_update_task` |
-| Add a dependency | *"Make deploy depend on frontend too"* | `vine_add_dependency` |
-| Remove a dependency | *"Remove the dependency from qa to frontend"* | `vine_remove_dependency` |
+| What you want        | What to say                                           | Tool the assistant calls |
+| -------------------- | ----------------------------------------------------- | ------------------------ |
+| Add a task           | _"Add a 'Deploy to staging' task that depends on qa"_ | `vine_add_task`          |
+| Remove a task        | _"Remove the qa task"_                                | `vine_remove_task`       |
+| Update a status      | _"Mark backend as complete"_                          | `vine_set_status`        |
+| Rename / re-describe | _"Rename frontend to 'Dashboard UI'"_                 | `vine_update_task`       |
+| Add a dependency     | _"Make deploy depend on frontend too"_                | `vine_add_dependency`    |
+| Remove a dependency  | _"Remove the dependency from qa to frontend"_         | `vine_remove_dependency` |
 
 ### References — compose graphs from external `.vine` files
 
-| What you want | What to say | Tool the assistant calls |
-|---|---|---|
-| Add a reference | *"Add a ref to infrastructure.vine"* | `vine_add_ref` |
-| Expand a reference | *"Inline the infra ref"* | `vine_expand_ref` |
-| Update a ref's URI | *"Point the infra ref to infra-v2.vine"* | `vine_update_ref_uri` |
-| List all refs | *"Which refs does this graph have?"* | `vine_get_refs` |
+| What you want      | What to say                              | Tool the assistant calls |
+| ------------------ | ---------------------------------------- | ------------------------ |
+| Add a reference    | _"Add a ref to infrastructure.vine"_     | `vine_add_ref`           |
+| Expand a reference | _"Inline the infra ref"_                 | `vine_expand_ref`        |
+| Update a ref's URI | _"Point the infra ref to infra-v2.vine"_ | `vine_update_ref_uri`    |
+| List all refs      | _"Which refs does this graph have?"_     | `vine_get_refs`          |
 
 > **Tip:** Every mutation tool writes the file back to disk automatically —
 > your `.vine` file stays in sync.
@@ -106,19 +106,19 @@ using natural language. The assistant will call the right tools automatically.
 
 Use statuses to track progress through your workflow:
 
-| Status | Emoji | Meaning |
-|---|---|---|
-| `notstarted` | ⚪ | Queued, not yet picked up |
-| `planning` | 🟣 | Being scoped or designed |
-| `started` | 🟡 | Actively in progress |
-| `reviewing` | 🟠 | Done, awaiting review or feedback |
-| `complete` | 🟢 | Finished and accepted |
-| `blocked` | 🔴 | Cannot proceed — dependency or external blocker |
+| Status       | Emoji | Meaning                                         |
+| ------------ | ----- | ----------------------------------------------- |
+| `notstarted` | ⚪    | Queued, not yet picked up                       |
+| `planning`   | 🟣    | Being scoped or designed                        |
+| `started`    | 🟡    | Actively in progress                            |
+| `reviewing`  | 🟠    | Done, awaiting review or feedback               |
+| `complete`   | 🟢    | Finished and accepted                           |
+| `blocked`    | 🔴    | Cannot proceed — dependency or external blocker |
 
 A typical flow: `notstarted` → `planning` → `started` → `reviewing` → `complete`.
 
-Ask your assistant to transition tasks: *"I've finished the API — mark backend
-as reviewing and start frontend."*
+Ask your assistant to transition tasks: _"I've finished the API — mark backend
+as reviewing and start frontend."_
 
 ---
 

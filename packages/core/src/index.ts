@@ -51,7 +51,11 @@ export {
 export { expandVineRef } from './expansion.js';
 
 // Search & Filter
-export type { ActionableTasks, ExecutionProgress, GraphSummary } from './search.js';
+export type {
+  ActionableTasks,
+  ExecutionProgress,
+  GraphSummary,
+} from './search.js';
 export {
   filterByStatus,
   getActionableTasks,

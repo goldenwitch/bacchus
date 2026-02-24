@@ -23,25 +23,25 @@ For the full MCP tool reference, see [docs/MCP.md](docs/MCP.md).
 
 ## Tool Summary
 
-| Category      | Tool                     | Description                                                          |
-| ------------- | ------------------------ | -------------------------------------------------------------------- |
-| **Execution** | `vine_next_tasks`        | Returns the execution frontier: ready, completable, and expandable.  |
-| **Read-only** | `vine_validate`          | Parse and validate a `.vine` file.                                   |
-|               | `vine_show`              | High-level graph summary.                                            |
-|               | `vine_list`              | List tasks (optional status/search filters).                         |
-|               | `vine_get_task`          | Full detail for one task by ID.                                      |
-|               | `vine_get_descendants`   | Transitive downstream subtree.                                       |
-|               | `vine_search`            | Case-insensitive text search.                                        |
-| **Mutations** | `vine_set_status`        | Update a task's status.                                              |
-|               | `vine_update_task`       | Update name, description, or decisions.                              |
-|               | `vine_add_task`          | Add a task.                                                          |
-|               | `vine_remove_task`       | Remove a task and clean up edges.                                    |
-|               | `vine_add_dependency`    | Add a dependency edge.                                               |
-|               | `vine_remove_dependency` | Remove a dependency edge.                                            |
-| **Ref nodes** | `vine_expand_ref`        | Expand a ref by inlining a child graph.                              |
-|               | `vine_add_ref`           | Add a reference node.                                                |
-|               | `vine_update_ref_uri`    | Update a ref node's URI.                                             |
-|               | `vine_get_refs`          | List all reference nodes.                                            |
+| Category      | Tool                     | Description                                                         |
+| ------------- | ------------------------ | ------------------------------------------------------------------- |
+| **Execution** | `vine_next_tasks`        | Returns the execution frontier: ready, completable, and expandable. |
+| **Read-only** | `vine_validate`          | Parse and validate a `.vine` file.                                  |
+|               | `vine_show`              | High-level graph summary.                                           |
+|               | `vine_list`              | List tasks (optional status/search filters).                        |
+|               | `vine_get_task`          | Full detail for one task by ID.                                     |
+|               | `vine_get_descendants`   | Transitive downstream subtree.                                      |
+|               | `vine_search`            | Case-insensitive text search.                                       |
+| **Mutations** | `vine_set_status`        | Update a task's status.                                             |
+|               | `vine_update_task`       | Update name, description, or decisions.                             |
+|               | `vine_add_task`          | Add a task.                                                         |
+|               | `vine_remove_task`       | Remove a task and clean up edges.                                   |
+|               | `vine_add_dependency`    | Add a dependency edge.                                              |
+|               | `vine_remove_dependency` | Remove a dependency edge.                                           |
+| **Ref nodes** | `vine_expand_ref`        | Expand a ref by inlining a child graph.                             |
+|               | `vine_add_ref`           | Add a reference node.                                               |
+|               | `vine_update_ref_uri`    | Update a ref node's URI.                                            |
+|               | `vine_get_refs`          | List all reference nodes.                                           |
 
 ---
 
@@ -268,22 +268,27 @@ pr-ready
 ### Execution Trace
 
 **Round 1** — `vine_next_tasks` returns:
+
 ```json
 { "ready_to_start": [{ "id": "branch", ... }] }
 ```
+
 One sub-agent picks up `branch`:
+
 - Sets `branch` → `started`
 - Creates a feature branch from latest main
 - Adds decision: `> Branched from main at abc123`
 - Sets `branch` → `reviewing`
 
 **Round 2** — `vine_next_tasks` returns:
+
 ```json
 {
   "ready_to_start": [{ "id": "changes", ... }],
   "ready_to_complete": [{ "id": "branch", ... }]
 }
 ```
+
 - Mark `branch` → `complete`
 - Sub-agent picks up `changes`:
   - Writes code, makes commits
@@ -291,6 +296,7 @@ One sub-agent picks up `branch`:
   - Sets `changes` → `reviewing`
 
 **Round 3** — `vine_next_tasks` returns:
+
 ```json
 {
   "ready_to_start": [
@@ -304,6 +310,7 @@ One sub-agent picks up `branch`:
   "ready_to_complete": [{ "id": "changes" }]
 }
 ```
+
 - Mark `changes` → `complete`
 - **Six sub-agents in parallel**, each running their respective check:
   - `typecheck`: runs `yarn typecheck`, records pass/fail
@@ -315,29 +322,36 @@ One sub-agent picks up `branch`:
 - Each sets their task → `reviewing` on success, `blocked` on failure
 
 **Round 4** — All CI checks reviewing. `vine_next_tasks` returns:
+
 ```json
 {
   "ready_to_start": [{ "id": "open-pr" }],
   "ready_to_complete": []
 }
 ```
+
 - Sub-agent for `open-pr`:
   - Opens a PR with a clear description
   - Adds decision: `> PR #42 opened against main`
   - Sets `open-pr` → `reviewing`
 
 **Round 5** — `open-pr` dependant (`ci-green`) starts:
+
 ```json
 {
   "ready_to_start": [{ "id": "ci-green" }],
   "ready_to_complete": [
-    { "id": "typecheck" }, { "id": "lint" },
-    { "id": "format-check" }, { "id": "test" },
-    { "id": "e2e" }, { "id": "build-vscode" },
+    { "id": "typecheck" },
+    { "id": "lint" },
+    { "id": "format-check" },
+    { "id": "test" },
+    { "id": "e2e" },
+    { "id": "build-vscode" },
     { "id": "open-pr" }
   ]
 }
 ```
+
 - Mark all `ready_to_complete` tasks → `complete`
 - Sub-agent for `ci-green`: verifies GitHub Actions pass, sets → `reviewing`
 
@@ -384,6 +398,7 @@ These serve as context for upstream tasks and as an audit trail.
 ### Error Recovery
 
 If a task fails:
+
 1. Set status to `blocked` with a decision explaining the failure.
 2. The orchestrator can: retry, escalate to a human, or skip (if optional like `build-vscode`).
 3. Blocked tasks never appear in `ready_to_complete` — they require explicit intervention.

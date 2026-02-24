@@ -82,10 +82,7 @@
   const containerWidth = $derived(activePanel === 'chat' ? '340px' : '230px');
 </script>
 
-<div
-  class="left-panel-accordion"
-  style:width={containerWidth}
->
+<div class="left-panel-accordion" style:width={containerWidth}>
   {#if chatAvailable && chatSession && onupdate}
     <GlassAccordion
       icon="💬"
@@ -124,7 +121,7 @@
     <VisualsPanel
       config={visualsConfig}
       onchange={onvisualschange}
-      onspritechange={onspritechange}
+      {onspritechange}
       onreset={onvisualsreset}
     />
   </GlassAccordion>

@@ -336,7 +336,8 @@ textarea {
 }
 
 .anim-vine-leaf-sway {
-  animation: vine-leaf-sway var(--vis-leaf-sway-duration, 4s) ease-in-out infinite;
+  animation: vine-leaf-sway var(--vis-leaf-sway-duration, 4s) ease-in-out
+    infinite;
   transform-origin: 0% 50%;
 }
 

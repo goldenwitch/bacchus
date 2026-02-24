@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.lm.registerMcpServerDefinitionProvider('bacchus-vine.mcp', {
       onDidChangeMcpServerDefinitions: didChange.event,
 
-      provideMcpServerDefinitions: async () => {
+      provideMcpServerDefinitions: () => {
         const serverPath = context.asAbsolutePath('dist/server.js');
         output.appendLine(`MCP server path: ${serverPath}`);
         const def = new vscode.McpStdioServerDefinition(
@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
         return [def];
       },
 
-      resolveMcpServerDefinition: async (server) => {
+      resolveMcpServerDefinition: (server) => {
         output.appendLine('MCP server resolving…');
         return server;
       },

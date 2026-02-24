@@ -34,12 +34,12 @@ The extension uses the VS Code Language Model API to wire the VINE MCP server:
 
 All tools from `@bacchus/mcp` are automatically available through this provider:
 
-| Category  | Tools |
-| --------- | ----- |
-| Read-only | `vine_validate`, `vine_show`, `vine_list`, `vine_get_task`, `vine_get_descendants`, `vine_search` |
-| Execution | `vine_next_tasks` |
+| Category  | Tools                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Read-only | `vine_validate`, `vine_show`, `vine_list`, `vine_get_task`, `vine_get_descendants`, `vine_search`                           |
+| Execution | `vine_next_tasks`                                                                                                           |
 | Mutations | `vine_add_task`, `vine_remove_task`, `vine_set_status`, `vine_update_task`, `vine_add_dependency`, `vine_remove_dependency` |
-| Ref nodes | `vine_add_ref`, `vine_expand_ref`, `vine_update_ref_uri`, `vine_get_refs` |
+| Ref nodes | `vine_add_ref`, `vine_expand_ref`, `vine_update_ref_uri`, `vine_get_refs`                                                   |
 
 See [MCP.md](MCP.md) for full tool documentation.
 
@@ -47,11 +47,11 @@ See [MCP.md](MCP.md) for full tool documentation.
 
 ## Installation & Activation
 
-| Requirement | Value |
-| ----------- | ----- |
-| VS Code     | `^1.99.0` |
+| Requirement | Value                                |
+| ----------- | ------------------------------------ |
+| VS Code     | `^1.99.0`                            |
 | Node.js     | 22+ (used as the MCP server runtime) |
-| Workspace   | Folder containing `.vine` files |
+| Workspace   | Folder containing `.vine` files      |
 
 The extension is not published to the VS Code Marketplace yet. Install from a `.vsix` file:
 
@@ -69,20 +69,20 @@ The extension activates automatically on startup — no manual steps needed.
 
 ## Build & Development
 
-| Script | Command | Description |
-| ------ | ------- | ----------- |
-| Build  | `yarn workspace bacchus-vine build` | One-shot production bundle |
-| Watch  | `yarn workspace bacchus-vine watch` | Incremental rebuilds during development |
-| Package | `yarn workspace bacchus-vine package` | Produces a `.vsix` file via `vsce` |
+| Script  | Command                               | Description                             |
+| ------- | ------------------------------------- | --------------------------------------- |
+| Build   | `yarn workspace bacchus-vine build`   | One-shot production bundle              |
+| Watch   | `yarn workspace bacchus-vine watch`   | Incremental rebuilds during development |
+| Package | `yarn workspace bacchus-vine package` | Produces a `.vsix` file via `vsce`      |
 
 ### Bundle Output
 
 The esbuild configuration ([esbuild.mjs](../packages/vscode/esbuild.mjs)) produces two bundles:
 
-| Output | Entry Point | Description |
-| ------ | ----------- | ----------- |
-| `dist/extension.js` | `src/extension.ts` | Extension host code |
-| `dist/server.js` | `../mcp/src/index.ts` | Bundled MCP server (from `@bacchus/mcp`) |
+| Output              | Entry Point           | Description                              |
+| ------------------- | --------------------- | ---------------------------------------- |
+| `dist/extension.js` | `src/extension.ts`    | Extension host code                      |
+| `dist/server.js`    | `../mcp/src/index.ts` | Bundled MCP server (from `@bacchus/mcp`) |
 
 ### esbuild Configuration
 
@@ -143,11 +143,11 @@ The [test-workspace/](../packages/vscode/test-workspace/) directory contains sam
 
 No user-facing configuration settings are exposed. The extension works out of the box with the following requirements:
 
-| Requirement | Details |
-| ----------- | ------- |
-| VS Code | `^1.99.0` with MCP server definition provider API support |
-| Node.js | 22+ (ships with recent VS Code) |
-| Workspace | A folder open in VS Code; `.vine` files are resolved relative to the first workspace folder |
+| Requirement | Details                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| VS Code     | `^1.99.0` with MCP server definition provider API support                                   |
+| Node.js     | 22+ (ships with recent VS Code)                                                             |
+| Workspace   | A folder open in VS Code; `.vine` files are resolved relative to the first workspace folder |
 
 ---
 

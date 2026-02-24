@@ -30,9 +30,9 @@ The server exposes 17 tools. All tools accept a `file` parameter (path to a `.vi
 
 Parse and validate a `.vine` file. Use this first when opening an unfamiliar file to confirm it is well-formed.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
 
 **Returns**: `"Valid — <n> task(s)."` on success, or a parse/validation error message.
 
@@ -42,9 +42,9 @@ Parse and validate a `.vine` file. Use this first when opening an unfamiliar fil
 
 Return a high-level summary: root task, total/leaf counts, and per-status breakdown.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
 
 **Returns**: Multi-line text with root info, task counts, and status breakdown.
 
@@ -54,11 +54,11 @@ Return a high-level summary: root task, total/leaf counts, and per-status breakd
 
 List tasks, optionally filtered by status or a search string.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `status` | string | No | Filter by status (`complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`) |
-| `search` | string | No | Case-insensitive text search across names and descriptions |
+| Parameter | Type   | Required | Description                                                                                |
+| --------- | ------ | -------- | ------------------------------------------------------------------------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file                                                                   |
+| `status`  | string | No       | Filter by status (`complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`) |
+| `search`  | string | No       | Case-insensitive text search across names and descriptions                                 |
 
 **Returns**: JSON array of task objects.
 
@@ -68,10 +68,10 @@ List tasks, optionally filtered by status or a search string.
 
 Return full details of a single task by ID, including description, status, dependencies, decisions, and attachments.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Task ID |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
+| `id`      | string | Yes      | Task ID                  |
 
 **Returns**: JSON object with all task fields.
 
@@ -81,10 +81,10 @@ Return full details of a single task by ID, including description, status, depen
 
 Return all tasks that transitively depend on the given task (its full downstream subtree). Useful for assessing the blast radius of a change.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Task ID |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
+| `id`      | string | Yes      | Task ID                  |
 
 **Returns**: JSON array of `{ id, shortName }` objects.
 
@@ -94,10 +94,10 @@ Return all tasks that transitively depend on the given task (its full downstream
 
 Case-insensitive text search across task names and descriptions. Returns matching tasks with full detail.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `query` | string | Yes | Search string |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
+| `query`   | string | Yes      | Search string            |
 
 **Returns**: JSON array of matching task objects.
 
@@ -109,18 +109,18 @@ Case-insensitive text search across task names and descriptions. Returns matchin
 
 Analyse the current execution state of a `.vine` graph and return the frontier of actionable work. Designed for iterative execution loops: call this → act on results → call again.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
 
 **Returns**: JSON object with four sections:
 
-| Section | Description |
-| ------- | ----------- |
-| `ready_to_start` | Tasks whose dependencies are all satisfied (`complete` or `reviewing`) and whose status is `notstarted` or `planning`. Pick these up in parallel. |
+| Section             | Description                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ready_to_start`    | Tasks whose dependencies are all satisfied (`complete` or `reviewing`) and whose status is `notstarted` or `planning`. Pick these up in parallel.             |
 | `ready_to_complete` | Tasks in `reviewing` status where at least one dependant has started consuming their output (`started`, `reviewing`, or `complete`). Safe to mark `complete`. |
-| `needs_expansion` | Ref nodes on the frontier whose dependencies are all satisfied. Must be expanded via `vine_expand_ref` before their inner tasks become visible. |
-| `progress` | Aggregate stats: `total`, `complete`, `percentage`, `root_id`, `root_status`, `by_status` (per-status counts). |
+| `needs_expansion`   | Ref nodes on the frontier whose dependencies are all satisfied. Must be expanded via `vine_expand_ref` before their inner tasks become visible.               |
+| `progress`          | Aggregate stats: `total`, `complete`, `percentage`, `root_id`, `root_status`, `by_status` (per-status counts).                                                |
 
 ---
 
@@ -132,14 +132,14 @@ All mutation tools read the file, apply the change using `@bacchus/core` pure fu
 
 Add a new task to the graph.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Unique task identifier |
-| `name` | string | Yes | Short task name |
-| `status` | string | No | Status (default: `notstarted`). Valid values: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
-| `description` | string | No | Task description text |
-| `dependsOn` | string[] | No | List of dependency task IDs |
+| Parameter     | Type     | Required | Description                                                                                                           |
+| ------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `file`        | string   | Yes      | Path to the `.vine` file                                                                                              |
+| `id`          | string   | Yes      | Unique task identifier                                                                                                |
+| `name`        | string   | Yes      | Short task name                                                                                                       |
+| `status`      | string   | No       | Status (default: `notstarted`). Valid values: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
+| `description` | string   | No       | Task description text                                                                                                 |
+| `dependsOn`   | string[] | No       | List of dependency task IDs                                                                                           |
 
 **Returns**: `'Task "<id>" added.'`
 
@@ -149,10 +149,10 @@ Add a new task to the graph.
 
 Remove a task and all references to it from the graph. Dependency edges pointing to the removed task are dropped from other tasks.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Task ID to remove |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
+| `id`      | string | Yes      | Task ID to remove        |
 
 **Returns**: `'Task "<id>" removed.'`
 
@@ -162,11 +162,11 @@ Remove a task and all references to it from the graph. Dependency edges pointing
 
 Update a task's status.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Task ID |
-| `status` | string | Yes | New status. Valid values: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
+| Parameter | Type   | Required | Description                                                                                       |
+| --------- | ------ | -------- | ------------------------------------------------------------------------------------------------- |
+| `file`    | string | Yes      | Path to the `.vine` file                                                                          |
+| `id`      | string | Yes      | Task ID                                                                                           |
+| `status`  | string | Yes      | New status. Valid values: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
 
 **Returns**: `'Task "<id>" status set to "<status>".'`
 
@@ -176,13 +176,13 @@ Update a task's status.
 
 Update a task's name, description, and/or decisions list. Does **not** change status — use `vine_set_status` for that. Pass only the fields you want to change; omitted fields are left untouched.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Task ID |
-| `name` | string | No | New short name |
-| `description` | string | No | New description |
-| `decisions` | string[] | No | New decisions list (replaces existing) |
+| Parameter     | Type     | Required | Description                            |
+| ------------- | -------- | -------- | -------------------------------------- |
+| `file`        | string   | Yes      | Path to the `.vine` file               |
+| `id`          | string   | Yes      | Task ID                                |
+| `name`        | string   | No       | New short name                         |
+| `description` | string   | No       | New description                        |
+| `decisions`   | string[] | No       | New decisions list (replaces existing) |
 
 **Returns**: `'Task "<id>" updated.'`
 
@@ -192,11 +192,11 @@ Update a task's name, description, and/or decisions list. Does **not** change st
 
 Add a dependency edge: `taskId` depends on `depId`. The validator rejects cycles, so this is safe to call speculatively.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `taskId` | string | Yes | Task that will gain the dependency |
-| `depId` | string | Yes | Task being depended on |
+| Parameter | Type   | Required | Description                        |
+| --------- | ------ | -------- | ---------------------------------- |
+| `file`    | string | Yes      | Path to the `.vine` file           |
+| `taskId`  | string | Yes      | Task that will gain the dependency |
+| `depId`   | string | Yes      | Task being depended on             |
 
 **Returns**: `'Dependency added: "<taskId>" now depends on "<depId>".'`
 
@@ -206,11 +206,11 @@ Add a dependency edge: `taskId` depends on `depId`. The validator rejects cycles
 
 Remove a dependency edge: `taskId` no longer depends on `depId`. Only removes the edge, not the tasks themselves.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `taskId` | string | Yes | Task that will lose the dependency |
-| `depId` | string | Yes | Task being un-depended |
+| Parameter | Type   | Required | Description                        |
+| --------- | ------ | -------- | ---------------------------------- |
+| `file`    | string | Yes      | Path to the `.vine` file           |
+| `taskId`  | string | Yes      | Task that will lose the dependency |
+| `depId`   | string | Yes      | Task being un-depended             |
 
 **Returns**: `'Dependency removed: "<taskId>" no longer depends on "<depId>".'`
 
@@ -222,18 +222,18 @@ Remove a dependency edge: `taskId` no longer depends on `depId`. Only removes th
 
 Analyse the current execution state of a `.vine` graph and return the frontier of actionable work. Returns three lists plus a progress snapshot. Call this tool in a loop: act on the results using mutation tools, then call `vine_next_tasks` again. The loop terminates when the root task is complete.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
 
 **Returns** (JSON):
 
-| Field | Description |
-| ----- | ----------- |
-| `ready_to_start` | Tasks whose dependencies are all satisfied (`notstarted` or `planning`) — pick these up |
-| `ready_to_complete` | Tasks in `reviewing` where a dependant has started consuming output — safe to mark `complete` |
-| `needs_expansion` | Ref nodes on the frontier that must be expanded via `vine_expand_ref` before inner tasks are visible |
-| `progress` | `{ total, complete, percentage, root_id, root_status, by_status }` |
+| Field               | Description                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ready_to_start`    | Tasks whose dependencies are all satisfied (`notstarted` or `planning`) — pick these up              |
+| `ready_to_complete` | Tasks in `reviewing` where a dependant has started consuming output — safe to mark `complete`        |
+| `needs_expansion`   | Ref nodes on the frontier that must be expanded via `vine_expand_ref` before inner tasks are visible |
+| `progress`          | `{ total, complete, percentage, root_id, root_status, by_status }`                                   |
 
 ---
 
@@ -243,15 +243,15 @@ Analyse the current execution state of a `.vine` graph and return the frontier o
 
 Add a reference node to a VINE graph. Reference nodes are proxies for external `.vine` files.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | Unique ID |
-| `name` | string | Yes | Display name |
-| `vine` | string | Yes | URI to the external `.vine` file |
-| `description` | string | No | Description text |
-| `depends_on` | string[] | No | IDs of dependencies |
-| `decisions` | string[] | No | Decision lines |
+| Parameter     | Type     | Required | Description                      |
+| ------------- | -------- | -------- | -------------------------------- |
+| `file`        | string   | Yes      | Path to the `.vine` file         |
+| `id`          | string   | Yes      | Unique ID                        |
+| `name`        | string   | Yes      | Display name                     |
+| `vine`        | string   | Yes      | URI to the external `.vine` file |
+| `description` | string   | No       | Description text                 |
+| `depends_on`  | string[] | No       | IDs of dependencies              |
+| `decisions`   | string[] | No       | Decision lines                   |
 
 **Returns**: `'Ref "<id>" added.'`
 
@@ -261,11 +261,11 @@ Add a reference node to a VINE graph. Reference nodes are proxies for external `
 
 Expand a reference node by inlining an external VINE graph. The ref node is replaced with the child graph's content.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the parent `.vine` file |
-| `ref_id` | string | Yes | ID of the reference node to expand |
-| `child_file` | string | Yes | Path to the child `.vine` file to inline |
+| Parameter    | Type   | Required | Description                              |
+| ------------ | ------ | -------- | ---------------------------------------- |
+| `file`       | string | Yes      | Path to the parent `.vine` file          |
+| `ref_id`     | string | Yes      | ID of the reference node to expand       |
+| `child_file` | string | Yes      | Path to the child `.vine` file to inline |
 
 **Returns**: `'Ref "<ref_id>" expanded.'`
 
@@ -275,11 +275,11 @@ Expand a reference node by inlining an external VINE graph. The ref node is repl
 
 Update the URI of a reference node.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
-| `id` | string | Yes | ID of the reference node |
-| `uri` | string | Yes | New URI for the reference |
+| Parameter | Type   | Required | Description               |
+| --------- | ------ | -------- | ------------------------- |
+| `file`    | string | Yes      | Path to the `.vine` file  |
+| `id`      | string | Yes      | ID of the reference node  |
+| `uri`     | string | Yes      | New URI for the reference |
 
 **Returns**: `'Ref "<id>" URI updated.'`
 
@@ -289,9 +289,9 @@ Update the URI of a reference node.
 
 List all reference nodes in a VINE graph.
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `file` | string | Yes | Path to the `.vine` file |
+| Parameter | Type   | Required | Description              |
+| --------- | ------ | -------- | ------------------------ |
+| `file`    | string | Yes      | Path to the `.vine` file |
 
 **Returns** (JSON): Array of `{ id, shortName, vine, dependencies }` objects.
 
@@ -301,13 +301,13 @@ List all reference nodes in a VINE graph.
 
 File reads and writes are isolated in [io.ts](../packages/mcp/src/io.ts), keeping all tool handlers free of direct filesystem calls:
 
-| Function | Signature | Description |
-| -------- | --------- | ----------- |
-| `readGraph` | `(filePath: string) → VineGraph` | Reads a `.vine` file from disk, parses it via `@bacchus/core`'s `parse()` |
-| `writeGraph` | `(filePath: string, graph: VineGraph) → void` | Serializes via `@bacchus/core`'s `serialize()` and writes to disk |
-| `resolvePath` | `(file: string) → string` | Resolves relative/extensionless paths against cwd and registered roots |
-| `setRoots` | `(dirs: readonly string[]) → void` | Registers additional root directories for path resolution |
-| `getRoots` | `() → readonly string[]` | Returns the current registered roots |
+| Function      | Signature                                     | Description                                                               |
+| ------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `readGraph`   | `(filePath: string) → VineGraph`              | Reads a `.vine` file from disk, parses it via `@bacchus/core`'s `parse()` |
+| `writeGraph`  | `(filePath: string, graph: VineGraph) → void` | Serializes via `@bacchus/core`'s `serialize()` and writes to disk         |
+| `resolvePath` | `(file: string) → string`                     | Resolves relative/extensionless paths against cwd and registered roots    |
+| `setRoots`    | `(dirs: readonly string[]) → void`            | Registers additional root directories for path resolution                 |
+| `getRoots`    | `() → readonly string[]`                      | Returns the current registered roots                                      |
 
 ### Path Resolution Strategy
 
@@ -327,14 +327,14 @@ This boundary enables testing (tool handlers are tested against temp directories
 
 Errors from `@bacchus/core` are caught by each tool handler and returned as MCP error responses (`isError: true`):
 
-| Error Class | Formatting |
-| ----------- | ---------- |
-| `VineParseError` | `"Parse error (line <n>): <message>"` |
-| `VineValidationError` | `"Validation error [<constraint>]: <message>"` |
-| `VineError` | `error.message` directly |
-| Node.js `ENOENT` | `"File not found: <path>"` (with resolved path if different) |
-| Node.js `EACCES` | `"Permission denied: <path>"` |
-| Other errors | `error.message` or `String(error)` |
+| Error Class           | Formatting                                                   |
+| --------------------- | ------------------------------------------------------------ |
+| `VineParseError`      | `"Parse error (line <n>): <message>"`                        |
+| `VineValidationError` | `"Validation error [<constraint>]: <message>"`               |
+| `VineError`           | `error.message` directly                                     |
+| Node.js `ENOENT`      | `"File not found: <path>"` (with resolved path if different) |
+| Node.js `EACCES`      | `"Permission denied: <path>"`                                |
+| Other errors          | `error.message` or `String(error)`                           |
 
 All errors are surfaced as text content with `isError: true`, so AI clients can read and recover from them.
 
@@ -451,8 +451,8 @@ The VS Code package includes [mcp-protocol.test.ts](../packages/vscode/__tests__
 
 ## Dependencies
 
-| Package | Role |
-| ------- | ---- |
-| `@bacchus/core` | VINE parser, serializer, graph queries, and mutations |
+| Package                     | Role                                                          |
+| --------------------------- | ------------------------------------------------------------- |
+| `@bacchus/core`             | VINE parser, serializer, graph queries, and mutations         |
 | `@modelcontextprotocol/sdk` | MCP server framework (JSON-RPC, tool registration, transport) |
-| `zod` | Input schema validation for tool parameters |
+| `zod`                       | Input schema validation for tool parameters                   |

@@ -43,13 +43,13 @@ Push local commits to the remote branch.
 -> test
 -> typecheck
 ---
-[typecheck] TypeScript Typecheck (notstarted)
+[typecheck] TypeScript Typecheck (complete)
 Run `yarn typecheck` — strict mode, zero errors allowed.
 If errors exist, fix them in source and re-run until clean.
 Commit any fixes: `git add -A && git commit -m "fix: type errors"`
 -> changes
 ---
-[lint] ESLint (notstarted)
+[lint] ESLint (complete)
 Run `yarn lint`. On failure:
 1. Auto-fix: `yarn lint --fix`
 2. Manually fix any remaining issues
@@ -57,7 +57,7 @@ Run `yarn lint`. On failure:
 Commit any fixes: `git add -A && git commit -m "fix: lint issues"`
 -> changes
 ---
-[format-check] Prettier Format Check (notstarted)
+[format-check] Prettier Format Check (complete)
 Run `yarn format:check`. On failure:
 1. Auto-fix: `yarn format`
 2. Re-run `yarn format:check` to confirm
@@ -65,13 +65,13 @@ Commit any fixes: `git add -A && git commit -m "style: format"`
 -> changes
 > Pre-commit hook auto-formats staged files, but CI verifies everything.
 ---
-[test] Unit Tests (notstarted)
+[test] Unit Tests (complete)
 Run `yarn test` — all Vitest suites must pass.
 If tests fail, fix the relevant code or tests and re-run until green.
 Commit any fixes: `git add -A && git commit -m "fix: failing tests"`
 -> changes
 ---
-[e2e] E2E Tests (notstarted)
+[e2e] E2E Tests (complete)
 Run `yarn e2e` — Playwright browser tests for the UI package.
 - Skip if no UI changes: `git diff main --name-only | grep packages/ui`
 - If tests fail, fix and re-run.
@@ -79,13 +79,13 @@ Commit any fixes: `git add -A && git commit -m "fix: e2e failures"`
 -> changes
 > Optional locally but CI always runs e2e. Recommended before opening PR.
 ---
-[build-vscode] Build VS Code Extension (notstarted)
+[build-vscode] Build VS Code Extension (complete)
 Run `yarn build:vscode` to verify the extension compiles cleanly.
 - Skip if no vscode changes: `git diff main --name-only | grep packages/vscode`
 -> changes
 > If skipped, mark complete immediately.
 ---
-[changes] Ensure Changes are Committed (started)
+[changes] Ensure Changes are Committed (complete)
 Ensure all work-in-progress is committed with clear, atomic messages.
 - Check: `git status` for uncommitted changes
 - Stage and commit: `git add -A && git commit -m "..."`

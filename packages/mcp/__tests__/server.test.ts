@@ -28,7 +28,14 @@ import {
 } from '@bacchus/core';
 import type { ConcreteTask, RefTask } from '@bacchus/core';
 
-import { readGraph, writeGraph, readFileContent, resolvePath, setRoots, getRoots } from '../src/io.js';
+import {
+  readGraph,
+  writeGraph,
+  readFileContent,
+  resolvePath,
+  setRoots,
+  getRoots,
+} from '../src/io.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -244,7 +251,10 @@ describe('mutation operations', () => {
     const dir = makeTempDir();
     const file = writeSample(dir);
     let graph = readGraph(file);
-    graph = updateTask(graph, 'child-a', { shortName: 'Updated A', description: 'New desc.' });
+    graph = updateTask(graph, 'child-a', {
+      shortName: 'Updated A',
+      description: 'New desc.',
+    });
     writeGraph(file, graph);
     const reloaded = readGraph(file);
     const task = getTask(reloaded, 'child-a');

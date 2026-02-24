@@ -367,7 +367,13 @@ export { serialize } from './serializer.js';
 export { validate } from './validator.js';
 
 // Graph Queries
-export { getTask, getRoot, getRootId, getDependencies, getDependants } from './graph.js';
+export {
+  getTask,
+  getRoot,
+  getRootId,
+  getDependencies,
+  getDependants,
+} from './graph.js';
 
 // Types & Type Guards
 export { isVineRef, isConcreteTask, getSpriteUri } from './types.js';

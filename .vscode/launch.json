@@ -12,9 +12,7 @@
         "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode",
         "${workspaceFolder}/packages/vscode/test-workspace"
       ],
-      "outFiles": [
-        "${workspaceFolder}/packages/vscode/dist/**/*.js"
-      ],
+      "outFiles": ["${workspaceFolder}/packages/vscode/dist/**/*.js"],
       "sourceMaps": true,
       "preLaunchTask": "watch:vscode"
     }

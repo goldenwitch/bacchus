@@ -30,7 +30,14 @@ import {
 } from '@bacchus/core';
 import type { Task, RefTask, Status } from '@bacchus/core';
 
-import { readGraph, writeGraph, readFileContent, resolvePath, setRoots, getRoots } from './io.js';
+import {
+  readGraph,
+  writeGraph,
+  readFileContent,
+  resolvePath,
+  setRoots,
+  getRoots,
+} from './io.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -419,7 +426,7 @@ export async function startServer(): Promise<void> {
     'vine_update_task',
     {
       description:
-        'Update a task\'s name, description, and/or decisions list, then write back to disk. Use this to rename tasks, refine descriptions, or record decisions (> lines). Does NOT change status — use vine_set_status for that. Pass only the fields you want to change; omitted fields are left untouched.',
+        "Update a task's name, description, and/or decisions list, then write back to disk. Use this to rename tasks, refine descriptions, or record decisions (> lines). Does NOT change status — use vine_set_status for that. Pass only the fields you want to change; omitted fields are left untouched.",
       inputSchema: {
         file: z.string(),
         id: z.string(),

@@ -1,4 +1,10 @@
-import type { ConcreteTask, RefTask, Status, Task, VineGraph } from './types.js';
+import type {
+  ConcreteTask,
+  RefTask,
+  Status,
+  Task,
+  VineGraph,
+} from './types.js';
 import { isVineRef, isConcreteTask } from './types.js';
 import { getTask, getDependencies, getDependants } from './graph.js';
 import { VineError } from './errors.js';
@@ -285,9 +291,7 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
     throw new VineError('Cannot get actionable tasks: order is empty');
   }
   const root = getTask(graph, rootId);
-  const rootStatus: Status | 'ref' = isConcreteTask(root)
-    ? root.status
-    : 'ref';
+  const rootStatus: Status | 'ref' = isConcreteTask(root) ? root.status : 'ref';
 
   const total = graph.tasks.size;
   const percentage = total > 0 ? Math.round((completeCount / total) * 100) : 0;
