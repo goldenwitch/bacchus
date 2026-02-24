@@ -25,9 +25,9 @@ describe('pr-ready.vine', () => {
     expect(() => validate(graph)).not.toThrow();
   });
 
-  it('has expected node count (13 tasks)', () => {
+  it('has expected node count (12 tasks)', () => {
     const graph = parse(vineContent);
-    expect(graph.tasks.size).toBe(13);
+    expect(graph.tasks.size).toBe(12);
   });
 
   it('has correct root node', () => {
@@ -76,11 +76,10 @@ describe('pr-ready.vine', () => {
     expect(branch.dependencies.length).toBe(0);
   });
 
-  it('all tasks have valid statuses', () => {
+  it('all tasks are notstarted', () => {
     const graph = parse(vineContent);
-    const validStatuses = ['notstarted', 'planning', 'started', 'reviewing', 'complete', 'blocked'];
     for (const [id, task] of graph.tasks) {
-      expect(validStatuses, `${id} should have a valid status`).toContain(task.status);
+      expect(task.status, `${id} should be notstarted`).toBe('notstarted');
     }
   });
 
@@ -94,6 +93,10 @@ describe('pr-ready.vine', () => {
       0,
     );
     expect(graph.tasks.get('ci-green')!.decisions.length).toBeGreaterThan(0);
+    // request-review was removed — pr-ready depends only on ci-green
+    expect(graph.tasks.get('pr-ready')!.dependencies).not.toContain(
+      'request-review',
+    );
   });
 
   it('round-trips through serialize → parse', () => {
