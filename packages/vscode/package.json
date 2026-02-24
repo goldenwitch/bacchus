@@ -2,7 +2,7 @@
   "name": "bacchus-vine",
   "displayName": "Bacchus VINE",
   "description": "VS Code extension wiring VINE MCP tools for AI assistants",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "publisher": "goldenwitch",
   "license": "MIT",

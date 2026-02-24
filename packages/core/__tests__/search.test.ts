@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '../src/parser.js';
 import { VineError } from '../src/errors.js';
+import { setStatus } from '../src/mutations.js';
 import {
   filterByStatus,
   searchTasks,
@@ -8,6 +9,7 @@ import {
   getRefs,
   getDescendants,
   getSummary,
+  getActionableTasks,
 } from '../src/search.js';
 
 const VINE_TEXT = [
@@ -256,5 +258,249 @@ describe('getSummary', () => {
     expect(summary.byStatus.complete).toBe(1);
     // ref node has undefined status — should not crash or pollute counts
     expect(Number.isNaN(summary.byStatus.notstarted)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getActionableTasks
+// ---------------------------------------------------------------------------
+
+/**
+ * Diamond-shaped graph used across getActionableTasks tests:
+ *
+ *   root (notstarted)
+ *     -> left  (notstarted)
+ *     -> right (notstarted)
+ *   left  -> leaf (notstarted)
+ *   right -> leaf (notstarted)
+ *   leaf  (notstarted)  ← the only starting leaf
+ */
+const DIAMOND_VINE = [
+  'vine 1.0.0',
+  '---',
+  '[root] Root Task (notstarted)',
+  'The root task.',
+  '-> left',
+  '-> right',
+  '---',
+  '[left] Left Branch (notstarted)',
+  '-> leaf',
+  '---',
+  '[right] Right Branch (notstarted)',
+  '-> leaf',
+  '---',
+  '[leaf] Leaf Task (notstarted)',
+  'Starting point.',
+].join('\n');
+
+describe('getActionableTasks', () => {
+  it('returns only leaf tasks as ready on a fresh graph', () => {
+    const g = parse(DIAMOND_VINE);
+    const result = getActionableTasks(g);
+
+    expect(result.ready.map((t) => t.id)).toEqual(['leaf']);
+    expect(result.completable).toEqual([]);
+    expect(result.expandable).toEqual([]);
+    expect(result.progress.complete).toBe(0);
+    expect(result.progress.percentage).toBe(0);
+  });
+
+  it('unblocks dependants when leaf is complete', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'complete');
+
+    const result = getActionableTasks(g);
+    expect(result.ready.map((t) => t.id)).toEqual(['left', 'right']);
+    expect(result.progress.complete).toBe(1);
+  });
+
+  it('treats reviewing as satisfying a dependency', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'reviewing');
+
+    const result = getActionableTasks(g);
+    // left and right should still be ready since reviewing satisfies deps
+    expect(result.ready.map((t) => t.id)).toEqual(['left', 'right']);
+  });
+
+  it('reviewing task becomes completable when a dependant starts', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'reviewing');
+    g = setStatus(g, 'left', 'started');
+
+    const result = getActionableTasks(g);
+
+    // leaf is reviewing and left (a dependant) is started → leaf is completable
+    expect(result.completable.map((t) => t.id)).toEqual(['leaf']);
+    // right is still ready (its deps are satisfied and it's notstarted)
+    expect(result.ready.map((t) => t.id)).toEqual(['right']);
+  });
+
+  it('fully complete graph returns empty lists', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'complete');
+    g = setStatus(g, 'left', 'complete');
+    g = setStatus(g, 'right', 'complete');
+    g = setStatus(g, 'root', 'complete');
+
+    const result = getActionableTasks(g);
+
+    expect(result.ready).toEqual([]);
+    expect(result.completable).toEqual([]);
+    expect(result.expandable).toEqual([]);
+    expect(result.progress.complete).toBe(4);
+    expect(result.progress.percentage).toBe(100);
+    expect(result.progress.rootStatus).toBe('complete');
+  });
+
+  it('started tasks are not in ready list', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'started');
+
+    const result = getActionableTasks(g);
+    // leaf is started, not in ready (only notstarted/planning qualify)
+    expect(result.ready).toEqual([]);
+  });
+
+  it('blocked tasks are not in ready list', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'blocked');
+
+    const result = getActionableTasks(g);
+    expect(result.ready).toEqual([]);
+  });
+
+  it('planning tasks on the frontier appear in ready', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'planning');
+
+    const result = getActionableTasks(g);
+    expect(result.ready.map((t) => t.id)).toEqual(['leaf']);
+  });
+
+  it('ref nodes on frontier appear in expandable', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (notstarted)',
+      '-> ext',
+      '---',
+      'ref [ext] Sub Project (./sub.vine)',
+    ].join('\n');
+    const g = parse(refVine);
+    const result = getActionableTasks(g);
+
+    expect(result.expandable.map((t) => t.id)).toEqual(['ext']);
+    // root is not ready because it depends on a ref (unsatisfied)
+    expect(result.ready).toEqual([]);
+  });
+
+  it('ref nodes with unsatisfied deps are not expandable', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (notstarted)',
+      '-> ext',
+      '---',
+      'ref [ext] Sub Project (./sub.vine)',
+      '-> blocker',
+      '---',
+      '[blocker] Blocker (notstarted)',
+    ].join('\n');
+    const g = parse(refVine);
+    const result = getActionableTasks(g);
+
+    // blocker is a leaf and ready; ext depends on blocker (notstarted) so not expandable
+    expect(result.ready.map((t) => t.id)).toEqual(['blocker']);
+    expect(result.expandable).toEqual([]);
+  });
+
+  it('progress tracks status breakdown correctly', () => {
+    let g = parse(DIAMOND_VINE);
+    g = setStatus(g, 'leaf', 'complete');
+    g = setStatus(g, 'left', 'started');
+    g = setStatus(g, 'right', 'reviewing');
+
+    const result = getActionableTasks(g);
+    expect(result.progress.byStatus).toEqual({
+      complete: 1,
+      started: 1,
+      reviewing: 1,
+      planning: 0,
+      notstarted: 1,
+      blocked: 0,
+    });
+    expect(result.progress.percentage).toBe(25);
+  });
+
+  it('works with the pr-ready shaped graph', () => {
+    // Simulate the pr-ready.vine shape: branch is the only leaf
+    const prVine = [
+      'vine 1.2.0',
+      'title: PR Readiness',
+      '---',
+      '[pr-ready] PR Ready (notstarted)',
+      '-> review',
+      '-> ci-green',
+      '---',
+      '[review] Review (notstarted)',
+      '-> ci-green',
+      '---',
+      '[ci-green] CI Green (notstarted)',
+      '-> open-pr',
+      '---',
+      '[open-pr] Open PR (notstarted)',
+      '-> typecheck',
+      '-> lint',
+      '-> test',
+      '---',
+      '[typecheck] Typecheck (notstarted)',
+      '-> changes',
+      '---',
+      '[lint] Lint (notstarted)',
+      '-> changes',
+      '---',
+      '[test] Tests (notstarted)',
+      '-> changes',
+      '---',
+      '[changes] Implement Changes (notstarted)',
+      '-> branch',
+      '---',
+      '[branch] Create Branch (notstarted)',
+    ].join('\n');
+
+    // Fresh: only branch is ready
+    let g = parse(prVine);
+    let result = getActionableTasks(g);
+    expect(result.ready.map((t) => t.id)).toEqual(['branch']);
+
+    // Complete branch → changes is ready
+    g = setStatus(g, 'branch', 'complete');
+    result = getActionableTasks(g);
+    expect(result.ready.map((t) => t.id)).toEqual(['changes']);
+
+    // Complete changes → parallel CI tasks ready
+    g = setStatus(g, 'changes', 'complete');
+    result = getActionableTasks(g);
+    expect(result.ready.map((t) => t.id)).toEqual([
+      'typecheck',
+      'lint',
+      'test',
+    ]);
+
+    // All CI tasks reviewing, open-pr dependant starts → CI completable
+    g = setStatus(g, 'typecheck', 'reviewing');
+    g = setStatus(g, 'lint', 'reviewing');
+    g = setStatus(g, 'test', 'reviewing');
+    result = getActionableTasks(g);
+    expect(result.ready.map((t) => t.id)).toEqual(['open-pr']);
+
+    g = setStatus(g, 'open-pr', 'started');
+    result = getActionableTasks(g);
+    expect(result.completable.map((t) => t.id)).toEqual([
+      'typecheck',
+      'lint',
+      'test',
+    ]);
   });
 });

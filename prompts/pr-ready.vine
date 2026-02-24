@@ -1,0 +1,100 @@
+vine 1.2.0
+title: PR Readiness Checklist
+---
+[pr-ready] PR Ready for Review (notstarted)
+PR is open, CI is green, and review has been requested.
+Verify: `gh pr view --json state,reviewRequests,statusCheckRollup`.
+-> ci-green
+-> request-review
+---
+[request-review] Request Review (notstarted)
+Ensure the PR is marked ready and reviewers are assigned.
+- If draft, convert: `gh pr ready`
+- Request reviewers: `gh pr edit --add-reviewer <handle>`
+- Verify: `gh pr view --json isDraft,reviewRequests`
+-> ci-green
+> If already marked ready with reviewers assigned, this is a no-op.
+---
+[ci-green] CI Pipeline Green (notstarted)
+All CI checks pass on the PR.
+- Monitor: `gh pr checks --watch --fail-fast`
+- On failure, inspect: `gh run view <run-id> --log-failed`
+- Fix failures locally, commit, push — CI re-triggers automatically.
+-> open-pr
+> CI triggers automatically on push to PR branch.
+---
+[open-pr] Open Pull Request (notstarted)
+Ensure a PR exists for the current branch against main.
+- Check: `gh pr view` (exits 0 if a PR already exists)
+- Create: `gh pr create --fill` (or with explicit --title/--body)
+- Update: `gh pr edit --title/--body` if description needs changes
+-> push
+> If a PR already exists and looks correct, this is a no-op.
+---
+[push] Push to Remote (notstarted)
+Push local commits to the remote branch.
+- Push: `git push --set-upstream origin HEAD`
+- If already up to date, this is a no-op.
+- Verify: `git log origin/HEAD..HEAD` should be empty after push.
+-> build-vscode
+-> e2e
+-> format-check
+-> lint
+-> test
+-> typecheck
+---
+[typecheck] TypeScript Typecheck (notstarted)
+Run `yarn typecheck` — strict mode, zero errors allowed.
+If errors exist, fix them in source and re-run until clean.
+Commit any fixes: `git add -A && git commit -m "fix: type errors"`
+-> changes
+---
+[lint] ESLint (notstarted)
+Run `yarn lint`. On failure:
+1. Auto-fix: `yarn lint --fix`
+2. Manually fix any remaining issues
+3. Re-run `yarn lint` to confirm zero warnings/errors
+Commit any fixes: `git add -A && git commit -m "fix: lint issues"`
+-> changes
+---
+[format-check] Prettier Format Check (notstarted)
+Run `yarn format:check`. On failure:
+1. Auto-fix: `yarn format`
+2. Re-run `yarn format:check` to confirm
+Commit any fixes: `git add -A && git commit -m "style: format"`
+-> changes
+> Pre-commit hook auto-formats staged files, but CI verifies everything.
+---
+[test] Unit Tests (notstarted)
+Run `yarn test` — all Vitest suites must pass.
+If tests fail, fix the relevant code or tests and re-run until green.
+Commit any fixes: `git add -A && git commit -m "fix: failing tests"`
+-> changes
+---
+[e2e] E2E Tests (notstarted)
+Run `yarn e2e` — Playwright browser tests for the UI package.
+- Skip if no UI changes: `git diff main --name-only | grep packages/ui`
+- If tests fail, fix and re-run.
+Commit any fixes: `git add -A && git commit -m "fix: e2e failures"`
+-> changes
+> Optional locally but CI always runs e2e. Recommended before opening PR.
+---
+[build-vscode] Build VS Code Extension (notstarted)
+Run `yarn build:vscode` to verify the extension compiles cleanly.
+- Skip if no vscode changes: `git diff main --name-only | grep packages/vscode`
+-> changes
+> If skipped, mark complete immediately.
+---
+[changes] Ensure Changes are Committed (started)
+Ensure all work-in-progress is committed with clear, atomic messages.
+- Check: `git status` for uncommitted changes
+- Stage and commit: `git add -A && git commit -m "..."`
+- If working tree is clean, this is a no-op.
+-> branch
+---
+[branch] Ensure Feature Branch (complete)
+Ensure we're on a feature branch, not main/master.
+- Check: `git branch --show-current`
+- If on main: `git checkout -b <descriptive-name>`
+- If already on a feature branch, rebase onto latest main:
+  `git fetch origin && git rebase origin/main`

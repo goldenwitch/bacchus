@@ -77,16 +77,17 @@ type ToolResult = { content: ContentItem[]; isError?: boolean };
 // ---------------------------------------------------------------------------
 
 describe('MCP protocol — tools/list', () => {
-  it('returns all 16 tools', async () => {
+  it('returns all 17 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name);
-    expect(names).toHaveLength(16);
+    expect(names).toHaveLength(17);
     expect(names).toContain('vine_validate');
     expect(names).toContain('vine_show');
     expect(names).toContain('vine_list');
     expect(names).toContain('vine_get_task');
     expect(names).toContain('vine_get_descendants');
     expect(names).toContain('vine_search');
+    expect(names).toContain('vine_next_tasks');
     expect(names).toContain('vine_add_task');
     expect(names).toContain('vine_remove_task');
     expect(names).toContain('vine_set_status');

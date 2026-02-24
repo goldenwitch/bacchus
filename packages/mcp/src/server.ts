@@ -10,6 +10,7 @@ import {
   getTask,
   getDescendants,
   getSummary,
+  getActionableTasks,
   filterByStatus,
   searchTasks,
   addTask,
@@ -278,6 +279,48 @@ export async function startServer(): Promise<void> {
   );
 
   // ── Mutation tools ──────────────────────────────────────────────────
+
+  server.registerTool(
+    'vine_next_tasks',
+    {
+      description:
+        'Analyse the current execution state of a .vine graph and return the frontier of actionable work. Returns three lists: (1) ready_to_start — tasks whose dependencies are all satisfied and whose status is notstarted or planning, ready to be picked up; (2) ready_to_complete — tasks in reviewing status where at least one dependant has started consuming their output, safe to mark complete; (3) needs_expansion — ref nodes on the frontier that must be expanded (via vine_expand_ref) before their inner tasks become visible. Also returns a progress snapshot (total, complete, percentage, root status, per-status breakdown). Call this tool in a loop: act on the results using mutation tools (vine_set_status, vine_update_task, vine_expand_ref), then call vine_next_tasks again to get the next frontier. The loop terminates when the root task is complete.',
+      inputSchema: { file: z.string() },
+    },
+    async ({ file }) => {
+      await fetchRoots(server);
+      try {
+        const graph = readGraph(file);
+        const { ready, completable, expandable, progress } =
+          getActionableTasks(graph);
+
+        const result = {
+          ready_to_start: ready.map(formatTask),
+          ready_to_complete: completable.map(formatTask),
+          needs_expansion: expandable.map((r) => ({
+            id: r.id,
+            shortName: r.shortName,
+            vine: r.vine,
+            dependencies: [...r.dependencies],
+          })),
+          progress: {
+            total: progress.total,
+            complete: progress.complete,
+            percentage: progress.percentage,
+            root_id: progress.rootId,
+            root_status: progress.rootStatus,
+            by_status: progress.byStatus,
+          },
+        };
+
+        return ok(JSON.stringify(result, null, 2));
+      } catch (error: unknown) {
+        return fail(formatError(error, file));
+      }
+    },
+  );
+
+  // ── Write tools ─────────────────────────────────────────────────────
 
   server.registerTool(
     'vine_add_task',

@@ -53,7 +53,7 @@ The **first block** is always the root of the graph.
 ## 2. Open the file in VS Code
 
 With the Bacchus VINE extension installed, simply open any `.vine` file. The
-extension registers an MCP server that exposes 13 tools to your AI assistant
+extension registers an MCP server that exposes 17 tools to your AI assistant
 (GitHub Copilot, Claude, etc.), letting it read and modify the graph on your
 behalf.
 
@@ -75,6 +75,7 @@ using natural language. The assistant will call the right tools automatically.
 | Inspect one task | *"Tell me about the frontend task"* | `vine_get_task` |
 | See what's downstream | *"What depends on the backend task?"* | `vine_get_descendants` |
 | Check for errors | *"Is my vine file valid?"* | `vine_validate` |
+| See the execution frontier | *"What tasks can I start next?"* | `vine_next_tasks` |
 
 ### Work — change the graph
 
@@ -86,6 +87,15 @@ using natural language. The assistant will call the right tools automatically.
 | Rename / re-describe | *"Rename frontend to 'Dashboard UI'"* | `vine_update_task` |
 | Add a dependency | *"Make deploy depend on frontend too"* | `vine_add_dependency` |
 | Remove a dependency | *"Remove the dependency from qa to frontend"* | `vine_remove_dependency` |
+
+### References — compose graphs from external `.vine` files
+
+| What you want | What to say | Tool the assistant calls |
+|---|---|---|
+| Add a reference | *"Add a ref to infrastructure.vine"* | `vine_add_ref` |
+| Expand a reference | *"Inline the infra ref"* | `vine_expand_ref` |
+| Update a ref's URI | *"Point the infra ref to infra-v2.vine"* | `vine_update_ref_uri` |
+| List all refs | *"Which refs does this graph have?"* | `vine_get_refs` |
 
 > **Tip:** Every mutation tool writes the file back to disk automatically —
 > your `.vine` file stays in sync.

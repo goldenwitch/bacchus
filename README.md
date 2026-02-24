@@ -158,7 +158,7 @@ node packages/mcp/dist/server.js
 node packages/mcp/dist/server.js --cwd /path/to/project
 ```
 
-### Tools (16)
+### Tools (17)
 
 | Category      | Tool                     | Description                               |
 | ------------- | ------------------------ | ----------------------------------------- |
@@ -168,6 +168,7 @@ node packages/mcp/dist/server.js --cwd /path/to/project
 |               | `vine_get_task`          | Full detail for one task by ID.           |
 |               | `vine_get_descendants`   | Transitive downstream subtree.            |
 |               | `vine_search`            | Case-insensitive text search.             |
+| **Execution** | `vine_next_tasks`        | Execution frontier: ready, completable, expandable tasks. |
 | **Mutations** | `vine_add_task`          | Add a task.                               |
 |               | `vine_remove_task`       | Remove a task and clean up edges.         |
 |               | `vine_set_status`        | Update a task's status.                   |
@@ -199,7 +200,7 @@ VS Code extension that bundles the VINE MCP server for automatic tool discovery 
 yarn workspace bacchus-vine package
 
 # Install in VS Code
-code --install-extension packages/vscode/bacchus-vine-0.1.0.vsix
+code --install-extension packages/vscode/bacchus-vine-1.0.0.vsix
 ```
 
 Requires VS Code `^1.99.0`. The extension activates automatically on startup.

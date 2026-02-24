@@ -37,7 +37,9 @@ All tools from `@bacchus/mcp` are automatically available through this provider:
 | Category  | Tools |
 | --------- | ----- |
 | Read-only | `vine_validate`, `vine_show`, `vine_list`, `vine_get_task`, `vine_get_descendants`, `vine_search` |
+| Execution | `vine_next_tasks` |
 | Mutations | `vine_add_task`, `vine_remove_task`, `vine_set_status`, `vine_update_task`, `vine_add_dependency`, `vine_remove_dependency` |
+| Ref nodes | `vine_add_ref`, `vine_expand_ref`, `vine_update_ref_uri`, `vine_get_refs` |
 
 See [MCP.md](MCP.md) for full tool documentation.
 
@@ -58,7 +60,7 @@ The extension is not published to the VS Code Marketplace yet. Install from a `.
 yarn workspace bacchus-vine package
 
 # Install in VS Code
-code --install-extension packages/vscode/bacchus-vine-0.1.0.vsix
+code --install-extension packages/vscode/bacchus-vine-1.0.0.vsix
 ```
 
 The extension activates automatically on startup — no manual steps needed.
@@ -112,7 +114,7 @@ The esbuild configuration ([esbuild.mjs](../packages/vscode/esbuild.mjs)) produc
 [mcp-protocol.test.ts](../packages/vscode/__tests__/mcp-protocol.test.ts) — end-to-end communication with the bundled server over stdio:
 
 - Builds `dist/server.js` if needed, then spawns it via `StdioClientTransport`
-- Verifies `tools/list` returns all 12 tools
+- Verifies `tools/list` returns all 17 tools
 - Exercises read-only tools (`vine_validate`, `vine_show`, `vine_list`) against temp `.vine` files
 - Exercises mutation tools (`vine_set_status`) and verifies the file is modified on disk
 - Tests error responses for nonexistent files

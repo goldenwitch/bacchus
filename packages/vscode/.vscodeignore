@@ -6,4 +6,5 @@ tsconfig.json
 esbuild.mjs
 runIntegrationTests.mjs
 *.map
+*.vsix
 .gitignore

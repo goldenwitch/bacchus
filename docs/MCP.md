@@ -22,7 +22,7 @@ The `--cwd` flag changes the process working directory and registers it as a roo
 
 ## Tool Reference
 
-The server exposes 12 tools. All tools accept a `file` parameter (path to a `.vine` file, absolute or relative to cwd/registered roots). Relative paths without an extension are automatically resolved with `.vine` appended.
+The server exposes 17 tools. All tools accept a `file` parameter (path to a `.vine` file, absolute or relative to cwd/registered roots). Relative paths without an extension are automatically resolved with `.vine` appended.
 
 ### Read-Only Tools
 
@@ -100,6 +100,27 @@ Case-insensitive text search across task names and descriptions. Returns matchin
 | `query` | string | Yes | Search string |
 
 **Returns**: JSON array of matching task objects.
+
+---
+
+### Execution Tools
+
+#### `vine_next_tasks`
+
+Analyse the current execution state of a `.vine` graph and return the frontier of actionable work. Designed for iterative execution loops: call this → act on results → call again.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `file` | string | Yes | Path to the `.vine` file |
+
+**Returns**: JSON object with four sections:
+
+| Section | Description |
+| ------- | ----------- |
+| `ready_to_start` | Tasks whose dependencies are all satisfied (`complete` or `reviewing`) and whose status is `notstarted` or `planning`. Pick these up in parallel. |
+| `ready_to_complete` | Tasks in `reviewing` status where at least one dependant has started consuming their output (`started`, `reviewing`, or `complete`). Safe to mark `complete`. |
+| `needs_expansion` | Ref nodes on the frontier whose dependencies are all satisfied. Must be expanded via `vine_expand_ref` before their inner tasks become visible. |
+| `progress` | Aggregate stats: `total`, `complete`, `percentage`, `root_id`, `root_status`, `by_status` (per-status counts). |
 
 ---
 
@@ -192,6 +213,87 @@ Remove a dependency edge: `taskId` no longer depends on `depId`. Only removes th
 | `depId` | string | Yes | Task being un-depended |
 
 **Returns**: `'Dependency removed: "<taskId>" no longer depends on "<depId>".'`
+
+---
+
+### Execution Tools
+
+#### `vine_next_tasks`
+
+Analyse the current execution state of a `.vine` graph and return the frontier of actionable work. Returns three lists plus a progress snapshot. Call this tool in a loop: act on the results using mutation tools, then call `vine_next_tasks` again. The loop terminates when the root task is complete.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `file` | string | Yes | Path to the `.vine` file |
+
+**Returns** (JSON):
+
+| Field | Description |
+| ----- | ----------- |
+| `ready_to_start` | Tasks whose dependencies are all satisfied (`notstarted` or `planning`) — pick these up |
+| `ready_to_complete` | Tasks in `reviewing` where a dependant has started consuming output — safe to mark `complete` |
+| `needs_expansion` | Ref nodes on the frontier that must be expanded via `vine_expand_ref` before inner tasks are visible |
+| `progress` | `{ total, complete, percentage, root_id, root_status, by_status }` |
+
+---
+
+### Ref Node Tools
+
+#### `vine_add_ref`
+
+Add a reference node to a VINE graph. Reference nodes are proxies for external `.vine` files.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `file` | string | Yes | Path to the `.vine` file |
+| `id` | string | Yes | Unique ID |
+| `name` | string | Yes | Display name |
+| `vine` | string | Yes | URI to the external `.vine` file |
+| `description` | string | No | Description text |
+| `depends_on` | string[] | No | IDs of dependencies |
+| `decisions` | string[] | No | Decision lines |
+
+**Returns**: `'Ref "<id>" added.'`
+
+---
+
+#### `vine_expand_ref`
+
+Expand a reference node by inlining an external VINE graph. The ref node is replaced with the child graph's content.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `file` | string | Yes | Path to the parent `.vine` file |
+| `ref_id` | string | Yes | ID of the reference node to expand |
+| `child_file` | string | Yes | Path to the child `.vine` file to inline |
+
+**Returns**: `'Ref "<ref_id>" expanded.'`
+
+---
+
+#### `vine_update_ref_uri`
+
+Update the URI of a reference node.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `file` | string | Yes | Path to the `.vine` file |
+| `id` | string | Yes | ID of the reference node |
+| `uri` | string | Yes | New URI for the reference |
+
+**Returns**: `'Ref "<id>" URI updated.'`
+
+---
+
+#### `vine_get_refs`
+
+List all reference nodes in a VINE graph.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `file` | string | Yes | Path to the `.vine` file |
+
+**Returns** (JSON): Array of `{ id, shortName, vine, dependencies }` objects.
 
 ---
 
@@ -319,14 +421,17 @@ The VS Code package includes [mcp-protocol.test.ts](../packages/vscode/__tests__
 │                                              │
 │  server.ts                                   │
 │    ├─ McpServer (@modelcontextprotocol/sdk)  │
-│    ├─ Tool handlers (12 tools)               │
+│    ├─ Tool handlers (17 tools)               │
 │    │   ├─ Read: validate, show, list,        │
 │    │   │        get_task, get_descendants,    │
 │    │   │        search                        │
-│    │   └─ Write: add_task, remove_task,      │
-│    │            set_status, update_task,      │
-│    │            add_dependency,               │
-│    │            remove_dependency             │
+│    │   ├─ Exec: next_tasks                    │
+│    │   ├─ Write: add_task, remove_task,      │
+│    │   │         set_status, update_task,     │
+│    │   │         add_dependency,              │
+│    │   │         remove_dependency            │
+│    │   └─ Ref: add_ref, expand_ref,          │
+│    │          update_ref_uri, get_refs        │
 │    └─ MCP roots discovery                    │
 │                                              │
 │  io.ts                                       │

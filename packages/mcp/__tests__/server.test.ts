@@ -8,6 +8,7 @@ import {
   getTask,
   getDescendants,
   getSummary,
+  getActionableTasks,
   filterByStatus,
   searchTasks,
   addTask,
@@ -601,5 +602,89 @@ describe('ref operations', () => {
     expect(expandedTask.kind).toBe('task');
     // Child graph non-root nodes should be inlined
     expect(reloaded.tasks.has('ext-ref/child-leaf')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// vine_next_tasks (getActionableTasks via I/O layer)
+// ---------------------------------------------------------------------------
+
+describe('vine_next_tasks', () => {
+  it('returns leaves as ready on a fresh graph', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    const graph = readGraph(file);
+    const result = getActionableTasks(graph);
+
+    // 'leaf' is the only task with no dependencies
+    expect(result.ready.map((t) => t.id)).toEqual(['leaf']);
+    expect(result.completable).toEqual([]);
+    expect(result.expandable).toEqual([]);
+  });
+
+  it('unblocks dependants when a leaf is set to complete', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+
+    let graph = readGraph(file);
+    graph = setStatus(graph, 'leaf', 'complete');
+    writeGraph(file, graph);
+
+    const reloaded = readGraph(file);
+    const result = getActionableTasks(reloaded);
+
+    // child-a and child-b both depend only on leaf (now complete)
+    // child-a is "complete" already in the fixture → not in ready
+    // child-b is "planning" → should be in ready
+    expect(result.ready.map((t) => t.id)).toEqual(['child-b']);
+  });
+
+  it('reviewing task appears in completable when dependant starts', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+
+    let graph = readGraph(file);
+    graph = setStatus(graph, 'leaf', 'reviewing');
+    graph = setStatus(graph, 'child-a', 'started');
+    writeGraph(file, graph);
+
+    const reloaded = readGraph(file);
+    const result = getActionableTasks(reloaded);
+
+    expect(result.completable.map((t) => t.id)).toEqual(['leaf']);
+  });
+
+  it('ref nodes on frontier appear in needs_expansion', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'ref.vine');
+    writeFileSync(file, REF_VINE, 'utf-8');
+
+    const graph = readGraph(file);
+    const result = getActionableTasks(graph);
+
+    // ext-ref depends on leaf (notstarted) → not on frontier yet
+    // leaf has no deps → ready
+    expect(result.ready.map((t) => t.id)).toEqual(['leaf']);
+    expect(result.expandable).toEqual([]);
+
+    // Now complete leaf → ext-ref should become expandable
+    const updated = setStatus(graph, 'leaf', 'complete');
+    writeGraph(file, updated);
+    const reloaded = readGraph(file);
+    const result2 = getActionableTasks(reloaded);
+    expect(result2.expandable.map((t) => t.id)).toEqual(['ext-ref']);
+  });
+
+  it('progress reflects file state after mutations', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+
+    const g = readGraph(file);
+    // Fixture statuses: root=started, child-a=complete, child-b=planning, leaf=notstarted
+    const result = getActionableTasks(g);
+    expect(result.progress.total).toBe(4);
+    expect(result.progress.complete).toBe(1); // child-a
+    expect(result.progress.percentage).toBe(25);
+    expect(result.progress.rootStatus).toBe('started');
   });
 });
