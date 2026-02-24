@@ -37,10 +37,12 @@ export {
 
 // Mutations
 export {
+  addRef,
   addTask,
   removeTask,
   setStatus,
   updateTask,
+  updateRefUri,
   addDependency,
   removeDependency,
 } from './mutations.js';
@@ -54,6 +56,7 @@ export {
   filterByStatus,
   searchTasks,
   getLeaves,
+  getRefs,
   getDescendants,
   getSummary,
 } from './search.js';

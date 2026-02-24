@@ -1,6 +1,6 @@
 # VINE TypeScript Library — Design Specification
 
-Version: 1.1.0
+Version: 1.2.0
 Package: `@bacchus/core` (`packages/core/`)
 
 ## Overview
@@ -41,7 +41,7 @@ type AttachmentClass = 'artifact' | 'guidance' | 'file';
 
 interface Attachment {
   readonly class: AttachmentClass;
-  readonly mimeType: string;
+  readonly mime: string;
   readonly uri: string;
 }
 ```
@@ -149,13 +149,15 @@ type ValidationConstraint =
   | 'at-least-one-task'
   | 'valid-dependency-refs'
   | 'no-cycles'
-  | 'no-islands';
+  | 'no-islands'
+  | 'ref-uri-required';
 
 type ValidationDetails =
   | { constraint: 'at-least-one-task' }
   | { constraint: 'valid-dependency-refs'; taskId: string; missingDep: string }
   | { constraint: 'no-cycles'; cycle: string[] }
-  | { constraint: 'no-islands'; islandTaskIds: string[] };
+  | { constraint: 'no-islands'; islandTaskIds: string[] }
+  | { constraint: 'ref-uri-required'; taskId: string };
 ```
 
 ---
@@ -225,6 +227,7 @@ Throws `VineValidationError` on the first constraint violation found.
 | 2   | Valid dependency refs | Every `task.dependencies[i]` exists as a key in `graph.tasks`                                              | `'valid-dependency-refs'` |
 | 3   | No cycles             | DFS-based cycle detection across the full dependency graph                                                 | `'no-cycles'`             |
 | 4   | No islands            | BFS/DFS from root (first id in `order`) following **reverse** dependency edges; every task must be visited | `'no-islands'`            |
+| 5   | Ref URI required      | Every ref node must have a non-empty `vine` URI string                                                     | `'ref-uri-required'`      |
 
 Unique ids are enforced by the parser at insertion time (throws `VineParseError` on duplicates), so the validator does not re-check them.
 
@@ -257,9 +260,9 @@ Converts a `VineGraph` back to `.vine` text.
 3. For each task, emit lines in this order:
    a. **Header**: `[id] Short Name (status)`
    b. **Description**: emit as multi-line text (split on `\n`), preserving line breaks
-   c. **Attachments**: in canonical order — artifacts first, then guidance, then files. Each as `@<class> <mimeType> <uri>`
-   d. **Dependencies**: one `-> targetId` line per dependency, in array order
-   e. **Decisions**: one `> text` line per decision, in array order
+   c. **Dependencies**: one `-> targetId` line per dependency, sorted alphabetically
+   d. **Decisions**: one `> text` line per decision, in array order
+   e. **Attachments**: in canonical order — artifacts first, then guidance, then files. Each as `@<class> <mime> <uri>`
 4. Separate blocks with the delimiter (default `---`).
 5. Trailing newline at end of file.
 
@@ -269,7 +272,7 @@ Converts a `VineGraph` back to `.vine` text.
 deepEqual(parse(serialize(graph)), graph); // must hold for any valid VineGraph
 ```
 
-The serializer preserves enough structure that re-parsing produces an identical graph. Field ordering within a block is normalized (description → attachments → dependencies → decisions) to ensure deterministic output.
+The serializer preserves enough structure that re-parsing produces an identical graph. Field ordering within a block is normalized (description → dependencies → decisions → attachments) to ensure deterministic output.
 
 ---
 
@@ -281,6 +284,9 @@ Pure functions for traversing a `VineGraph`. All accept a graph as the first arg
 /** Returns the task with the given id. Throws VineError if not found. */
 function getTask(graph: VineGraph, id: string): Task;
 
+/** Returns the id of the root task (first in order). */
+function getRootId(graph: VineGraph): string;
+
 /** Returns the root task (first in order). */
 function getRoot(graph: VineGraph): Task;
 
@@ -289,10 +295,6 @@ function getDependencies(graph: VineGraph, id: string): Task[];
 
 /** Returns tasks that depend on the given task. */
 function getDependants(graph: VineGraph, id: string): Task[];
-
-/** Returns all transitive dependencies (ancestors) of a task.
- *  Useful for viz camera framing. */
-function getAncestors(graph: VineGraph, id: string): Task[];
 ```
 
 ---
@@ -302,10 +304,18 @@ function getAncestors(graph: VineGraph, id: string): Task[];
 ### `isVineRef`
 
 ```ts
-function isVineRef(task: Task): boolean;
+function isVineRef(task: Task): task is RefTask;
 ```
 
-Returns `true` if the task is a **reference node** — i.e. it has a non-`undefined` `vine` field (and `status` is `undefined`). Use this to distinguish concrete tasks from `ref` placeholders.
+Type guard that narrows `Task` to `RefTask`. Returns `true` if `task.kind === 'ref'`. Defined in `types.ts` (re-exported from `index.ts`).
+
+### `isConcreteTask`
+
+```ts
+function isConcreteTask(task: Task): task is ConcreteTask;
+```
+
+Type guard that narrows `Task` to `ConcreteTask`. Returns `true` if `task.kind === 'task'`. Defined in `types.ts` (re-exported from `index.ts`).
 
 ### `expandVineRef`
 
@@ -357,21 +367,24 @@ export { serialize } from './serializer.js';
 export { validate } from './validator.js';
 
 // Graph Queries
-export { getTask, getRoot, getDependencies, getDependants } from './graph.js';
+export { getTask, getRoot, getRootId, getDependencies, getDependants } from './graph.js';
 
-// Reference Node Helpers
-export { isVineRef } from './expansion.js';
+// Types & Type Guards
+export { isVineRef, isConcreteTask, getSpriteUri } from './types.js';
+
+// Expansion
 export { expandVineRef } from './expansion.js';
 
 // Mutations
 export {
+  addRef,
   addTask,
   removeTask,
   setStatus,
   updateTask,
+  updateRefUri,
   addDependency,
   removeDependency,
-  buildGraph,
 } from './mutations.js';
 
 // Search & Filter
@@ -379,6 +392,7 @@ export {
   filterByStatus,
   searchTasks,
   getLeaves,
+  getRefs,
   getDescendants,
   getSummary,
 } from './search.js';
@@ -425,7 +439,7 @@ packages/core/
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `parser.test.ts`     | Valid parse of the VINE.md example; malformed headers; unknown status keywords; duplicate ids; empty input; leading/trailing whitespace; multiple blank lines |
 | `validator.test.ts`  | One test per constraint — happy path and failure path. Cycle detection with direct and transitive cycles. Island detection with disconnected subgraphs.       |
-| `serializer.test.ts` | Output matches expected `.vine` format. Field ordering (description → deps → decisions). Trailing newline.                                                    |
+| `serializer.test.ts` | Output matches expected `.vine` format. Field ordering (description → deps → decisions → attachments). Trailing newline.                                      |
 | `graph.test.ts`      | Each query helper returns correct results for the VINE.md example graph.                                                                                      |
 | `roundtrip.test.ts`  | `parse(serialize(graph))` deep-equals original for the VINE.md example and generated graphs.                                                                  |
 | `mutations.test.ts`  | Each mutation validates inputs, returns new graph, and throws on invalid operations (missing tasks, cycles, etc.).                                            |
@@ -467,11 +481,14 @@ function removeDependency(
   taskId: string,
   depId: string,
 ): VineGraph;
+function addRef(graph: VineGraph, ref: RefTask): VineGraph;
+function updateRefUri(graph: VineGraph, id: string, uri: string): VineGraph;
 ```
 
 All functions return a new `VineGraph` instance (immutable operations). They validate inputs (task existence, cycle detection, etc.) and throw `VineError` on invalid operations.
 
-`buildGraph(tasks, options?)` is a convenience constructor that builds a complete `VineGraph` from an array of tasks, propagating `version`, `title`, and `delimiter` metadata from the options parameter.
+- `addRef` — Adds a reference node. Validates `kind === 'ref'` and non-empty `vine` URI. Returns new graph.
+- `updateRefUri` — Updates a ref node's `vine` URI. Throws if the target node is not a ref (`kind !== 'ref'`).
 
 ## Search Module (`search.ts`)
 
@@ -482,7 +499,10 @@ function filterByStatus(graph: VineGraph, status: Status): Task[];
 function searchTasks(graph: VineGraph, query: string): Task[];
 function getLeaves(graph: VineGraph): Task[];
 function getDescendants(graph: VineGraph, id: string): Task[];
+function getRefs(graph: VineGraph): readonly RefTask[];
 function getSummary(graph: VineGraph): GraphSummary;
 ```
+
+- `getRefs` — Returns all reference nodes in graph order.
 
 `GraphSummary` includes `total`, `byStatus` (count per status with all 6 statuses initialized to 0: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`), `rootId`, `rootName`, and `leafCount`. All query functions return results in graph order.

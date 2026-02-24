@@ -26,7 +26,9 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "yarn workspace @bacchus/ui e2e",
     "e2e:chat": "yarn workspace @bacchus/ui e2e:chat",
-    "e2e:chat:live": "yarn workspace @bacchus/ui e2e:chat:live"
+    "e2e:chat:live": "yarn workspace @bacchus/ui e2e:chat:live",
+    "build:vscode": "yarn workspace bacchus-vine build",
+    "test:integration": "yarn workspace bacchus-vine test:integration"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

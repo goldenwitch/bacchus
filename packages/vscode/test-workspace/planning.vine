@@ -1,0 +1,74 @@
+vine 1.1.0
+title: Planning & Pre-Construction
+prefix: planning
+---
+[root] Planning & Pre-Construction (started)
+All upfront work before breaking ground.
+-> budget
+-> design
+-> permits
+---
+[budget] Budget & Financing (notstarted)
+Determine total budget, secure financing, and create a cost breakdown.
+> Typical tiny home range: $30K–$70K for DIY, $50K–$150K for contractor-built.
+-> research-costs
+-> financing
+-> cost-breakdown
+---
+[research-costs] Research Costs (notstarted)
+Gather estimates for materials, labor, permits, and land preparation.
+Get quotes from at least three suppliers and two contractors.
+---
+[financing] Secure Financing (notstarted)
+Apply for a construction loan, personal loan, RV loan, or arrange self-funding.
+-> research-costs
+> RV loans may apply if the home is on a trailer and RVIA-certified.
+---
+[cost-breakdown] Create Cost Breakdown (notstarted)
+Build a detailed spreadsheet with line items for every phase.
+Include a 15–20% contingency buffer for unexpected expenses.
+-> research-costs
+-> financing
+---
+[design] Design & Blueprints (notstarted)
+Create or purchase architectural plans and choose a floor layout.
+-> budget
+-> floor-plan
+-> structural-plans
+-> material-selection
+---
+[floor-plan] Floor Plan Layout (notstarted)
+Choose square footage, room layout, loft configuration, and storage strategy.
+Consider traffic flow, natural light, and multi-use furniture placement.
+---
+[structural-plans] Structural & Engineering Plans (notstarted)
+Hire a designer or purchase pre-made plans; obtain stamped structural drawings for permitting.
+-> floor-plan
+---
+[material-selection] Material Selection (notstarted)
+Choose framing lumber, roofing, siding, insulation type, windows, and finish materials.
+Balance cost, weight (critical for trailer builds), and durability.
+-> floor-plan
+-> cost-breakdown
+---
+[permits] Permits & Legal (notstarted)
+Research zoning laws, obtain building permits, and confirm code compliance.
+-> design
+-> zoning-research
+-> building-permit
+-> inspections-schedule
+---
+[zoning-research] Zoning & Code Research (notstarted)
+Confirm the lot is zoned for a tiny home or ADU and check minimum size requirements.
+Review setback rules, height limits, and any HOA restrictions.
+---
+[building-permit] Apply for Building Permit (notstarted)
+Submit plans and applications to the local building department.
+Allow 2–8 weeks for review depending on jurisdiction.
+-> structural-plans
+-> zoning-research
+---
+[inspections-schedule] Schedule Inspections (notstarted)
+Coordinate required inspection checkpoints with the building department.
+Typical inspections: foundation, framing, rough MEP, insulation, final.
+-> building-permit

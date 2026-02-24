@@ -1,0 +1,29 @@
+vine 1.1.0
+title: Build a Tiny Home
+---
+[root] Build a Tiny Home (started)
+End-to-end plan for designing, permitting, and constructing a tiny home.
+-> planning
+-> site-prep
+-> construction
+-> interior
+-> final
+---
+ref [planning] Planning & Pre-Construction (./planning.vine)
+All upfront work before breaking ground.
+---
+ref [site-prep] Site Preparation (./site-prep.vine)
+Prepare the land and utilities before construction begins.
+-> planning
+---
+ref [construction] Shell & Structure (./construction.vine)
+Build the structural envelope of the tiny home.
+-> site-prep
+---
+ref [interior] Interior Build-Out (./interior.vine)
+Complete all interior systems and finishes.
+-> construction
+---
+ref [final] Final Inspection & Move-In (./final.vine)
+Pass inspections, obtain certificate of occupancy, and move in.
+-> interior

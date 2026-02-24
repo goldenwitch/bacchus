@@ -8,11 +8,13 @@ import {
   filterByStatus,
   searchTasks,
   addTask,
+  addRef,
   setStatus,
+  EMPTY_ANNOTATIONS,
   VineParseError,
   VineValidationError,
 } from '@bacchus/core';
-import type { Task, VineGraph, ConcreteTask } from '@bacchus/core';
+import type { Task, VineGraph, ConcreteTask, RefTask } from '@bacchus/core';
 
 /**
  * Patch the root task's dependencies to include a new id, so that
@@ -346,5 +348,81 @@ describe('integration with search', () => {
 
     const noMatch = searchTasks(graph, 'zzz-nonexistent');
     expect(noMatch).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Round-trip: add ref
+// ---------------------------------------------------------------------------
+
+describe('round-trip: add ref', () => {
+  it('adds a ref node and persists it through write/read', () => {
+    const filePath = join(tempDir, 'test.vine');
+    writeFileSync(filePath, SAMPLE_VINE, 'utf-8');
+
+    let graph = readGraph(filePath);
+
+    const ref: RefTask = {
+      kind: 'ref',
+      id: 'ext',
+      shortName: 'External Graph',
+      description: 'An external reference.',
+      dependencies: ['auth'],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+      vine: 'other.vine',
+    };
+
+    graph = patchRootDeps(graph, 'ext');
+    graph = addRef(graph, ref);
+    writeGraph(filePath, graph);
+
+    const reloaded = readGraph(filePath);
+
+    expect(reloaded.tasks.has('ext')).toBe(true);
+    const ext = reloaded.tasks.get('ext');
+    expect(ext).toBeDefined();
+    expect(ext!.kind).toBe('ref');
+    expect(ext!.shortName).toBe('External Graph');
+    expect(ext!.dependencies).toEqual(['auth']);
+    if (ext!.kind === 'ref') {
+      expect(ext!.vine).toBe('other.vine');
+    }
+  });
+
+  it('preserves original tasks after add ref', () => {
+    const filePath = join(tempDir, 'test.vine');
+    writeFileSync(filePath, SAMPLE_VINE, 'utf-8');
+
+    const original = readGraph(filePath);
+    const originalIds = [...original.order];
+
+    const ref: RefTask = {
+      kind: 'ref',
+      id: 'ext',
+      shortName: 'External Graph',
+      description: '',
+      dependencies: ['setup'],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+      vine: 'other.vine',
+    };
+
+    const patched = patchRootDeps(original, 'ext');
+    const updated = addRef(patched, ref);
+    writeGraph(filePath, updated);
+
+    const reloaded = readGraph(filePath);
+
+    for (const id of originalIds) {
+      const before = original.tasks.get(id);
+      const after = reloaded.tasks.get(id);
+      expect(before).toBeDefined();
+      expect(after).toBeDefined();
+      expect(after!.shortName).toBe(before!.shortName);
+      if (id !== 'root') {
+        expect([...after!.dependencies]).toEqual([...before!.dependencies]);
+      }
+    }
   });
 });

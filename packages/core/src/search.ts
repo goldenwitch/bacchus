@@ -1,4 +1,5 @@
-import type { Status, Task, VineGraph } from './types.js';
+import type { RefTask, Status, Task, VineGraph } from './types.js';
+import { isVineRef } from './types.js';
 import { getTask, getDependants } from './graph.js';
 import { VineError } from './errors.js';
 
@@ -59,6 +60,20 @@ export function getLeaves(graph: VineGraph): Task[] {
   for (const id of graph.order) {
     const task = getTask(graph, id);
     if (task.dependencies.length === 0) {
+      result.push(task);
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns all reference nodes in graph order.
+ */
+export function getRefs(graph: VineGraph): readonly RefTask[] {
+  const result: RefTask[] = [];
+  for (const id of graph.order) {
+    const task = getTask(graph, id);
+    if (isVineRef(task)) {
       result.push(task);
     }
   }

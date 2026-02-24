@@ -1,6 +1,6 @@
 # BacchusUI — Design Specification
 
-Version: 1.1.0
+Version: 1.2.0
 Package: `@bacchus/ui` (`packages/ui/`)
 
 ## Overview
@@ -77,7 +77,23 @@ Dependency edges connect a task to each of its dependencies:
 - **Arrow**: Small arrowhead marker at the dependency end, indicating direction (task → dependency).
 - **Flow animation**: Animated `stroke-dashoffset` producing a gentle flowing-dot effect along the edge direction. Speed: 30px/s.
 - **Opacity**: 0.6 at rest, 1.0 when connected to a focused node, 0.15 when dimmed.
+### Reference Node Visual Treatment
 
+Reference nodes (`kind: 'ref'`) use a distinct visual treatment to differentiate them from concrete tasks:
+
+- **Tint**: Slate blue-gray (`#5A6A7A`) applied via `feColorMatrix`, replacing the status-based palette.
+- **Legend**: Reference nodes appear as a separate entry in the `Legend.svelte` component, labeled "ref".
+- **No status coloring**: Refs do not have a `status` field, so no status color, emoji badge, or glow pulse is applied.
+- **Glow ring**: Uses the same slate blue-gray tint instead of a status color.
+
+### Sprite System
+
+Node rendering uses an animated SVG `<symbol>` sprite system:
+
+- **Default sprite** (`sprites/bubble.svg`): A grayscale bubble with breathing-pulse and shimmer CSS animations baked into the SVG.
+- **`@sprite(uri)` annotation**: Tasks can declare a custom sprite via the `@sprite(uri)` header annotation in the `.vine` file. The URI points to an SVG file containing a `<symbol>` element.
+- **Sprite registry** (`sprites/registry.ts`): Manages loaded sprites using Vite's `?raw` import for bundled SVGs. Custom sprites are fetched, sanitized (`sprites/sanitize.ts`), and registered at runtime.
+- **Per-status tinting** (`sprites/tint.ts`): An `feColorMatrix` SVG filter recolors the grayscale sprite to the node's status color (or slate blue-gray for reference nodes). Each status has a pre-computed matrix.
 ---
 
 ## Graph Layout
@@ -109,7 +125,7 @@ The root task (from `getRoot(graph)`) is identified and given a strong `forceX` 
 
 ### Depth Calculation
 
-BFS outward from root: root = depth 0, root's direct dependencies = depth 1, their dependencies = depth 2, etc. `@bacchus/core` exports `getAncestors(graph, id)` for transitive dependency traversal, which can assist here. Used by `forceRadial` for concentric ring layout and by entry animation for stagger ordering.
+BFS outward from root: root = depth 0, root's direct dependencies = depth 1, their dependencies = depth 2, etc. `@bacchus/core` exports `getDescendants(graph, id)` for transitive dependency traversal, which can assist here. Used by `forceRadial` for concentric ring layout and by entry animation for stagger ordering.
 
 ---
 
@@ -395,8 +411,13 @@ Errors include a "Dismiss" button that returns to the clean landing screen.
 ║  ├── Tooltip.svelte            # shown on node hover
 ║  ├── Legend.svelte             # status color legend
 ║  ├── PhysicsPanel.svelte       # force-directed layout tuning
+║  ├── VisualsPanel.svelte       # visual controls accordion
 ║  ├── GlassAccordion.svelte     # shared accordion + glassmorphism
+║  ├── LeftPanelAccordion.svelte # left-side panel housing accordions
 ║  ├── ChatPanel.svelte          # AI chat planner panel
+║  ├── ToolFeedbackCard.svelte   # tool call result display
+║  ├── MarkdownMessage.svelte    # rendered markdown in chat
+║  ├── ThemeToggle.svelte        # dark/light theme switch
 ║  └── Toolbar.svelte            # mute toggle, overlays
 ║      └── MuteButton.svelte     # sound toggle
 ╚══════════════════════════════════════════════════════════════
@@ -470,7 +491,23 @@ packages/ui/
 │       │   ├── LandingScreen.svelte      # File picker / URL input (app-only)
 │       │   ├── FileDropZone.svelte       # Drag-and-drop zone (app-only)
 │       │   ├── UrlInput.svelte           # URL parameter input (app-only)
-│       │   └── MuteButton.svelte         # Sound toggle
+│       │   ├── MuteButton.svelte         # Sound toggle
+│       │   ├── GlassAccordion.svelte     # Shared glassmorphism accordion
+│       │   ├── LeftPanelAccordion.svelte  # Left-side panel accordion host
+│       │   ├── PhysicsPanel.svelte       # Physics controls accordion
+│       │   ├── VisualsPanel.svelte       # Visual controls accordion
+│       │   ├── ChatPanel.svelte          # AI chat planner panel
+│       │   ├── ToolFeedbackCard.svelte   # Tool call result card
+│       │   ├── MarkdownMessage.svelte    # Rendered markdown messages
+│       │   ├── ThemeToggle.svelte        # Dark/light theme switch
+│       │   ├── Legend.svelte             # Status color legend
+│       │   └── primitives/
+│       │       ├── GroupHeader.svelte     # Shared group heading
+│       │       ├── PanelBody.svelte       # Panel content wrapper
+│       │       ├── PanelCheckbox.svelte   # Checkbox control
+│       │       ├── PanelSlider.svelte     # Slider control
+│       │       ├── ResetButton.svelte     # Reset-to-default button
+│       │       └── TextInput.svelte       # Text field control
 │       ├── sound.ts                      # Web Audio API SoundEngine
 │       ├── layout.ts                     # D3-force simulation setup
 │       ├── camera.ts                     # Viewport transform + focus framing
@@ -478,12 +515,21 @@ packages/ui/
 │       ├── persistence.ts                # localStorage session persistence
 │       ├── status.ts                     # Status → color / emoji / CSS mappings
 │       ├── types.ts                      # UI-specific types (SimNode, SimLink, etc.)
+│       ├── visuals.ts                    # Visual parameter management
+│       ├── sprites/
+│       │   ├── bubble.svg                # Default animated bubble sprite
+│       │   ├── registry.ts               # Sprite registry (Vite raw import)
+│       │   ├── sanitize.ts               # SVG sanitization
+│       │   └── tint.ts                   # feColorMatrix per-status tinting
 │       └── chat/                         # Chat planner module
 │           ├── anthropic.ts              # Anthropic API client (streaming + tools)
+│           ├── apikey.ts                 # localStorage-backed API key management
 │           ├── orchestrator.ts           # Tool-use orchestration loop
 │           ├── session.ts                # Chat session state management
 │           ├── sessionStore.ts           # localStorage session buffer
-│           └── tools.ts                  # Graph mutation tools (incl. add_attachment, remove_attachment)
+│           ├── toolFeedback.ts           # Tool feedback rendering helpers
+│           ├── tools.ts                  # Graph mutation tools (12 tools)
+│           └── types.ts                  # Chat-specific types
 └── __tests__/
     ├── layout.test.ts
     ├── camera.test.ts

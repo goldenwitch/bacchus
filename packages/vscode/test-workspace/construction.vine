@@ -1,0 +1,76 @@
+vine 1.1.0
+title: Shell & Structure
+prefix: construction
+---
+[root] Shell & Structure (notstarted)
+Build the structural envelope of the tiny home.
+-> framing
+-> roofing
+-> exterior
+---
+[framing] Framing (notstarted)
+Construct the floor, wall, and roof framing per engineered plans.
+-> floor-framing
+-> wall-framing
+-> roof-framing
+---
+[floor-framing] Floor Framing (notstarted)
+Build the floor deck: rim joists, floor joists, blocking, and subfloor sheathing.
+Use pressure-treated lumber for the bottom plate if on a trailer or near grade.
+---
+[wall-framing] Wall Framing (notstarted)
+Frame exterior and interior walls on the deck; raise, plumb, and brace.
+Include headers over windows/doors and blocking for cabinets and TV mounts.
+-> floor-framing
+---
+[roof-framing] Roof Framing (notstarted)
+Install rafters or trusses, ridge board, and roof sheathing (OSB or plywood).
+-> wall-framing
+> Shed roof is simplest; gable provides loft space; gambrel maximizes headroom.
+---
+[roofing] Roofing (notstarted)
+Weatherproof the roof before proceeding with interior work.
+-> framing
+-> roof-underlayment
+-> roof-finish
+-> flashing-gutters
+---
+[roof-underlayment] Roof Underlayment (notstarted)
+Apply ice & water shield at eaves and valleys; cover remaining area with synthetic underlayment.
+-> roof-framing
+---
+[roof-finish] Finish Roofing Material (notstarted)
+Install the final roof covering: metal panels, asphalt shingles, or standing seam.
+-> roof-underlayment
+> Metal roofing is popular for tiny homes — lightweight, long-lasting, and low maintenance.
+---
+[flashing-gutters] Flashing & Gutters (notstarted)
+Install drip edge, step flashing at walls, pipe boots at penetrations, and rain gutters with downspouts.
+-> roof-finish
+---
+[exterior] Exterior Envelope (notstarted)
+Seal the building envelope to be weather-tight.
+-> roofing
+-> house-wrap
+-> windows-doors
+-> siding
+-> exterior-trim
+---
+[house-wrap] House Wrap / WRB (notstarted)
+Apply weather-resistive barrier (Tyvek or equivalent) over wall sheathing.
+Tape all seams and integrate with window/door flashing.
+-> wall-framing
+---
+[windows-doors] Windows & Exterior Door (notstarted)
+Install windows and the entry door with proper pan flashing and sealant.
+-> house-wrap
+> Consider double-pane low-E windows for energy efficiency.
+---
+[siding] Siding Installation (notstarted)
+Install exterior cladding: board-and-batten, metal, lap siding, or fiber cement.
+Maintain a rain screen gap if using wood or fiber cement.
+-> windows-doors
+---
+[exterior-trim] Exterior Trim & Caulk (notstarted)
+Install corner boards, window/door trim, fascia, and caulk all penetrations.
+-> siding

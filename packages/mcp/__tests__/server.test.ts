@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import {
   parse,
@@ -16,14 +16,18 @@ import {
   updateTask,
   addDependency,
   removeDependency,
+  addRef,
+  updateRefUri,
+  getRefs,
+  expandVineRef,
   isValidStatus,
   VineError,
   VineParseError,
   EMPTY_ANNOTATIONS,
 } from '@bacchus/core';
-import type { ConcreteTask } from '@bacchus/core';
+import type { ConcreteTask, RefTask } from '@bacchus/core';
 
-import { readGraph, writeGraph, resolvePath } from '../src/io.js';
+import { readGraph, writeGraph, readFileContent, resolvePath, setRoots, getRoots } from '../src/io.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -309,5 +313,293 @@ describe('error handling', () => {
 
   it('parse invalid .vine throws VineParseError', () => {
     expect(() => parse('totally invalid content')).toThrow(VineParseError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Path resolution
+// ---------------------------------------------------------------------------
+
+describe('resolvePath', () => {
+  afterEach(() => {
+    setRoots([]);
+  });
+
+  it('returns an absolute path unchanged when the file exists', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    expect(resolvePath(file)).toBe(file);
+  });
+
+  it('resolves a relative path against cwd', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'plan.vine');
+    const original = process.cwd();
+    try {
+      process.chdir(dir);
+      const resolved = resolvePath('plan.vine');
+      expect(resolved).toBe(join(dir, 'plan.vine'));
+    } finally {
+      process.chdir(original);
+    }
+  });
+
+  it('resolves a relative path against registered roots', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'tasks.vine');
+    setRoots([dir]);
+    const resolved = resolvePath('tasks.vine');
+    expect(resolved).toBe(join(dir, 'tasks.vine'));
+  });
+
+  it('prefers cwd over roots when both contain the file', () => {
+    const cwdDir = makeTempDir();
+    writeSample(cwdDir, 'shared.vine');
+    // Create a second temp dir as a root
+    const rootDir = mkdtempSync(join(tmpdir(), 'mcp-root-'));
+    writeFileSync(join(rootDir, 'shared.vine'), SAMPLE_VINE, 'utf-8');
+    setRoots([rootDir]);
+    const original = process.cwd();
+    try {
+      process.chdir(cwdDir);
+      const resolved = resolvePath('shared.vine');
+      expect(resolved).toBe(join(cwdDir, 'shared.vine'));
+    } finally {
+      process.chdir(original);
+      rmSync(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it('infers .vine extension when the input has no extension', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'project.vine');
+    setRoots([dir]);
+    const resolved = resolvePath('project');
+    expect(resolved).toBe(join(dir, 'project.vine'));
+  });
+
+  it('does not infer .vine when the input already has an extension', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'data.txt');
+    setRoots([dir]);
+    // 'data' should try data and data.vine, but data.txt should not match 'data'
+    // resolvePath('data.txt') should find data.txt directly
+    const resolved = resolvePath('data.txt');
+    expect(resolved).toBe(join(dir, 'data.txt'));
+  });
+
+  it('falls back to cwd-based resolution when nothing matches', () => {
+    setRoots([]);
+    const resolved = resolvePath('nonexistent.vine');
+    expect(resolved).toBe(resolve('nonexistent.vine'));
+  });
+
+  it('readGraph works with a relative path when cwd is correct', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'rel.vine');
+    const original = process.cwd();
+    try {
+      process.chdir(dir);
+      const graph = readGraph('rel.vine');
+      expect(graph.tasks.size).toBe(4);
+    } finally {
+      process.chdir(original);
+    }
+  });
+
+  it('readGraph works via registered roots', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'rooted.vine');
+    setRoots([dir]);
+    const graph = readGraph('rooted.vine');
+    expect(graph.tasks.size).toBe(4);
+  });
+
+  it('readGraph with .vine extension inference', () => {
+    const dir = makeTempDir();
+    writeSample(dir, 'inferred.vine');
+    setRoots([dir]);
+    const graph = readGraph('inferred');
+    expect(graph.tasks.size).toBe(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setRoots / getRoots
+// ---------------------------------------------------------------------------
+
+describe('setRoots / getRoots', () => {
+  afterEach(() => {
+    setRoots([]);
+  });
+
+  it('getRoots returns empty array by default', () => {
+    expect(getRoots()).toEqual([]);
+  });
+
+  it('setRoots stores and getRoots retrieves roots', () => {
+    setRoots(['/a', '/b']);
+    expect(getRoots()).toEqual(['/a', '/b']);
+  });
+
+  it('setRoots replaces previous roots', () => {
+    setRoots(['/old']);
+    setRoots(['/new']);
+    expect(getRoots()).toEqual(['/new']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ref fixtures
+// ---------------------------------------------------------------------------
+
+const REF_VINE = `\
+vine 1.1.0
+title: Parent Project
+---
+[root] Root Task (started)
+The root task.
+-> child-a
+-> ext-ref
+---
+[child-a] Child A (complete)
+First child task.
+-> leaf
+---
+ref [ext-ref] External Module (./child.vine)
+A reference to an external vine file.
+-> leaf
+---
+[leaf] Leaf Task (notstarted)
+A leaf task.
+`;
+
+const CHILD_VINE = `\
+vine 1.0.0
+title: Child Module
+---
+[child-root] Child Root (notstarted)
+Root of the child graph.
+-> child-leaf
+---
+[child-leaf] Child Leaf (notstarted)
+Leaf node in child graph.
+`;
+
+// ---------------------------------------------------------------------------
+// Ref operations
+// ---------------------------------------------------------------------------
+
+describe('ref operations', () => {
+  it('vine_add_ref: adds a ref node, write, re-read, verify', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+
+    // Wire root to depend on the new ref so graph stays connected
+    const root = getTask(graph, 'root') as ConcreteTask;
+    const patchedRoot: ConcreteTask = {
+      ...root,
+      dependencies: [...root.dependencies, 'my-ref'],
+    };
+    const patchedTasks = new Map(graph.tasks);
+    patchedTasks.set('root', patchedRoot);
+    graph = { ...graph, tasks: patchedTasks };
+
+    const refTask: RefTask = {
+      kind: 'ref',
+      id: 'my-ref',
+      shortName: 'My Ref',
+      description: 'A reference node.',
+      vine: './other.vine',
+      dependencies: ['leaf'],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+    };
+    graph = addRef(graph, refTask);
+    writeGraph(file, graph);
+
+    const reloaded = readGraph(file);
+    expect(reloaded.tasks.has('my-ref')).toBe(true);
+    const task = getTask(reloaded, 'my-ref');
+    expect(task.kind).toBe('ref');
+    if (task.kind === 'ref') {
+      expect(task.vine).toBe('./other.vine');
+    }
+  });
+
+  it('vine_add_ref: missing vine URI throws error', () => {
+    const graph = readGraph(writeSample(makeTempDir()));
+    const bad = {
+      kind: 'ref' as const,
+      id: 'bad-ref',
+      shortName: 'Bad Ref',
+      description: '',
+      vine: '',
+      dependencies: [],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+    };
+    expect(() => addRef(graph, bad)).toThrow();
+  });
+
+  it('vine_get_refs: returns ref nodes from a graph with refs', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'ref.vine');
+    writeFileSync(file, REF_VINE, 'utf-8');
+    const graph = readGraph(file);
+    const refs = getRefs(graph);
+    expect(refs).toHaveLength(1);
+    expect(refs[0].id).toBe('ext-ref');
+    expect(refs[0].vine).toBe('./child.vine');
+  });
+
+  it('vine_get_refs: returns empty array when no refs exist', () => {
+    const graph = readGraph(writeSample(makeTempDir()));
+    const refs = getRefs(graph);
+    expect(refs).toHaveLength(0);
+  });
+
+  it('vine_update_ref_uri: updates the URI of a ref node', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'ref.vine');
+    writeFileSync(file, REF_VINE, 'utf-8');
+    let graph = readGraph(file);
+    graph = updateRefUri(graph, 'ext-ref', './updated.vine');
+    writeGraph(file, graph);
+
+    const reloaded = readGraph(file);
+    const task = getTask(reloaded, 'ext-ref');
+    expect(task.kind).toBe('ref');
+    if (task.kind === 'ref') {
+      expect(task.vine).toBe('./updated.vine');
+    }
+  });
+
+  it('vine_update_ref_uri: throws on non-ref node', () => {
+    const graph = readGraph(writeSample(makeTempDir()));
+    expect(() => updateRefUri(graph, 'root', './other.vine')).toThrow();
+  });
+
+  it('vine_expand_ref: expands a ref by inlining child graph', () => {
+    const dir = makeTempDir();
+    const parentFile = join(dir, 'parent.vine');
+    const childFile = join(dir, 'child.vine');
+    writeFileSync(parentFile, REF_VINE, 'utf-8');
+    writeFileSync(childFile, CHILD_VINE, 'utf-8');
+
+    const parentGraph = readGraph(parentFile);
+    const childContent = readFileContent(childFile);
+    const childGraph = parse(childContent);
+    const expanded = expandVineRef(parentGraph, 'ext-ref', childGraph);
+    writeGraph(parentFile, expanded);
+
+    const reloaded = readGraph(parentFile);
+    // The ref node should be replaced with a concrete task at the same ID
+    expect(reloaded.tasks.has('ext-ref')).toBe(true);
+    const expandedTask = getTask(reloaded, 'ext-ref');
+    expect(expandedTask.kind).toBe('task');
+    // Child graph non-root nodes should be inlined
+    expect(reloaded.tasks.has('ext-ref/child-leaf')).toBe(true);
   });
 });

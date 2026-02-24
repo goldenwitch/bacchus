@@ -5,6 +5,7 @@ import {
   filterByStatus,
   searchTasks,
   getLeaves,
+  getRefs,
   getDescendants,
   getSummary,
 } from '../src/search.js';
@@ -152,6 +153,36 @@ describe('getLeaves', () => {
   it('returns [design] as the only task with no dependencies', () => {
     const result = getLeaves(graph);
     expect(result.map((t) => t.id)).toEqual(['design']);
+  });
+});
+
+describe('getRefs', () => {
+  it('returns only ref nodes in graph order', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (started)',
+      '-> ext-a',
+      '-> task-a',
+      '-> ext-b',
+      '---',
+      'ref [ext-a] External A (./a.vine)',
+      '-> task-a',
+      '---',
+      '[task-a] Task A (complete)',
+      '---',
+      'ref [ext-b] External B (./b.vine)',
+    ].join('\n');
+    const refGraph = parse(refVine);
+
+    const result = getRefs(refGraph);
+    expect(result.map((t) => t.id)).toEqual(['ext-a', 'ext-b']);
+    expect(result.every((t) => t.kind === 'ref')).toBe(true);
+  });
+
+  it('returns empty array when no refs exist', () => {
+    const result = getRefs(graph);
+    expect(result).toEqual([]);
   });
 });
 

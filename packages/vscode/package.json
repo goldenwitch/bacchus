@@ -1,0 +1,58 @@
+{
+  "name": "bacchus-vine",
+  "displayName": "Bacchus VINE",
+  "description": "VS Code extension wiring VINE MCP tools for AI assistants",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "goldenwitch",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goldenwitch/bacchus.git",
+    "directory": "packages/vscode"
+  },
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "bacchus.showGraph",
+        "title": "Bacchus: Show Graph"
+      }
+    ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "bacchus-vine.mcp",
+        "label": "Bacchus VINE MCP Server"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "pretest": "node esbuild.mjs",
+    "test:integration": "node runIntegrationTests.mjs",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@secretlint/secretlint-rule-no-dotenv": "^11.3.1",
+    "@secretlint/secretlint-rule-preset-recommend": "^11.3.1",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.99.0",
+    "@vscode/test-electron": "^2.5.0",
+    "@vscode/vsce": "^3.0.0",
+    "@yarnpkg/esbuild-plugin-pnp": "^2.0.3",
+    "esbuild": "^0.25.0",
+    "zod": "^3.25 || ^4.0"
+  }
+}

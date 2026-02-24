@@ -6,6 +6,7 @@ import { validateCommand } from '../src/commands/validate.js';
 import { showCommand } from '../src/commands/show.js';
 import { listCommand } from '../src/commands/list.js';
 import { addCommand } from '../src/commands/add.js';
+import { addRefCommand } from '../src/commands/add-ref.js';
 import { statusCommand } from '../src/commands/status.js';
 import { handleCommandError } from '../src/errors.js';
 import { Command } from 'commander';
@@ -319,6 +320,102 @@ describe('add command', () => {
       'x',
       '--name',
       'X',
+      '--depends-on',
+      'setup',
+    ]);
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('File not found'),
+    );
+    expect(process.exitCode).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// add-ref command
+// ---------------------------------------------------------------------------
+
+describe('add-ref command', () => {
+  it('reports validation error for island ref', async () => {
+    // Adding a ref that nothing depends on creates an island → validation error.
+    const file = writeVine('test.vine', SAMPLE_VINE);
+    const prog = wrapCommand(addRefCommand);
+    await prog.parseAsync([
+      'node',
+      'test',
+      'add-ref',
+      file,
+      '--id',
+      'ext',
+      '--name',
+      'External Graph',
+      '--vine',
+      'other.vine',
+      '--depends-on',
+      'setup',
+    ]);
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Validation error'),
+    );
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('rejects missing --vine flag', async () => {
+    const file = writeVine('test.vine', SAMPLE_VINE);
+    const prog = wrapCommand(addRefCommand);
+
+    // Commander throws when a required option is missing.
+    await expect(
+      prog.parseAsync([
+        'node',
+        'test',
+        'add-ref',
+        file,
+        '--id',
+        'ext',
+        '--name',
+        'External',
+      ]),
+    ).rejects.toThrow();
+  });
+
+  it('rejects invalid task id format', async () => {
+    const file = writeVine('test.vine', SAMPLE_VINE);
+    const prog = wrapCommand(addRefCommand);
+    await prog.parseAsync([
+      'node',
+      'test',
+      'add-ref',
+      file,
+      '--id',
+      'bad id!',
+      '--name',
+      'Bad',
+      '--vine',
+      'other.vine',
+    ]);
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid task id'),
+    );
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('reports file not found', async () => {
+    const file = join(tempDir, 'nonexistent.vine');
+    const prog = wrapCommand(addRefCommand);
+    await prog.parseAsync([
+      'node',
+      'test',
+      'add-ref',
+      file,
+      '--id',
+      'ext',
+      '--name',
+      'External',
+      '--vine',
+      'other.vine',
       '--depends-on',
       'setup',
     ]);

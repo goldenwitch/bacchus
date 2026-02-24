@@ -12,6 +12,7 @@ export default [
       '**/dist/**',
       '.yarn/**',
       '.pnp.*',
+      '**/*.mjs',
     ],
   },
   eslint.configs.recommended,

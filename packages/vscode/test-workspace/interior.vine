@@ -1,0 +1,175 @@
+vine 1.1.0
+title: Interior Build-Out
+prefix: interior
+---
+[root] Interior Build-Out (notstarted)
+Complete all interior systems and finishes.
+-> electrical
+-> plumbing
+-> insulation
+-> interior-walls
+-> flooring
+-> kitchen-bath
+-> interior-finish
+---
+[electrical] Electrical (notstarted)
+Run wiring, install panel, outlets, switches, and lighting.
+-> panel-install
+-> rough-wiring
+-> fixture-prep
+---
+[panel-install] Electrical Panel Installation (notstarted)
+Mount the breaker panel and connect the main feed from the service drop.
+Size the panel for all planned circuits (typically 100A, 20–24 spaces).
+---
+[rough-wiring] Rough Wiring (notstarted)
+Run Romex (NM-B) through studs for outlets, switches, and dedicated circuits.
+Include dedicated circuits for kitchen appliances, bathroom, HVAC, and water heater.
+-> panel-install
+---
+[fixture-prep] Light & Fixture Boxes (notstarted)
+Install junction boxes, recessed light housings, ceiling fan brackets, and exhaust fan housing.
+-> rough-wiring
+---
+[plumbing] Plumbing (notstarted)
+Install supply lines, drain lines, water heater, and fixture rough-ins.
+-> supply-lines
+-> drain-lines
+-> water-heater
+---
+[supply-lines] Supply Line Rough-In (notstarted)
+Run PEX or copper supply lines to kitchen, bathroom, and water heater locations.
+Install shut-off valves at each fixture location.
+---
+[drain-lines] Drain & Vent Rough-In (notstarted)
+Install DWV (drain-waste-vent) piping for sink, shower, and toilet.
+Ensure proper slope (1/4" per foot) and vent through the roof.
+---
+[water-heater] Water Heater Installation (notstarted)
+Install a tankless or compact tank water heater and connect supply/gas lines.
+-> supply-lines
+> Tankless saves space — ideal for tiny homes. Consider point-of-use units.
+---
+[insulation] Insulation (notstarted)
+Insulate walls, ceiling, and floor; install vapor barrier.
+-> electrical
+-> plumbing
+-> wall-insulation
+-> ceiling-insulation
+-> floor-insulation
+-> vapor-barrier
+---
+[wall-insulation] Wall Insulation (notstarted)
+Install batt, spray foam, or rigid foam in wall cavities.
+Ensure no gaps around wiring and plumbing penetrations.
+-> rough-wiring
+-> supply-lines
+---
+[ceiling-insulation] Ceiling / Roof Insulation (notstarted)
+Insulate the roof cavity or cathedral ceiling to at least R-30.
+-> wall-insulation
+---
+[floor-insulation] Floor Insulation (notstarted)
+Insulate the floor cavity with rigid foam or batts and seal all air gaps.
+Critical for trailer builds exposed to air flow underneath.
+-> wall-insulation
+---
+[vapor-barrier] Vapor Barrier (notstarted)
+Apply 6-mil poly sheeting or a smart vapor retarder on the warm side of insulation.
+-> wall-insulation
+-> ceiling-insulation
+-> floor-insulation
+---
+[interior-walls] Interior Walls & Ceiling (notstarted)
+Install wall and ceiling finish surfaces.
+-> insulation
+-> hang-drywall
+-> tape-mud
+-> ceiling-finish
+---
+[hang-drywall] Hang Drywall / Paneling (notstarted)
+Cut and fasten drywall, tongue-and-groove boards, or shiplap to studs.
+Start with the ceiling, then walls.
+-> vapor-barrier
+---
+[tape-mud] Tape, Mud & Sand (notstarted)
+Finish drywall seams, corners, and screw dimples with joint compound; sand smooth.
+Apply three coats: tape coat, fill coat, finish coat.
+-> hang-drywall
+---
+[ceiling-finish] Ceiling Finish (notstarted)
+Install tongue-and-groove boards, drywall, or beadboard on the ceiling.
+-> hang-drywall
+---
+[flooring] Flooring (notstarted)
+Install subfloor finish and final flooring material.
+-> interior-walls
+-> subfloor-prep
+-> floor-install
+---
+[subfloor-prep] Subfloor Prep (notstarted)
+Level, clean, and prep the subfloor surface; fill any low spots.
+-> tape-mud
+---
+[floor-install] Finish Flooring Installation (notstarted)
+Lay vinyl plank, hardwood, laminate, or tile flooring.
+Leave expansion gaps at walls per manufacturer specs.
+-> subfloor-prep
+> Vinyl plank (LVP) is lightweight, waterproof, and easy to install in tiny homes.
+---
+[kitchen-bath] Kitchen & Bathroom (notstarted)
+Install cabinets, countertops, sink, toilet, and shower.
+-> plumbing
+-> interior-walls
+-> cabinets
+-> countertops
+-> toilet-shower
+-> kitchen-sink
+---
+[cabinets] Cabinet Installation (notstarted)
+Install kitchen cabinets, bathroom vanity, and any built-in storage units.
+Anchor securely to studs — verify blocking locations before hanging uppers.
+-> tape-mud
+---
+[countertops] Countertop Installation (notstarted)
+Template, fabricate, and install kitchen countertops.
+-> cabinets
+> Butcher block is affordable and easy to DIY; quartz is durable but heavier.
+---
+[toilet-shower] Toilet & Shower Install (notstarted)
+Set the toilet on a wax ring, install the shower pan/surround, and connect fixtures.
+-> drain-lines
+-> hang-drywall
+---
+[kitchen-sink] Kitchen Sink & Faucet (notstarted)
+Install undermount or drop-in sink, faucet, and garbage disposal; connect plumbing.
+-> countertops
+-> supply-lines
+---
+[interior-finish] Interior Finish & Trim (notstarted)
+Paint, trim, light fixtures, hardware, and final touches.
+-> flooring
+-> kitchen-bath
+-> painting
+-> trim-install
+-> fixtures-hardware
+-> final-clean
+---
+[painting] Painting (notstarted)
+Prime and paint walls, ceiling, and any accent areas.
+Use low-VOC paint in a small space for better air quality.
+-> floor-install
+-> ceiling-finish
+---
+[trim-install] Trim & Millwork (notstarted)
+Install baseboards, window casings, door trim, crown molding, and shelving.
+-> painting
+---
+[fixtures-hardware] Light Fixtures & Hardware (notstarted)
+Install light fixtures, dimmer switches, outlet covers, cabinet knobs, towel bars, and hooks.
+-> trim-install
+-> fixture-prep
+---
+[final-clean] Final Interior Clean (notstarted)
+Deep clean the entire interior: vacuum, mop, wipe surfaces, clean windows.
+-> fixtures-hardware

@@ -1,0 +1,12 @@
+{
+  // Bacchus VINE MCP server — provides task-graph tools for AI assistants.
+  // This config makes the tools available in Copilot Chat (Agent mode).
+  // The server binary is built by `yarn build:vscode` (or the F5 watch task).
+  "servers": {
+    "bacchus-vine": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/packages/vscode/dist/server.js"]
+    }
+  }
+}
