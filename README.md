@@ -3,7 +3,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml/badge.svg)](https://github.com/goldenwitch/bacchus/actions/workflows/ci.yml)
 
-A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE/v1.1.0.md).
+A tool for parsing, validating, querying, and visualizing task graphs in the [VINE text format](docs/VINE/v1.2.0.md).
 
 **Live at [grapesofgraph.com](https://grapesofgraph.com)** — automatically deployed on every push to `main`.
 
@@ -40,7 +40,6 @@ const text = serialize(graph); // normalized .vine output
 | `getRoot(graph)`                         | Get the root task (first in file order).          |
 | `getDependencies(graph, id)`             | Direct dependencies of a task.                    |
 | `getDependants(graph, id)`               | Tasks that depend on the given task.              |
-| `getAncestors(graph, id)`                | All transitive dependencies (BFS).                |
 | **Mutations**                            |                                                   |
 | `addTask(graph, task)`                   | Add a new task (returns new graph).               |
 | `removeTask(graph, id)`                  | Remove a task and clean up references.            |
@@ -48,12 +47,15 @@ const text = serialize(graph); // normalized .vine output
 | `updateTask(graph, id, fields)`          | Update task name/description/decisions.           |
 | `addDependency(graph, taskId, depId)`    | Add a dependency edge.                            |
 | `removeDependency(graph, taskId, depId)` | Remove a dependency edge.                         |
+| `addRef(graph, ref)`                     | Add a reference node to the graph.                |
+| `updateRefUri(graph, id, uri)`           | Update a ref node's vine URI.                     |
 | **Search & Filter**                      |                                                   |
 | `filterByStatus(graph, status)`          | Tasks matching a given status.                    |
 | `searchTasks(graph, query)`              | Case-insensitive text search.                     |
 | `getLeaves(graph)`                       | Tasks with no dependencies.                       |
 | `getDescendants(graph, id)`              | All tasks transitively depending on a task.       |
 | `getSummary(graph)`                      | Aggregate stats (totals, status counts, root).    |
+| `getRefs(graph)`                         | All reference nodes in graph order.               |
 | **Reference Nodes (v1.1.0)**             |                                                   |
 | `isVineRef(task)`                        | Returns true if a task is a reference node.       |
 | `expandVineRef(parent, refId, child)`    | Expand a ref node by inlining a child graph.      |
@@ -69,10 +71,11 @@ Both extend `VineError`.
 
 ### VINE Format
 
-The `.vine` format is versioned. Every file begins with a magic line (`vine <version>`) so parsers can dispatch to the correct version-specific reader. The current version is **v1.1.0**.
+The `.vine` format is versioned. Every file begins with a magic line (`vine <version>`) so parsers can dispatch to the correct version-specific reader. The current version is **v1.2.0**.
 
-- **Preamble**: `vine 1.1.0`, optional `title:`, `delimiter:`, and `prefix:` metadata, terminated by `---`
+- **Preamble**: `vine 1.2.0`, optional `title:`, `delimiter:`, and `prefix:` metadata, terminated by `---`
 - **Header**: `[id] Short Name (status)` — status is one of `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`
+- **Header annotations** (v1.2.0): optional `@key(value,...)` clauses trailing any header line (e.g. `@sprite(./icon.svg)`)
 - **Reference node** (v1.1.0): `ref [id] Name (URI)` — a placeholder that references an external `.vine` file
 - **Description**: plain lines (no prefix) — newlines preserved
 - **Dependency**: `-> other-id`
@@ -82,7 +85,7 @@ The `.vine` format is versioned. Every file begins with a magic line (`vine <ver
 - **Root**: the **first** task in the file
 - **Block delimiter**: `---` (configurable via metadata)
 
-See the [VINE v1.1.0 spec](docs/VINE/v1.1.0.md) for the full specification. v1.0.0 files remain valid and are parsed by the same library.
+See the [VINE v1.2.0 spec](docs/VINE/v1.2.0.md) for the full specification. v1.0.0 and v1.1.0 files remain valid and are parsed by the same library.
 
 ### VINE Versioning
 
@@ -106,13 +109,14 @@ yarn dlx tsx packages/cli/src/cli.ts <command> [options]
 
 ### Commands
 
-| Command                            | Description                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------ |
-| `vine validate <file>`             | Check a `.vine` file for parse/validation errors.                                    |
-| `vine show <file>`                 | Print a graph summary (root, task count, status breakdown).                          |
-| `vine list <file>`                 | List all tasks. Supports `--status` and `--search` filters.                          |
-| `vine add <file>`                  | Add a task (`--id`, `--name`, optional `--status`, `--description`, `--depends-on`). |
-| `vine status <file> <id> <status>` | Update a task's status.                                                              |
+| Command                            | Description                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `vine validate <file>`             | Check a `.vine` file for parse/validation errors.                                      |
+| `vine show <file>`                 | Print a graph summary (root, task count, status breakdown).                            |
+| `vine list <file>`                 | List all tasks. Supports `--status` and `--search` filters.                            |
+| `vine add <file>`                  | Add a task (`--id`, `--name`, optional `--status`, `--description`, `--depends-on`).   |
+| `vine add-ref <file>`              | Add a ref node (`--id`, `--name`, `--vine`, optional `--description`, `--depends-on`). |
+| `vine status <file> <id> <status>` | Update a task's status.                                                                |
 
 ### Examples
 
@@ -131,9 +135,77 @@ yarn dlx tsx packages/cli/src/cli.ts add examples/03-diamond.vine --id new-task 
 
 # Mark a task complete
 yarn dlx tsx packages/cli/src/cli.ts status examples/03-diamond.vine left complete
+
+# Add a reference node
+yarn dlx tsx packages/cli/src/cli.ts add-ref examples/03-diamond.vine --id sub --name "Sub Project" --vine ./sub-project.vine
 ```
 
 See [CLI.md](docs/CLI.md) for full documentation.
+
+---
+
+## @bacchus/mcp
+
+Stdio-based MCP server exposing the full VINE API for AI tool-use. Built on [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk), reuses `@bacchus/core` pure functions with isolated file I/O.
+
+### Quick Start
+
+```powershell
+# Run standalone (requires built output or tsx)
+node packages/mcp/dist/server.js
+
+# Optional: set working directory for relative .vine paths
+node packages/mcp/dist/server.js --cwd /path/to/project
+```
+
+### Tools (17)
+
+| Category      | Tool                     | Description                                               |
+| ------------- | ------------------------ | --------------------------------------------------------- |
+| **Read-only** | `vine_validate`          | Parse and validate a `.vine` file.                        |
+|               | `vine_show`              | High-level graph summary.                                 |
+|               | `vine_list`              | List tasks (optional status/search filters).              |
+|               | `vine_get_task`          | Full detail for one task by ID.                           |
+|               | `vine_get_descendants`   | Transitive downstream subtree.                            |
+|               | `vine_search`            | Case-insensitive text search.                             |
+| **Execution** | `vine_next_tasks`        | Execution frontier: ready, completable, expandable tasks. |
+| **Mutations** | `vine_add_task`          | Add a task.                                               |
+|               | `vine_remove_task`       | Remove a task and clean up edges.                         |
+|               | `vine_set_status`        | Update a task's status.                                   |
+|               | `vine_update_task`       | Update name/description/decisions.                        |
+|               | `vine_add_dependency`    | Add a dependency edge.                                    |
+|               | `vine_remove_dependency` | Remove a dependency edge.                                 |
+| **Ref nodes** | `vine_add_ref`           | Add a reference node.                                     |
+|               | `vine_expand_ref`        | Expand a ref by inlining a child graph.                   |
+|               | `vine_update_ref_uri`    | Update a ref node's URI.                                  |
+|               | `vine_get_refs`          | List all reference nodes.                                 |
+
+See [MCP.md](docs/MCP.md) for full documentation.
+
+---
+
+## @bacchus/vscode
+
+VS Code extension that bundles the VINE MCP server for automatic tool discovery by AI assistants (GitHub Copilot, etc.).
+
+### Features
+
+- **MCP server auto-registration** — all 16 VINE tools are automatically available to Copilot and other AI assistants (no manual configuration)
+- **`bacchus.showGraph` command** — opens graph visualization (placeholder — webview coming in a future release)
+
+### Installation
+
+```powershell
+# Build the VSIX package
+yarn workspace bacchus-vine package
+
+# Install in VS Code
+code --install-extension packages/vscode/bacchus-vine-1.0.0.vsix
+```
+
+Requires VS Code `^1.99.0`. The extension activates automatically on startup.
+
+See [VSCodeExtension.md](docs/VSCodeExtension.md) for full documentation.
 
 ---
 
@@ -163,14 +235,18 @@ Drop a `.vine` file onto the landing page or enter a URL to visualize a task gra
 
 The [`examples/`](examples/) folder contains `.vine` files you can drag into the UI to explore different graph shapes:
 
-| File                      | What it shows                                |
-| ------------------------- | -------------------------------------------- |
-| `01-single-task.vine`     | One node, no edges — the simplest graph.     |
-| `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).  |
-| `03-diamond.vine`         | Two parallel branches merging into one task. |
-| `04-all-statuses.vine`    | Every status keyword (all 6) in action.      |
-| `05-decisions.vine`       | Tasks annotated with `>` decision notes.     |
-| `06-project-bacchus.vine` | A realistic 13-task project graph.           |
+| File                      | What it shows                                  |
+| ------------------------- | ---------------------------------------------- |
+| `01-single-task.vine`     | One node, no edges — the simplest graph.       |
+| `02-linear-chain.vine`    | A straight-line dependency chain (5 tasks).    |
+| `03-diamond.vine`         | Two parallel branches merging into one task.   |
+| `04-all-statuses.vine`    | Every status keyword (all 6) in action.        |
+| `05-decisions.vine`       | Tasks annotated with `>` decision notes.       |
+| `06-project-bacchus.vine` | A realistic 13-task project graph.             |
+| `07-design-system.vine`   | Design system with prefix metadata and tokens. |
+| `08-nested-vine.vine`     | Nested reference to an external `.vine` file.  |
+| `09-ref-advanced.vine`    | Multiple ref nodes with decisions and edges.   |
+| `10-sprites.vine`         | Custom `@sprite()` annotations (v1.2.0).       |
 
 Start the dev server and drag any file onto the landing page to visualize it.
 

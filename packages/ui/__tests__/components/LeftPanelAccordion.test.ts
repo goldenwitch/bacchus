@@ -12,7 +12,9 @@ import { getDefaults as getVisualsDefaults } from '../../src/lib/visuals.js';
 import { ChatSession } from '../../src/lib/chat/session.js';
 
 if (typeof Element.prototype.animate !== 'function') {
-  Element.prototype.animate = vi.fn().mockReturnValue({ onfinish: null, cancel: vi.fn() });
+  Element.prototype.animate = vi
+    .fn()
+    .mockReturnValue({ onfinish: null, cancel: vi.fn() });
 }
 
 function defaultProps() {
@@ -75,8 +77,12 @@ describe('LeftPanelAccordion', () => {
     await fireEvent.click(physicsToggle);
 
     expect(physicsToggle.getAttribute('aria-expanded')).toBe('true');
-    expect(getByLabelText('Toggle chat planner').getAttribute('aria-expanded')).toBe('false');
-    expect(getByLabelText('Toggle visual controls').getAttribute('aria-expanded')).toBe('false');
+    expect(
+      getByLabelText('Toggle chat planner').getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(
+      getByLabelText('Toggle visual controls').getAttribute('aria-expanded'),
+    ).toBe('false');
   });
 
   it('click Physics while Physics open → all collapse', async () => {
@@ -95,8 +101,12 @@ describe('LeftPanelAccordion', () => {
     await fireEvent.click(physicsToggle);
 
     expect(physicsToggle.getAttribute('aria-expanded')).toBe('false');
-    expect(getByLabelText('Toggle chat planner').getAttribute('aria-expanded')).toBe('false');
-    expect(getByLabelText('Toggle visual controls').getAttribute('aria-expanded')).toBe('false');
+    expect(
+      getByLabelText('Toggle chat planner').getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(
+      getByLabelText('Toggle visual controls').getAttribute('aria-expanded'),
+    ).toBe('false');
   });
 
   it('click Visuals while Physics open → Physics closes, Visuals opens', async () => {
@@ -160,9 +170,15 @@ describe('LeftPanelAccordion', () => {
       },
     });
 
-    expect(getByLabelText('Toggle chat planner').getAttribute('aria-expanded')).toBe('true');
-    expect(getByLabelText('Toggle physics controls').getAttribute('aria-expanded')).toBe('false');
-    expect(getByLabelText('Toggle visual controls').getAttribute('aria-expanded')).toBe('false');
+    expect(
+      getByLabelText('Toggle chat planner').getAttribute('aria-expanded'),
+    ).toBe('true');
+    expect(
+      getByLabelText('Toggle physics controls').getAttribute('aria-expanded'),
+    ).toBe('false');
+    expect(
+      getByLabelText('Toggle visual controls').getAttribute('aria-expanded'),
+    ).toBe('false');
   });
 
   it('clicking Physics while Chat is open fires ontogglechat', async () => {
@@ -224,7 +240,9 @@ describe('LeftPanelAccordion', () => {
         ontogglechat: vi.fn(),
       },
     });
-    const accordion = container.querySelector('.left-panel-accordion') as HTMLElement;
+    const accordion = container.querySelector(
+      '.left-panel-accordion',
+    ) as HTMLElement;
     expect(accordion.style.width).toBe('340px');
   });
 
@@ -239,7 +257,9 @@ describe('LeftPanelAccordion', () => {
       },
     });
     await fireEvent.click(getByLabelText('Toggle physics controls'));
-    const accordion = container.querySelector('.left-panel-accordion') as HTMLElement;
+    const accordion = container.querySelector(
+      '.left-panel-accordion',
+    ) as HTMLElement;
     expect(accordion.style.width).toBe('230px');
   });
 });

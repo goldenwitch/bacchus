@@ -10,10 +10,19 @@ export function sanitizeSvg(svgText: string): string {
   let result = svgText;
 
   // Remove dangerous elements and their contents (case-insensitive)
-  const dangerousTags = ['script', 'foreignObject', 'iframe', 'embed', 'object'];
+  const dangerousTags = [
+    'script',
+    'foreignObject',
+    'iframe',
+    'embed',
+    'object',
+  ];
   for (const tag of dangerousTags) {
     // Match both self-closing and paired tags
-    result = result.replace(new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'), '');
+    result = result.replace(
+      new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'),
+      '',
+    );
     result = result.replace(new RegExp(`<${tag}\\b[^>]*\\/?>`, 'gi'), '');
   }
 

@@ -1,4 +1,10 @@
-import type { ConcreteTask, Status, Task, VineGraph } from './types.js';
+import type {
+  ConcreteTask,
+  RefTask,
+  Status,
+  Task,
+  VineGraph,
+} from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 
@@ -55,6 +61,31 @@ export function addTask(graph: VineGraph, task: Task): VineGraph {
 
   const newTasks = replaceTask(graph.tasks, task);
   const newOrder = [...graph.order, task.id];
+
+  const next = buildGraph(newTasks, newOrder, graph);
+  validate(next);
+  return next;
+}
+
+/**
+ * Add a reference node to the graph.
+ *
+ * The ref is appended **after** all existing tasks in order so that
+ * the root task always remains the first element.
+ *
+ * @throws {VineError} if `ref.vine` is empty.
+ * @throws {VineError} if a task with the same id already exists.
+ */
+export function addRef(graph: VineGraph, ref: RefTask): VineGraph {
+  if (!ref.vine) {
+    throw new VineError('Ref node must have a non-empty vine URI');
+  }
+  if (graph.tasks.has(ref.id)) {
+    throw new VineError(`Task "${ref.id}" already exists.`);
+  }
+
+  const newTasks = replaceTask(graph.tasks, ref);
+  const newOrder = [...graph.order, ref.id];
 
   const next = buildGraph(newTasks, newOrder, graph);
   validate(next);
@@ -158,6 +189,36 @@ export function updateTask(
   );
   validate(next);
   return next;
+}
+
+/**
+ * Update the vine URI of a reference node.
+ *
+ * @throws {VineError} if the task does not exist.
+ * @throws {VineError} if the task is not a ref node.
+ * @throws {VineError} if the URI is empty.
+ */
+export function updateRefUri(
+  graph: VineGraph,
+  id: string,
+  uri: string,
+): VineGraph {
+  const task = graph.tasks.get(id);
+  if (!task) {
+    throw new VineError(`Task not found: ${id}`);
+  }
+  if (task.kind !== 'ref') {
+    throw new VineError('updateRefUri can only be called on ref nodes');
+  }
+  if (!uri || typeof uri !== 'string') {
+    throw new VineError('Ref URI must be a non-empty string');
+  }
+
+  const updated: RefTask = { ...task, vine: uri };
+  return {
+    ...graph,
+    tasks: replaceTask(graph.tasks, updated),
+  };
 }
 
 /**

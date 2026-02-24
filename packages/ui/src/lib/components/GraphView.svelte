@@ -803,7 +803,7 @@
     {graph}
     {onupdate}
     {chatSession}
-    physicsConfig={physicsConfig}
+    {physicsConfig}
     onphysicschange={handlePhysicsChange}
     onphysicsreset={handlePhysicsReset}
     {showStrataLines}
@@ -811,7 +811,7 @@
       showStrataLines = show;
       saveStrataOverride(show);
     }}
-    visualsConfig={visualsConfig}
+    {visualsConfig}
     onvisualschange={handleVisualsChange}
     onspritechange={handleVisualsSpriteChange}
     onvisualsreset={handleVisualsReset}

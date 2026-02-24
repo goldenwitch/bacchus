@@ -1,0 +1,54 @@
+vine 1.1.0
+title: Final Inspection & Move-In
+prefix: final
+---
+[root] Final Inspection & Move-In (notstarted)
+Pass inspections, obtain certificate of occupancy, and move in.
+-> rough-inspection
+-> final-inspection
+-> certificate
+-> punch-list
+-> move-in
+---
+[rough-inspection] Rough Inspections (notstarted)
+Schedule and pass framing, electrical, plumbing, and insulation inspections.
+These happen during construction — coordinate timing with your build schedule.
+---
+[final-inspection] Final Building Inspection (notstarted)
+Pass the final building inspection covering all systems, finishes, and safety.
+Inspector checks egress, smoke/CO detectors, GFCI protection, and structural integrity.
+-> rough-inspection
+---
+[certificate] Certificate of Occupancy (notstarted)
+Obtain CO or equivalent approval from the local jurisdiction.
+Required before the home can be legally occupied.
+-> final-inspection
+---
+[punch-list] Punch List & Corrections (notstarted)
+Address any deficiencies or corrections noted during inspections.
+Walk through with a checklist: test every outlet, faucet, window, and door.
+-> final-inspection
+---
+[move-in] Move-In & Setup (notstarted)
+Move furniture, connect appliances, and set up the home.
+-> certificate
+-> punch-list
+-> furniture
+-> appliances
+-> landscaping
+---
+[furniture] Furniture & Storage Solutions (notstarted)
+Select and install space-saving furniture: loft bed, fold-down table, modular sofa, and storage stairs.
+Measure everything twice — every inch counts in a tiny home.
+-> certificate
+---
+[appliances] Appliance Hookup (notstarted)
+Install and connect refrigerator, cooktop/oven, washer/dryer combo, and mini-split HVAC.
+Verify electrical circuits match appliance requirements.
+-> certificate
+> Apartment-size or RV-size appliances fit best in tiny homes.
+---
+[landscaping] Exterior & Landscaping (notstarted)
+Build entry steps or deck, finish exterior grading, and plant landscaping.
+Add pathway lighting and house numbers.
+-> certificate

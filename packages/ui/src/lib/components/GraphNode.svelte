@@ -299,7 +299,10 @@
     <defs>
       <!-- Glow blur for outer ring -->
       <filter id="glow-{node.id}" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation={visuals.glowBlurRadius} />
+        <feGaussianBlur
+          in="SourceGraphic"
+          stdDeviation={visuals.glowBlurRadius}
+        />
       </filter>
       <!-- Text glow: soft coloured halo behind label for contrast -->
       <filter

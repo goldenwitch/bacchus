@@ -1,16 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import {
+  addRef,
   addTask,
   removeTask,
   setStatus,
   updateTask,
+  updateRefUri,
   addDependency,
   removeDependency,
 } from '../src/mutations.js';
 import { parse } from '../src/parser.js';
 import { serialize } from '../src/serializer.js';
 import { VineError, VineValidationError } from '../src/errors.js';
-import type { Task, VineGraph, ConcreteTask } from '../src/types.js';
+import type { Task, VineGraph, ConcreteTask, RefTask } from '../src/types.js';
 import { EMPTY_ANNOTATIONS } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -778,5 +780,96 @@ describe('removeDependency', () => {
     expect(() => removeDependency(baseGraph, 'ghost', 'leaf-a')).toThrow(
       VineError,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// addRef
+// ---------------------------------------------------------------------------
+
+describe('addRef', () => {
+  it('adds a ref node to the graph', () => {
+    const patched = patchRootDeps(baseGraph, 'ext');
+    const ref: RefTask = {
+      kind: 'ref',
+      id: 'ext',
+      shortName: 'External',
+      description: 'Points to an external vine.',
+      vine: './other.vine',
+      dependencies: [],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+    };
+    const result = addRef(patched, ref);
+
+    expect(result.tasks.has('ext')).toBe(true);
+    const added = result.tasks.get('ext')!;
+    expect(added.kind).toBe('ref');
+    expect((added as RefTask).vine).toBe('./other.vine');
+    expect(result.order).toContain('ext');
+  });
+
+  it('rejects empty vine URI', () => {
+    const ref: RefTask = {
+      kind: 'ref',
+      id: 'bad-ref',
+      shortName: 'Bad Ref',
+      description: '',
+      vine: '',
+      dependencies: [],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+    };
+
+    expect(() => addRef(baseGraph, ref)).toThrow(VineError);
+  });
+
+  it('rejects duplicate ID', () => {
+    const ref: RefTask = {
+      kind: 'ref',
+      id: 'leaf-a',
+      shortName: 'Dup',
+      description: '',
+      vine: './dup.vine',
+      dependencies: [],
+      decisions: [],
+      annotations: EMPTY_ANNOTATIONS,
+    };
+
+    expect(() => addRef(baseGraph, ref)).toThrow(VineError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateRefUri
+// ---------------------------------------------------------------------------
+
+describe('updateRefUri', () => {
+  const refVine = [
+    'vine 1.1.0',
+    '---',
+    '[root] Root (started)',
+    '-> ext',
+    '---',
+    'ref [ext] External (./original.vine)',
+  ].join('\n');
+  const refGraph = parse(refVine);
+
+  it('updates the vine URI of a ref node', () => {
+    const result = updateRefUri(refGraph, 'ext', './updated.vine');
+    const updated = result.tasks.get('ext')!;
+
+    expect(updated.kind).toBe('ref');
+    expect((updated as RefTask).vine).toBe('./updated.vine');
+  });
+
+  it('rejects non-ref node', () => {
+    expect(() => updateRefUri(baseGraph, 'leaf-a', './foo.vine')).toThrow(
+      VineError,
+    );
+  });
+
+  it('rejects empty URI', () => {
+    expect(() => updateRefUri(refGraph, 'ext', '')).toThrow(VineError);
   });
 });

@@ -117,138 +117,135 @@
 </script>
 
 <div class="chat-body">
-      {#if !apiKey}
-        <!-- API Key entry -->
-        <div class="key-setup">
-          <p class="key-label">
-            Enter your Anthropic API key to start planning.
-          </p>
-          <div class="key-input-row">
-            <input
-              type="password"
-              class="key-input"
-              placeholder="sk-ant-..."
-              bind:value={keyInput}
-              onkeydown={handleKeyInputKeyDown}
-            />
+  {#if !apiKey}
+    <!-- API Key entry -->
+    <div class="key-setup">
+      <p class="key-label">Enter your Anthropic API key to start planning.</p>
+      <div class="key-input-row">
+        <input
+          type="password"
+          class="key-input"
+          placeholder="sk-ant-..."
+          bind:value={keyInput}
+          onkeydown={handleKeyInputKeyDown}
+        />
+        <button
+          class="key-save-btn"
+          onclick={handleSaveKey}
+          disabled={!keyInput.trim()}
+        >
+          Save
+        </button>
+      </div>
+      <p class="key-hint">
+        Stored locally in your browser. Never sent to our servers.
+      </p>
+    </div>
+  {:else}
+    <!-- Messages -->
+    <div class="chat-messages" bind:this={messagesEl}>
+      {#if messages.length === 0}
+        <p class="chat-empty">
+          Describe the plan you'd like to create, or ask me to modify the
+          current graph.
+        </p>
+      {/if}
+      {#each messages as msg, i (i)}
+        {#if msg.type === 'user'}
+          <div class="msg msg-user">
+            <p>{msg.content}</p>
+          </div>
+        {:else if msg.type === 'assistant'}
+          <div class="msg msg-assistant">
+            <MarkdownMessage content={msg.content} />
             <button
-              class="key-save-btn"
-              onclick={handleSaveKey}
-              disabled={!keyInput.trim()}
+              class="msg-copy-btn"
+              aria-label="Copy message"
+              onclick={() => {
+                navigator.clipboard.writeText(msg.content).catch(() => {});
+              }}
+              title="Copy message"
             >
-              Save
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                ></path>
+              </svg>
             </button>
           </div>
-          <p class="key-hint">
-            Stored locally in your browser. Never sent to our servers.
-          </p>
-        </div>
-      {:else}
-        <!-- Messages -->
-        <div class="chat-messages" bind:this={messagesEl}>
-          {#if messages.length === 0}
-            <p class="chat-empty">
-              Describe the plan you'd like to create, or ask me to modify the
-              current graph.
-            </p>
-          {/if}
-          {#each messages as msg, i (i)}
-            {#if msg.type === 'user'}
-              <div class="msg msg-user">
-                <p>{msg.content}</p>
-              </div>
-            {:else if msg.type === 'assistant'}
-              <div class="msg msg-assistant">
-                <MarkdownMessage content={msg.content} />
-                <button
-                  class="msg-copy-btn"
-                  aria-label="Copy message"
-                  onclick={() => {
-                    navigator.clipboard.writeText(msg.content).catch(() => {});
-                  }}
-                  title="Copy message"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"
-                    ></rect>
-                    <path
-                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                    ></path>
-                  </svg>
-                </button>
-              </div>
-            {:else if msg.type === 'tool'}
-              <div
-                class="msg"
-                class:msg-tool={!msg.isError}
-                class:msg-tool-error={msg.isError}
-              >
-                <ToolFeedbackCard
-                  detail={msg.detail}
-                  name={msg.name}
-                  result={msg.result}
-                  isError={msg.isError}
-                />
-              </div>
-            {:else if msg.type === 'error'}
-              <div class="msg msg-error">
-                <p>{msg.message}</p>
-              </div>
-            {/if}
-          {/each}
-          {#if isLoading}
-            <div class="loading-indicator">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-          {/if}
-        </div>
-
-        <!-- Input -->
-        <div class="chat-input-row">
-          <textarea
-            class="chat-input"
-            placeholder="Describe your plan..."
-            rows="2"
-            bind:value={inputText}
-            onkeydown={handleKeyDown}
-            disabled={isLoading}
-          ></textarea>
-          <button
-            class="send-btn"
-            onclick={handleSend}
-            disabled={isLoading || !inputText.trim()}
-            aria-label="Send message"
-            title="Send"
+        {:else if msg.type === 'tool'}
+          <div
+            class="msg"
+            class:msg-tool={!msg.isError}
+            class:msg-tool-error={msg.isError}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
+            <ToolFeedbackCard
+              detail={msg.detail}
+              name={msg.name}
+              result={msg.result}
+              isError={msg.isError}
+            />
+          </div>
+        {:else if msg.type === 'error'}
+          <div class="msg msg-error">
+            <p>{msg.message}</p>
+          </div>
+        {/if}
+      {/each}
+      {#if isLoading}
+        <div class="loading-indicator">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
         </div>
       {/if}
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-row">
+      <textarea
+        class="chat-input"
+        placeholder="Describe your plan..."
+        rows="2"
+        bind:value={inputText}
+        onkeydown={handleKeyDown}
+        disabled={isLoading}
+      ></textarea>
+      <button
+        class="send-btn"
+        onclick={handleSend}
+        disabled={isLoading || !inputText.trim()}
+        aria-label="Send message"
+        title="Send"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -503,5 +500,4 @@
     opacity: 1 !important;
     background: rgba(255, 255, 255, 0.2);
   }
-
 </style>

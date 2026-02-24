@@ -220,12 +220,30 @@ try {
 }
 
 # ---------------------------------------------------------------------------
+# 8. Build VS Code extension (pre-build so F5 works immediately)
+# ---------------------------------------------------------------------------
+Write-Step 'Building VS Code extension'
+
+Push-Location $PSScriptRoot
+try {
+    yarn build:vscode
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail 'VS Code extension build failed.'
+        exit 1
+    }
+    Write-Ok 'VS Code extension built (dist/extension.js + dist/server.js)'
+} finally {
+    Pop-Location
+}
+
+# ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 Write-Host "`n✅ Setup complete. You're ready to develop." -ForegroundColor Green
 Write-Host @"
 
   Quick reference:
+    F5                         Launch Extension Development Host
     yarn vitest run            Run unit tests
     yarn vitest run --coverage Run tests with coverage
     tsc --noEmit               Type-check (no emit)

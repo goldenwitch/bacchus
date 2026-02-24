@@ -204,7 +204,10 @@ describe('saveOverrides', () => {
   });
 
   it('removes key when overrides are empty', () => {
-    localStorage.setItem('bacchus-visuals', JSON.stringify({ glowBlurRadius: 5 }));
+    localStorage.setItem(
+      'bacchus-visuals',
+      JSON.stringify({ glowBlurRadius: 5 }),
+    );
     saveOverrides({});
     vi.advanceTimersByTime(200);
     expect(localStorage.getItem('bacchus-visuals')).toBeNull();
@@ -233,7 +236,10 @@ describe('clearOverrides', () => {
   });
 
   it('removes the localStorage key', () => {
-    localStorage.setItem('bacchus-visuals', JSON.stringify({ glowBlurRadius: 5 }));
+    localStorage.setItem(
+      'bacchus-visuals',
+      JSON.stringify({ glowBlurRadius: 5 }),
+    );
     clearOverrides();
     expect(localStorage.getItem('bacchus-visuals')).toBeNull();
   });

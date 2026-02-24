@@ -10,7 +10,7 @@
   } = $props();
 </script>
 
-<div class="panel-body" style:width={width}>
+<div class="panel-body" style:width>
   {@render children()}
 </div>
 

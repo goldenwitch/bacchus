@@ -1,0 +1,58 @@
+vine 1.1.0
+title: Site Preparation
+prefix: site-prep
+---
+[root] Site Preparation (notstarted)
+Prepare the land and utilities before construction begins.
+-> land
+-> utilities-rough
+---
+[land] Land & Foundation Prep (notstarted)
+Clear the site, level the ground, and prepare the foundation.
+-> survey
+-> clearing
+-> foundation
+---
+[survey] Land Survey (notstarted)
+Hire a licensed surveyor to mark property boundaries, setback lines, and easements.
+Confirm the build footprint complies with all setback requirements.
+---
+[clearing] Site Clearing & Grading (notstarted)
+Remove vegetation, stumps, and debris; grade the site for proper drainage.
+Establish a level building pad with appropriate slope away from the foundation.
+-> survey
+---
+[foundation] Foundation Installation (notstarted)
+Install the chosen foundation system per engineered plans.
+-> clearing
+> Decision needed: trailer-based (mobile) vs. permanent foundation (piers/slab/skids).
+> Trailer: flexibility to relocate; Piers/slab: more stable, may increase property value.
+---
+[utilities-rough] Utility Rough-In (notstarted)
+Arrange water, sewer/septic, and electrical service to the site.
+-> land
+-> utility-trench
+-> water-hookup
+-> sewer-septic
+-> electrical-service
+---
+[utility-trench] Utility Trench & Conduit (notstarted)
+Dig trenches to required depth and lay conduit for underground utility runs.
+Call 811 before digging to mark existing underground utilities.
+-> clearing
+---
+[water-hookup] Water Supply Connection (notstarted)
+Tap into municipal water or drill a well; run supply line to the build site.
+Install a shut-off valve and pressure regulator at the connection point.
+-> utility-trench
+---
+[sewer-septic] Sewer / Septic Connection (notstarted)
+Connect to municipal sewer or install an approved septic system.
+-> utility-trench
+> Check local health department requirements for septic tank sizing and drain field.
+> Composting toilet is an alternative if septic is prohibitively expensive.
+---
+[electrical-service] Electrical Service Drop (notstarted)
+Coordinate with the utility company for a temporary construction panel or permanent service drop.
+Determine amperage requirements (100A typical for a tiny home).
+-> utility-trench

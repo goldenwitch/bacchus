@@ -10,17 +10,36 @@ import PanelBody from '../../src/lib/components/primitives/PanelBody.svelte';
 // Polyfill Element.animate for jsdom
 if (typeof Element.prototype.animate !== 'function') {
   Element.prototype.animate = function () {
-    return { cancel: () => {}, finish: () => {}, play: () => {}, pause: () => {}, reverse: () => {}, onfinish: null, finished: Promise.resolve() } as unknown as Animation;
+    return {
+      cancel: () => {},
+      finish: () => {},
+      play: () => {},
+      pause: () => {},
+      reverse: () => {},
+      onfinish: null,
+      finished: Promise.resolve(),
+    } as unknown as Animation;
   };
 }
 
 describe('PanelSlider', () => {
-  afterEach(() => { cleanup(); });
-  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders label and formatted value', () => {
     const { getByText } = render(PanelSlider, {
-      props: { label: 'Speed', value: 42, min: 0, max: 100, step: 1, onchange: vi.fn() },
+      props: {
+        label: 'Speed',
+        value: 42,
+        min: 0,
+        max: 100,
+        step: 1,
+        onchange: vi.fn(),
+      },
     });
     expect(getByText('Speed')).toBeInTheDocument();
     expect(getByText('42')).toBeInTheDocument();
@@ -28,7 +47,14 @@ describe('PanelSlider', () => {
 
   it('renders the range input with correct attributes', () => {
     const { container } = render(PanelSlider, {
-      props: { label: 'Speed', value: 50, min: 0, max: 100, step: 5, onchange: vi.fn() },
+      props: {
+        label: 'Speed',
+        value: 50,
+        min: 0,
+        max: 100,
+        step: 5,
+        onchange: vi.fn(),
+      },
     });
     const input = container.querySelector('input[type="range"]')!;
     expect(input).toBeTruthy();
@@ -66,17 +92,28 @@ describe('PanelSlider', () => {
 
   it('auto-formats based on step precision', () => {
     const { getByText } = render(PanelSlider, {
-      props: { label: 'Fine', value: 0.123, min: 0, max: 1, step: 0.01, onchange: vi.fn() },
+      props: {
+        label: 'Fine',
+        value: 0.123,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onchange: vi.fn(),
+      },
     });
     expect(getByText('0.12')).toBeInTheDocument();
   });
 });
 
 describe('GroupHeader', () => {
-  afterEach(() => { cleanup(); });
+  afterEach(() => {
+    cleanup();
+  });
 
   it('renders uppercase label text', () => {
-    const { container } = render(GroupHeader, { props: { label: 'Repulsion' } });
+    const { container } = render(GroupHeader, {
+      props: { label: 'Repulsion' },
+    });
     const header = container.querySelector('.panel-group-header')!;
     expect(header).toBeTruthy();
     expect(header.textContent).toBe('Repulsion');
@@ -84,8 +121,12 @@ describe('GroupHeader', () => {
 });
 
 describe('ResetButton', () => {
-  afterEach(() => { cleanup(); });
-  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders with default label', () => {
     const { getByRole } = render(ResetButton, { props: { onclick: vi.fn() } });
@@ -94,7 +135,9 @@ describe('ResetButton', () => {
   });
 
   it('renders with custom label', () => {
-    const { getByRole } = render(ResetButton, { props: { label: 'Clear All', onclick: vi.fn() } });
+    const { getByRole } = render(ResetButton, {
+      props: { label: 'Clear All', onclick: vi.fn() },
+    });
     expect(getByRole('button', { name: /clear all/i })).toBeInTheDocument();
   });
 
@@ -107,8 +150,12 @@ describe('ResetButton', () => {
 });
 
 describe('PanelCheckbox', () => {
-  afterEach(() => { cleanup(); });
-  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders unchecked by default', () => {
     const { getByRole } = render(PanelCheckbox, {
@@ -123,7 +170,9 @@ describe('PanelCheckbox', () => {
     const { getByRole } = render(PanelCheckbox, {
       props: { checked: true, label: 'Enable', onchange: vi.fn() },
     });
-    expect((getByRole('checkbox', { name: /enable/i }) as HTMLInputElement).checked).toBe(true);
+    expect(
+      (getByRole('checkbox', { name: /enable/i }) as HTMLInputElement).checked,
+    ).toBe(true);
   });
 
   it('fires onchange with toggled value', async () => {
@@ -138,15 +187,26 @@ describe('PanelCheckbox', () => {
 
   it('uses custom ariaLabel when provided', () => {
     const { getByRole } = render(PanelCheckbox, {
-      props: { checked: false, label: 'Lines', onchange: vi.fn(), ariaLabel: 'Show strata lines' },
+      props: {
+        checked: false,
+        label: 'Lines',
+        onchange: vi.fn(),
+        ariaLabel: 'Show strata lines',
+      },
     });
-    expect(getByRole('checkbox', { name: /show strata lines/i })).toBeInTheDocument();
+    expect(
+      getByRole('checkbox', { name: /show strata lines/i }),
+    ).toBeInTheDocument();
   });
 });
 
 describe('TextInput', () => {
-  afterEach(() => { cleanup(); });
-  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('renders with placeholder', () => {
     const { container } = render(TextInput, {
@@ -188,12 +248,16 @@ describe('TextInput', () => {
     const { container } = render(TextInput, {
       props: { type: 'password' },
     });
-    expect(container.querySelector('input')!.getAttribute('type')).toBe('password');
+    expect(container.querySelector('input')!.getAttribute('type')).toBe(
+      'password',
+    );
   });
 });
 
 describe('PanelBody', () => {
-  afterEach(() => { cleanup(); });
+  afterEach(() => {
+    cleanup();
+  });
 
   it('renders children content inside .panel-body wrapper', () => {
     const { container, getByText } = render(PanelBody, {

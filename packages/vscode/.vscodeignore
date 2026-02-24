@@ -1,0 +1,10 @@
+.vscode/
+src/
+__tests__/
+node_modules/
+tsconfig.json
+esbuild.mjs
+runIntegrationTests.mjs
+*.map
+*.vsix
+.gitignore

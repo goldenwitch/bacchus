@@ -90,6 +90,8 @@ yarn dlx tsx packages/cli/src/cli.ts add examples/03-diamond.vine \
   --description "A brand-new task." --depends-on left right
 ```
 
+> **Note:** `add` creates concrete tasks only. To add a reference node linking to an external `.vine` file, use [`add-ref`](#vine-add-ref-file).
+
 ---
 
 ### `vine status <file> <id> <status>`
@@ -101,6 +103,33 @@ Valid statuses: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `b
 ```powershell
 yarn dlx tsx packages/cli/src/cli.ts status examples/03-diamond.vine left complete
 ```
+
+> **Note:** Reference nodes have no status. Passing a ref node ID will fail with a validation error — use `vine list` to confirm the node type first.
+
+---
+
+### `vine add-ref <file>`
+
+Adds a reference node to a `.vine` file. Reference nodes are proxies for external `.vine` files. **Modifies the file in-place.**
+
+| Flag                    | Required | Description                                                   |
+| ----------------------- | -------- | ------------------------------------------------------------- |
+| `--id <id>`             | Yes      | Unique reference node identifier.                             |
+| `--name <name>`         | Yes      | Short display name for the ref node.                          |
+| `--vine <uri>`          | Yes      | URI of the external `.vine` file (relative or absolute path). |
+| `--description <text>`  | No       | Description text.                                             |
+| `--depends-on <ids...>` | No       | Space-separated list of dependency task IDs.                  |
+
+```powershell
+yarn dlx tsx packages/cli/src/cli.ts add-ref examples/03-diamond.vine \
+  --id sub --name "Sub Project" --vine ./sub-project.vine
+```
+
+**Error handling:**
+
+- Invalid ID format → error (must be alphanumeric, hyphens, and optional slash-separated segments)
+- Missing required flags (`--id`, `--name`, `--vine`) → usage error from Commander
+- File not found → `ENOENT` error
 
 ---
 

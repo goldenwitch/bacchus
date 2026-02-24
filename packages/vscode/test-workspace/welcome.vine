@@ -1,0 +1,67 @@
+vine 1.0.0
+title: Bacchus VINE — Extension Test
+---
+[root] Test the Bacchus VINE Extension (started)
+Welcome! This workspace is the Extension Development Host for Bacchus VINE.
+Use the MCP tools exposed by the extension to explore and mutate this graph.
+-> setup
+-> mcp-tools
+-> graph-commands
+-> polish
+---
+[setup] Environment Setup (complete)
+Install dependencies, build the extension, and launch the host.
+> yarn install && yarn workspace bacchus-vine build
+---
+[mcp-tools] Exercise MCP Tools (started)
+Verify every MCP tool the extension exposes to the AI assistant.
+-> setup
+-> mcp-list
+-> mcp-show
+-> mcp-get
+-> mcp-search
+-> mcp-add
+-> mcp-update
+-> mcp-status
+-> mcp-deps
+-> mcp-validate
+-> mcp-descendants
+---
+[mcp-list] vine_list (notstarted)
+Ask the assistant to list all loaded VINE files.
+---
+[mcp-show] vine_show (notstarted)
+Ask the assistant to show the full contents of this graph.
+---
+[mcp-get] vine_get_task (notstarted)
+Retrieve a single task by ID — try "mcp-tools" or "root".
+---
+[mcp-search] vine_search (notstarted)
+Search for tasks matching a keyword, e.g. "MCP" or "graph".
+---
+[mcp-add] vine_add_task (notstarted)
+Add a brand-new task to this graph via the tool.
+---
+[mcp-update] vine_update_task (notstarted)
+Update a task's description or status.
+---
+[mcp-status] vine_set_status (notstarted)
+Transition a task to a different status.
+---
+[mcp-deps] vine_add / remove_dependency (notstarted)
+Wire and unwire dependency edges between tasks.
+---
+[mcp-validate] vine_validate (notstarted)
+Run the validator — should report zero errors on a clean graph.
+---
+[mcp-descendants] vine_get_descendants (notstarted)
+Get the full subtree under "mcp-tools".
+---
+[graph-commands] Test VS Code Commands (notstarted)
+Open the command palette and run "Bacchus: Show Graph".
+-> setup
+---
+[polish] Final Polish (planning)
+Confirm everything works, then mark tasks complete.
+-> mcp-tools
+-> graph-commands

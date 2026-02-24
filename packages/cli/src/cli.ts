@@ -7,6 +7,7 @@ import { validateCommand } from './commands/validate.js';
 import { showCommand } from './commands/show.js';
 import { listCommand } from './commands/list.js';
 import { addCommand } from './commands/add.js';
+import { addRefCommand } from './commands/add-ref.js';
 import { statusCommand } from './commands/status.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,7 @@ async function main(): Promise<void> {
   program.addCommand(showCommand);
   program.addCommand(listCommand);
   program.addCommand(addCommand);
+  program.addCommand(addRefCommand);
   program.addCommand(statusCommand);
 
   await program.parseAsync();

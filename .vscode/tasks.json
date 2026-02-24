@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Idempotent dependency install — near-instant when the lockfile is unchanged.
+      "label": "install",
+      "type": "shell",
+      "command": "yarn install",
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "silent" },
+      "problemMatcher": []
+    },
+    {
+      // Builds dist/extension.js + dist/server.js via esbuild, then watches
+      // for changes.  The background problemMatcher blocks the launch until
+      // the initial build finishes (keyed on the "[watch] build finished"
+      // marker that fires only after *both* bundles are ready).
+      "label": "watch:vscode",
+      "type": "shell",
+      "command": "yarn workspace bacchus-vine watch",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "install",
+      "isBackground": true,
+      "presentation": { "reveal": "never" },
+      "problemMatcher": {
+        "owner": "esbuild",
+        "fileLocation": ["relative", "${workspaceFolder}/packages/vscode"],
+        "pattern": {
+          "regexp": "^ERROR: (.+)",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[watch\\] build started",
+          "endsPattern": "^\\[watch\\] build finished"
+        }
+      }
+    }
+  ]
+}

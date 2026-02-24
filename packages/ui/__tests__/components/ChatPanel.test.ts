@@ -8,8 +8,6 @@ vi.mock('../../src/lib/chat/session.js', () => ({
   ChatSession: vi.fn().mockImplementation(() => createMockSession()),
 }));
 
-
-
 import ChatPanel from '../../src/lib/components/ChatPanel.svelte';
 
 // Polyfill Element.animate for jsdom
@@ -74,10 +72,16 @@ describe('ChatPanel', () => {
     it('save button calls session.saveApiKey with trimmed value', async () => {
       const props = defaultProps({ apiKey: null });
       const { container } = render(ChatPanel, { props });
-      const keyInput = container.querySelector('.key-input') as HTMLInputElement;
-      const saveBtn = container.querySelector('.key-save-btn') as HTMLButtonElement;
+      const keyInput = container.querySelector(
+        '.key-input',
+      ) as HTMLInputElement;
+      const saveBtn = container.querySelector(
+        '.key-save-btn',
+      ) as HTMLButtonElement;
 
-      await fireEvent.input(keyInput, { target: { value: '  sk-ant-test-key  ' } });
+      await fireEvent.input(keyInput, {
+        target: { value: '  sk-ant-test-key  ' },
+      });
       await fireEvent.click(saveBtn);
 
       expect(props.session.saveApiKey).toHaveBeenCalledWith(
@@ -89,7 +93,9 @@ describe('ChatPanel', () => {
     it('Enter key in key input triggers save', async () => {
       const props = defaultProps({ apiKey: null });
       const { container } = render(ChatPanel, { props });
-      const keyInput = container.querySelector('.key-input') as HTMLInputElement;
+      const keyInput = container.querySelector(
+        '.key-input',
+      ) as HTMLInputElement;
 
       await fireEvent.input(keyInput, { target: { value: 'sk-ant-test-key' } });
       await fireEvent.keyDown(keyInput, { key: 'Enter' });
@@ -101,7 +107,9 @@ describe('ChatPanel', () => {
       const { container } = render(ChatPanel, {
         props: defaultProps({ apiKey: null }),
       });
-      const saveBtn = container.querySelector('.key-save-btn') as HTMLButtonElement;
+      const saveBtn = container.querySelector(
+        '.key-save-btn',
+      ) as HTMLButtonElement;
       expect(saveBtn.disabled).toBe(true);
     });
   });
@@ -215,7 +223,9 @@ describe('ChatPanel', () => {
     it('send button calls session.processMessage and clears input', async () => {
       const props = defaultProps({ apiKey: 'sk-ant-key' });
       const { container } = render(ChatPanel, { props });
-      const textarea = container.querySelector('.chat-input') as HTMLTextAreaElement;
+      const textarea = container.querySelector(
+        '.chat-input',
+      ) as HTMLTextAreaElement;
       const sendBtn = container.querySelector('.send-btn') as HTMLButtonElement;
 
       await fireEvent.input(textarea, { target: { value: 'Build a plan' } });
@@ -239,7 +249,9 @@ describe('ChatPanel', () => {
       const { container } = render(ChatPanel, {
         props: defaultProps({ apiKey: 'sk-ant-key', isLoading: true }),
       });
-      const textarea = container.querySelector('.chat-input') as HTMLTextAreaElement;
+      const textarea = container.querySelector(
+        '.chat-input',
+      ) as HTMLTextAreaElement;
       const sendBtn = container.querySelector('.send-btn') as HTMLButtonElement;
 
       expect(textarea.disabled).toBe(true);
@@ -249,7 +261,9 @@ describe('ChatPanel', () => {
     it('Enter without Shift triggers send', async () => {
       const props = defaultProps({ apiKey: 'sk-ant-key' });
       const { container } = render(ChatPanel, { props });
-      const textarea = container.querySelector('.chat-input') as HTMLTextAreaElement;
+      const textarea = container.querySelector(
+        '.chat-input',
+      ) as HTMLTextAreaElement;
 
       await fireEvent.input(textarea, { target: { value: 'Hello' } });
       await fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
@@ -260,7 +274,9 @@ describe('ChatPanel', () => {
     it('Shift+Enter does not trigger send', async () => {
       const props = defaultProps({ apiKey: 'sk-ant-key' });
       const { container } = render(ChatPanel, { props });
-      const textarea = container.querySelector('.chat-input') as HTMLTextAreaElement;
+      const textarea = container.querySelector(
+        '.chat-input',
+      ) as HTMLTextAreaElement;
 
       await fireEvent.input(textarea, { target: { value: 'Hello' } });
       await fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
@@ -302,7 +318,9 @@ describe('ChatPanel', () => {
           displayMessages: [{ type: 'assistant', content: 'Copied text' }],
         }),
       });
-      const copyBtn = container.querySelector('.msg-copy-btn') as HTMLButtonElement;
+      const copyBtn = container.querySelector(
+        '.msg-copy-btn',
+      ) as HTMLButtonElement;
       expect(copyBtn).toBeTruthy();
       await fireEvent.click(copyBtn);
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Copied text');

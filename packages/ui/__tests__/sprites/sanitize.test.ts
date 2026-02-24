@@ -3,7 +3,8 @@ import { sanitizeSvg } from '../../src/lib/sprites/sanitize.js';
 
 describe('sanitizeSvg', () => {
   it('preserves valid SVG content', () => {
-    const svg = '<svg><symbol id="s"><circle r="42" cx="50" cy="50"/></symbol></svg>';
+    const svg =
+      '<svg><symbol id="s"><circle r="42" cx="50" cy="50"/></symbol></svg>';
     expect(sanitizeSvg(svg)).toBe(svg);
   });
 
@@ -16,7 +17,9 @@ describe('sanitizeSvg', () => {
   it('removes script elements', () => {
     const svg =
       '<svg><symbol id="s"><circle r="42"/></symbol><script>alert("xss")</script></svg>';
-    expect(sanitizeSvg(svg)).toBe('<svg><symbol id="s"><circle r="42"/></symbol></svg>');
+    expect(sanitizeSvg(svg)).toBe(
+      '<svg><symbol id="s"><circle r="42"/></symbol></svg>',
+    );
   });
 
   it('removes script elements case-insensitively', () => {
@@ -46,13 +49,17 @@ describe('sanitizeSvg', () => {
   });
 
   it('strips on* event handler attributes', () => {
-    const svg = '<svg><circle r="42" onclick="alert(1)" onerror="alert(2)"/></svg>';
+    const svg =
+      '<svg><circle r="42" onclick="alert(1)" onerror="alert(2)"/></svg>';
     expect(sanitizeSvg(svg)).toBe('<svg><circle r="42"/></svg>');
   });
 
   it('strips onload from symbol', () => {
-    const svg = '<svg><symbol id="s" onload="alert(1)"><circle r="42"/></symbol></svg>';
-    expect(sanitizeSvg(svg)).toBe('<svg><symbol id="s"><circle r="42"/></symbol></svg>');
+    const svg =
+      '<svg><symbol id="s" onload="alert(1)"><circle r="42"/></symbol></svg>';
+    expect(sanitizeSvg(svg)).toBe(
+      '<svg><symbol id="s"><circle r="42"/></symbol></svg>',
+    );
   });
 
   it('strips javascript: href', () => {
@@ -61,7 +68,8 @@ describe('sanitizeSvg', () => {
   });
 
   it('strips javascript: xlink:href', () => {
-    const svg = '<svg><a xlink:href="javascript:alert(1)"><circle r="42"/></a></svg>';
+    const svg =
+      '<svg><a xlink:href="javascript:alert(1)"><circle r="42"/></a></svg>';
     expect(sanitizeSvg(svg)).toBe('<svg><a><circle r="42"/></a></svg>');
   });
 

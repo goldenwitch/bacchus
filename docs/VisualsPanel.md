@@ -22,54 +22,54 @@ Organized into logical groups with small section headers:
 
 ### Glow
 
-| Slider Label  | Parameter          | Min | Max | Step | Default |
-| ------------- | ------------------ | --- | --- | ---- | ------- |
-| Glow Blur     | `glowBlurRadius`   | 0   | 15  | 0.5  | 3.5     |
-| Glow Stroke   | `glowStrokeWidth`  | 0.5 | 8   | 0.5  | 2.5     |
-| Glow Opacity  | `glowBaseOpacity`  | 0   | 1   | 0.05 | 0.6     |
-| Pulse Min     | `glowPulseMin`     | 0   | 1   | 0.05 | 0.4     |
-| Pulse Max     | `glowPulseMax`     | 0   | 1   | 0.05 | 0.8     |
-| Pulse Speed   | `glowPulseDuration`| 0.5 | 8   | 0.5  | 2.0     |
-| Ring Offset   | `glowRadiusOffset` | 0   | 20  | 1    | 6       |
+| Slider Label | Parameter           | Min | Max | Step | Default |
+| ------------ | ------------------- | --- | --- | ---- | ------- |
+| Glow Blur    | `glowBlurRadius`    | 0   | 15  | 0.5  | 3.5     |
+| Glow Stroke  | `glowStrokeWidth`   | 0.5 | 8   | 0.5  | 2.5     |
+| Glow Opacity | `glowBaseOpacity`   | 0   | 1   | 0.05 | 0.6     |
+| Pulse Min    | `glowPulseMin`      | 0   | 1   | 0.05 | 0.4     |
+| Pulse Max    | `glowPulseMax`      | 0   | 1   | 0.05 | 0.8     |
+| Pulse Speed  | `glowPulseDuration` | 0.5 | 8   | 0.5  | 2.0     |
+| Ring Offset  | `glowRadiusOffset`  | 0   | 20  | 1    | 6       |
 
 ### Dimming
 
-| Slider Label   | Parameter               | Min | Max | Step | Default |
-| -------------- | ----------------------- | --- | --- | ---- | ------- |
-| Dimmed Nodes   | `dimmedNodeOpacity`     | 0   | 1   | 0.05 | 0.45    |
-| Dimmed Edges   | `dimmedEdgeOpacity`     | 0   | 1   | 0.05 | 0.15    |
-| Default Edges  | `defaultEdgeOpacity`    | 0   | 1   | 0.05 | 0.6     |
-| Focused Edges  | `highlightedEdgeOpacity`| 0   | 1   | 0.05 | 1.0     |
+| Slider Label  | Parameter                | Min | Max | Step | Default |
+| ------------- | ------------------------ | --- | --- | ---- | ------- |
+| Dimmed Nodes  | `dimmedNodeOpacity`      | 0   | 1   | 0.05 | 0.45    |
+| Dimmed Edges  | `dimmedEdgeOpacity`      | 0   | 1   | 0.05 | 0.15    |
+| Default Edges | `defaultEdgeOpacity`     | 0   | 1   | 0.05 | 0.6     |
+| Focused Edges | `highlightedEdgeOpacity` | 0   | 1   | 0.05 | 1.0     |
 
 ### Edges
 
-| Slider Label    | Parameter           | Min | Max | Step | Default |
-| --------------- | ------------------- | --- | --- | ---- | ------- |
-| Vine Width      | `vineStrokeWidth`   | 0.5 | 8   | 0.5  | 2.5     |
-| Wave Amplitude  | `vineWaveAmplitude` | 0   | 20  | 1    | 5       |
-| Wave Frequency  | `vineWaveFrequency` | 0   | 10  | 0.5  | 3       |
-| Vine Segments   | `vineSegments`      | 2   | 20  | 1    | 8       |
-| Leaf Scale      | `leafScale`         | 0.5 | 6   | 0.1  | 2.2     |
-| Leaf Opacity    | `leafOpacity`       | 0   | 1   | 0.05 | 0.4     |
-| Flow Speed      | `edgeFlowDuration`  | 0.5 | 8   | 0.5  | 2.0     |
+| Slider Label   | Parameter           | Min | Max | Step | Default |
+| -------------- | ------------------- | --- | --- | ---- | ------- |
+| Vine Width     | `vineStrokeWidth`   | 0.5 | 8   | 0.5  | 2.5     |
+| Wave Amplitude | `vineWaveAmplitude` | 0   | 20  | 1    | 5       |
+| Wave Frequency | `vineWaveFrequency` | 0   | 10  | 0.5  | 3       |
+| Vine Segments  | `vineSegments`      | 2   | 20  | 1    | 8       |
+| Leaf Scale     | `leafScale`         | 0.5 | 6   | 0.1  | 2.2     |
+| Leaf Opacity   | `leafOpacity`       | 0   | 1   | 0.05 | 0.4     |
+| Flow Speed     | `edgeFlowDuration`  | 0.5 | 8   | 0.5  | 2.0     |
 
 ### Animations
 
-| Slider Label   | Parameter           | Min | Max | Step | Default |
-| -------------- | ------------------- | --- | --- | ---- | ------- |
-| Shimmer Speed  | `shimmerDuration`   | 1   | 20  | 0.5  | 6.0     |
-| Sway Angle     | `leafSwayAngle`     | 0   | 15  | 1    | 3       |
-| Sway Speed     | `leafSwayDuration`  | 1   | 12  | 0.5  | 4.0     |
-| Entry Stagger  | `entryStaggerDelay` | 20  | 300 | 10   | 80      |
+| Slider Label  | Parameter           | Min | Max | Step | Default |
+| ------------- | ------------------- | --- | --- | ---- | ------- |
+| Shimmer Speed | `shimmerDuration`   | 1   | 20  | 0.5  | 6.0     |
+| Sway Angle    | `leafSwayAngle`     | 0   | 15  | 1    | 3       |
+| Sway Speed    | `leafSwayDuration`  | 1   | 12  | 0.5  | 4.0     |
+| Entry Stagger | `entryStaggerDelay` | 20  | 300 | 10   | 80      |
 
 ### Sizing
 
-| Slider Label | Parameter        | Min | Max | Step | Default |
-| ------------ | ---------------- | --- | --- | ---- | ------- |
-| Min Radius   | `nodeRadiusMin`  | 20  | 80  | 2    | 40      |
-| Max Radius   | `nodeRadiusMax`  | 30  | 120 | 2    | 60      |
-| Badge Size   | `emojiBadgeRadius` | 6 | 24  | 1    | 12      |
-| Badge Font   | `emojiFontSize`  | 8   | 28  | 1    | 14      |
+| Slider Label | Parameter          | Min | Max | Step | Default |
+| ------------ | ------------------ | --- | --- | ---- | ------- |
+| Min Radius   | `nodeRadiusMin`    | 20  | 80  | 2    | 40      |
+| Max Radius   | `nodeRadiusMax`    | 30  | 120 | 2    | 60      |
+| Badge Size   | `emojiBadgeRadius` | 6   | 24  | 1    | 12      |
+| Badge Font   | `emojiFontSize`    | 8   | 28  | 1    | 14      |
 
 ### Sprite
 
@@ -116,15 +116,15 @@ Pure TypeScript module (no Svelte runes) with:
 
 Animation durations that can't be passed as props (since they're in CSS `@keyframes` classes) are injected as CSS variables:
 
-| CSS Variable                  | Controlled By         | Default Fallback |
-| ----------------------------- | --------------------- | ---------------- |
-| `--vis-glow-pulse-duration`   | `glowPulseDuration`   | `2s`             |
-| `--vis-shimmer-duration`      | `shimmerDuration`     | `6s`             |
-| `--vis-edge-flow-duration`    | `edgeFlowDuration`    | `2s`             |
-| `--vis-leaf-sway-angle`       | `leafSwayAngle`       | `3deg`           |
-| `--vis-leaf-sway-duration`    | `leafSwayDuration`    | `4s`             |
-| `--vis-glow-pulse-min`        | `glowPulseMin`        | `0.4`            |
-| `--vis-glow-pulse-max`        | `glowPulseMax`        | `0.8`            |
+| CSS Variable                | Controlled By       | Default Fallback |
+| --------------------------- | ------------------- | ---------------- |
+| `--vis-glow-pulse-duration` | `glowPulseDuration` | `2s`             |
+| `--vis-shimmer-duration`    | `shimmerDuration`   | `6s`             |
+| `--vis-edge-flow-duration`  | `edgeFlowDuration`  | `2s`             |
+| `--vis-leaf-sway-angle`     | `leafSwayAngle`     | `3deg`           |
+| `--vis-leaf-sway-duration`  | `leafSwayDuration`  | `4s`             |
+| `--vis-glow-pulse-min`      | `glowPulseMin`      | `0.4`            |
+| `--vis-glow-pulse-max`      | `glowPulseMax`      | `0.8`            |
 
 ---
 
