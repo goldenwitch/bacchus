@@ -137,7 +137,7 @@ jobs:
         env:
           YARN_NODE_LINKER: node-modules
         run: |
-          yarn install
+          yarn install --immutable
           yarn workspace bacchus-vine package
 
       - name: Upload VSIX artifact

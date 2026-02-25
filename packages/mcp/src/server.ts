@@ -136,7 +136,11 @@ export function _resetRootsFetched(): void {
 // Server
 // ---------------------------------------------------------------------------
 
-export async function startServer(): Promise<void> {
+/**
+ * Create a configured McpServer with all VINE tools and resources registered.
+ * Useful for testing via InMemoryTransport without stdio.
+ */
+export function createServer(): McpServer {
   const server = new McpServer({ name: '@bacchus/mcp', version: '1.0.0' });
 
   // ── Resources ───────────────────────────────────────────────────────
@@ -346,6 +350,27 @@ export async function startServer(): Promise<void> {
       await fetchRoots(server);
       try {
         // Validate and coerce operations
+        function assertStringArray(arr: unknown[], label: string, opIndex: number): string[] {
+          for (const el of arr) {
+            if (typeof el !== 'string') {
+              throw new VineError(`Operation ${String(opIndex)}: ${label} must be an array of strings.`);
+            }
+          }
+          return arr as string[];
+        }
+        function assertAnnotations(obj: unknown, label: string, opIndex: number): Record<string, string[]> {
+          if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+            throw new VineError(`Operation ${String(opIndex)}: ${label} must be an object.`);
+          }
+          const result: Record<string, string[]> = {};
+          for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+            if (!Array.isArray(value) || !value.every((v) => typeof v === 'string')) {
+              throw new VineError(`Operation ${String(opIndex)}: ${label} values must be arrays of strings.`);
+            }
+            result[key] = value;
+          }
+          return result;
+        }
         const ops: Operation[] = operations.map((raw, i) => {
           const o = raw;
           if (typeof o.op !== 'string') {
@@ -368,8 +393,11 @@ export async function startServer(): Promise<void> {
                 base.status = o.status;
               }
               if (typeof o.description === 'string') base.description = o.description;
-              if (Array.isArray(o.dependsOn)) base.dependsOn = o.dependsOn as string[];
-              if (o.annotations !== undefined && typeof o.annotations === 'object' && o.annotations !== null) base.annotations = o.annotations as Record<string, string[]>;
+              if (Array.isArray(o.dependsOn)) base.dependsOn = assertStringArray(o.dependsOn as unknown[], 'add_task "dependsOn"', i);
+              if (o.annotations !== undefined) {
+                if (typeof o.annotations !== 'object' || o.annotations === null) throw new VineError(`Operation ${String(i)}: add_task "annotations" must be an object mapping keys to string arrays.`);
+                base.annotations = assertAnnotations(o.annotations, 'add_task "annotations"', i);
+              }
               return base;
             }
             case 'remove_task': {
@@ -402,9 +430,25 @@ export async function startServer(): Promise<void> {
               };
               if (typeof o.name === 'string') upd.name = o.name;
               if (typeof o.description === 'string') upd.description = o.description;
-              if (Array.isArray(o.decisions)) upd.decisions = o.decisions as string[];
-              if (Array.isArray(o.attachments)) upd.attachments = o.attachments as Attachment[];
-              if (o.annotations !== undefined && typeof o.annotations === 'object' && o.annotations !== null) upd.annotations = o.annotations as Record<string, string[]>;
+              if (Array.isArray(o.decisions)) upd.decisions = assertStringArray(o.decisions as unknown[], 'update "decisions"', i);
+              if (Array.isArray(o.attachments)) {
+                for (const el of o.attachments as unknown[]) {
+                  if (
+                    el === null ||
+                    typeof el !== 'object' ||
+                    typeof (el as Record<string, unknown>).class !== 'string' ||
+                    typeof (el as Record<string, unknown>).mime !== 'string' ||
+                    typeof (el as Record<string, unknown>).uri !== 'string'
+                  ) {
+                    throw new VineError(`Operation ${String(i)}: update "attachments" elements must have class, mime, and uri as strings.`);
+                  }
+                }
+                upd.attachments = o.attachments as Attachment[];
+              }
+              if (o.annotations !== undefined) {
+                if (typeof o.annotations !== 'object' || o.annotations === null) throw new VineError(`Operation ${String(i)}: update "annotations" must be an object mapping keys to string arrays.`);
+                upd.annotations = assertAnnotations(o.annotations, 'update "annotations"', i);
+              }
               return upd;
             }
             case 'add_dep': {
@@ -428,8 +472,8 @@ export async function startServer(): Promise<void> {
                 vine: o.vine,
               };
               if (typeof o.description === 'string') ref.description = o.description;
-              if (Array.isArray(o.dependsOn)) ref.dependsOn = o.dependsOn as string[];
-              if (Array.isArray(o.decisions)) ref.decisions = o.decisions as string[];
+              if (Array.isArray(o.dependsOn)) ref.dependsOn = assertStringArray(o.dependsOn as unknown[], 'add_ref "dependsOn"', i);
+              if (Array.isArray(o.decisions)) ref.decisions = assertStringArray(o.decisions as unknown[], 'add_ref "decisions"', i);
               return ref;
             }
             case 'update_ref_uri': {
@@ -527,6 +571,12 @@ export async function startServer(): Promise<void> {
             })),
           };
           return ok(JSON.stringify(result, null, 2));
+        }
+
+        // Guard: at most one extract_to_ref per batch
+        const extractCount = ops.filter((o) => o.op === 'extract_to_ref').length;
+        if (extractCount > 1) {
+          throw new VineError('At most one extract_to_ref operation is allowed per batch.');
         }
 
         // Handle 'extract_to_ref' — multi-file operation
@@ -720,6 +770,11 @@ export async function startServer(): Promise<void> {
 
   // ── Start ───────────────────────────────────────────────────────────
 
+  return server;
+}
+
+export async function startServer(): Promise<void> {
+  const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

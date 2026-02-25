@@ -1,0 +1,9 @@
+vine 1.0.0
+title: Child Module
+---
+[child-root] Child Root (notstarted)
+Root of the child graph.
+-> child-leaf
+---
+[child-leaf] Child Leaf (notstarted)
+Leaf node in child graph.

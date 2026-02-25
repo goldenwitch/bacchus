@@ -395,6 +395,24 @@ describe('getActionableTasks', () => {
     expect(result.ready).toEqual([]);
   });
 
+  it('unexpanded ref nodes block root completion', () => {
+    const refVine = [
+      'vine 1.1.0',
+      '---',
+      '[root] Root (reviewing)',
+      '-> ext',
+      '---',
+      'ref [ext] Sub Project (./sub.vine)',
+    ].join('\n');
+    const g = parse(refVine);
+    const result = getActionableTasks(g);
+
+    // Root is reviewing but an unexpanded ref remains — root must NOT be completable
+    expect(result.completable.map((t) => t.id)).not.toContain('root');
+    // The ref should appear in expandable
+    expect(result.expandable.map((t) => t.id)).toEqual(['ext']);
+  });
+
   it('ref nodes with unsatisfied deps are not expandable', () => {
     const refVine = [
       'vine 1.1.0',

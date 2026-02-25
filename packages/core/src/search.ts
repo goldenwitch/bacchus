@@ -314,8 +314,8 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
     const allOthersFinished = [...graph.tasks.values()].every((t) => {
       if (t.id === root.id) return true;
       if (isConcreteTask(t)) return SATISFIED_STATUSES.has(t.status);
-      // Ref nodes should have been expanded already; ignore them.
-      return true;
+      // Unexpanded ref nodes block root completion.
+      return false;
     });
     if (allOthersFinished) {
       completable.push(root);

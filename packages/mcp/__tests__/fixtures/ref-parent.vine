@@ -1,0 +1,18 @@
+vine 1.1.0
+title: Parent Project
+---
+[root] Root Task (started)
+The root task.
+-> child-a
+-> ext-ref
+---
+[child-a] Child A (complete)
+First child task.
+-> leaf
+---
+ref [ext-ref] External Module (./child.vine)
+A reference to an external vine file.
+-> leaf
+---
+[leaf] Leaf Task (notstarted)
+A leaf task.

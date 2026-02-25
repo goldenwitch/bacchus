@@ -45,7 +45,7 @@ Query a .vine task graph. The `action` parameter selects the query type.
 | Parameter | Type   | Required | Description                                                               |
 | --------- | ------ | -------- | ------------------------------------------------------------------------- |
 | `file`    | string | Yes      | Path to the `.vine` file                                                  |
-| `action`  | string | Yes      | One of: `summary`, `list`, `task`, `descendants`, `search`, `refs`, `validate` |
+| `action`  | string | Yes      | One of: `summary`, `list`, `task`, `context`, `descendants`, `search`, `refs`, `validate` |
 | `id`      | string | No       | Task ID (required for `task` and `descendants`)                           |
 | `status`  | string | No       | Status filter (for `list`)                                                |
 | `query`   | string | No       | Search query (for `list` or `search`)                                     |
@@ -58,6 +58,7 @@ Query a .vine task graph. The `action` parameter selects the query type.
 | `summary`     | Root task, total/leaf counts, per-status breakdown                               | Multi-line text summary               |
 | `list`        | All tasks, optionally filtered by `status` or `query`                            | JSON array of task objects            |
 | `task`        | Full detail for one task by ID                                                   | JSON task object                      |
+| `context`     | Full task detail plus resolved dependencies (status, decisions, attachments) and dependant list | JSON object with `resolved_dependencies` and `dependant_tasks` |
 | `descendants` | Transitive downstream subtree (blast radius)                                     | JSON array of `{ id, shortName }`     |
 | `search`      | Case-insensitive text search across names and descriptions                       | JSON array of matching task objects    |
 | `refs`        | All reference nodes                                                              | JSON array of `{ id, shortName, vine, dependencies }` |
@@ -79,7 +80,8 @@ Return the execution frontier — the set of tasks that can be acted on right no
 | `ready_to_start`    | Tasks whose deps are all satisfied (complete/reviewing) and status is notstarted/planning             |
 | `ready_to_complete` | Tasks in reviewing where a dependant has started consuming output — safe to mark complete              |
 | `needs_expansion`   | Ref nodes on the frontier that must be expanded via `vine_expand` before inner tasks become visible   |
-| `progress`          | `{ total, complete, percentage, root_id, root_status, by_status }`                                    |
+| `blocked`           | Tasks with status blocked whose dependencies are all satisfied                                        |
+| `progress`          | `{ total, complete, percentage, ready_count, root_id, root_status, by_status }`                       |
 
 **Orchestration loop**: The orchestrator dispatches sub-agents that call `vine_next` themselves, handle housekeeping (expand refs, complete reviewed tasks), pick up one task, do the work, and report back progress. The orchestrator never calls VINE tools directly — it preserves its context for planning and coordination. See [AGENTS.md](../AGENTS.md) for the full pattern.
 
@@ -98,10 +100,13 @@ Apply one or more mutations atomically. Operations are applied in order; the gra
 
 | Op                | Fields                                                                     | Description                            |
 | ----------------- | -------------------------------------------------------------------------- | -------------------------------------- |
-| `add_task`        | `id`, `name`, `status?`, `description?`, `dependsOn?: string[]`           | Add a new concrete task                |
+| `create`          | `version?`                                                                 | Bootstrap a new .vine file (must be first op) |
+| `add_task`        | `id`, `name`, `status?`, `description?`, `dependsOn?: string[]`, `annotations?: Record<string, string[]>` | Add a new concrete task                |
 | `remove_task`     | `id`                                                                       | Remove a task and clean up edges       |
 | `set_status`      | `id`, `status`                                                             | Change task status                     |
-| `update`          | `id`, `name?`, `description?`, `decisions?: string[]`                     | Update task metadata                   |
+| `update`          | `id`, `name?`, `description?`, `decisions?: string[]`, `attachments?: Attachment[]`, `annotations?: Record<string, string[]>` | Update task metadata                   |
+| `claim`           | `id`                                                                       | Set task to started with dependency context    |
+| `extract_to_ref`  | `id`, `vine`, `refName?`                                                   | Extract task to child .vine, replace with ref  |
 | `add_dep`         | `taskId`, `depId`                                                          | Add a dependency edge                  |
 | `remove_dep`      | `taskId`, `depId`                                                          | Remove a dependency edge               |
 | `add_ref`         | `id`, `name`, `vine`, `description?`, `dependsOn?: string[]`, `decisions?: string[]` | Add a reference node     |
@@ -109,7 +114,17 @@ Apply one or more mutations atomically. Operations are applied in order; the gra
 
 **Batch semantics**: Validation runs only after all operations, so you can add a task and wire it into the graph in one call (solving the island-rule constraint that previously made `add_task` fail for disconnected nodes).
 
-**Returns**: `"<n> operation(s) applied: <summary>."` on success.
+**Returns** (JSON): Structured response with:
+
+| Field               | Description                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `summary`           | Human-readable summary of applied operations                                      |
+| `progress`          | `{ total, complete, percentage, ready_count, root_id, root_status, by_status }`   |
+| `ready_to_start`    | Tasks ready to pick up (same as `vine_next`)                                      |
+| `ready_to_complete` | Tasks safe to mark complete                                                       |
+| `blocked`           | Blocked tasks with satisfied dependencies                                         |
+| `needs_expansion`   | Ref nodes needing expansion                                                       |
+| `claimed`           | (When `claim` op used) Full task detail with resolved dependency context           |
 
 ---
 

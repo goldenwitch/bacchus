@@ -1,0 +1,18 @@
+vine 1.0.0
+title: Test Project
+---
+[root] Root Task (started)
+The root task.
+-> child-a
+-> child-b
+---
+[child-a] Child A (complete)
+First child task.
+-> leaf
+---
+[child-b] Child B (planning)
+Second child task.
+-> leaf
+---
+[leaf] Leaf Task (notstarted)
+A leaf task.
