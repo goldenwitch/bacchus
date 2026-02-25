@@ -83,76 +83,66 @@ type ToolResult = { content: ContentItem[]; isError?: boolean };
 // ---------------------------------------------------------------------------
 
 describe('MCP protocol — tools/list', () => {
-  it('returns all 17 tools', async () => {
+  it('returns all 4 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name);
-    expect(names).toHaveLength(17);
-    expect(names).toContain('vine_validate');
-    expect(names).toContain('vine_show');
-    expect(names).toContain('vine_list');
-    expect(names).toContain('vine_get_task');
-    expect(names).toContain('vine_get_descendants');
-    expect(names).toContain('vine_search');
-    expect(names).toContain('vine_next_tasks');
-    expect(names).toContain('vine_add_task');
-    expect(names).toContain('vine_remove_task');
-    expect(names).toContain('vine_set_status');
-    expect(names).toContain('vine_update_task');
-    expect(names).toContain('vine_add_dependency');
-    expect(names).toContain('vine_remove_dependency');
-    expect(names).toContain('vine_add_ref');
-    expect(names).toContain('vine_expand_ref');
-    expect(names).toContain('vine_update_ref_uri');
-    expect(names).toContain('vine_get_refs');
+    expect(names).toHaveLength(4);
+    expect(names).toContain('vine_read');
+    expect(names).toContain('vine_next');
+    expect(names).toContain('vine_write');
+    expect(names).toContain('vine_expand');
   });
 });
 
-describe('MCP protocol — read-only tools', () => {
-  it('vine_validate succeeds on valid file', async () => {
+describe('MCP protocol — vine_read', () => {
+  it('vine_read validate succeeds on valid file', async () => {
     const file = makeTempVine();
     const result = (await client.callTool({
-      name: 'vine_validate',
-      arguments: { file },
+      name: 'vine_read',
+      arguments: { file, action: 'validate' },
     })) as ToolResult;
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain('Valid');
   });
 
-  it('vine_show returns summary', async () => {
+  it('vine_read summary returns summary', async () => {
     const file = makeTempVine();
     const result = (await client.callTool({
-      name: 'vine_show',
-      arguments: { file },
+      name: 'vine_read',
+      arguments: { file, action: 'summary' },
     })) as ToolResult;
     expect(result.content[0].text).toContain('Root:');
     expect(result.content[0].text).toContain('Total tasks: 2');
   });
 
-  it('vine_list returns tasks', async () => {
+  it('vine_read list returns tasks', async () => {
     const file = makeTempVine();
     const result = (await client.callTool({
-      name: 'vine_list',
-      arguments: { file },
+      name: 'vine_read',
+      arguments: { file, action: 'list' },
     })) as ToolResult;
     const tasks = JSON.parse(result.content[0].text) as unknown[];
     expect(tasks).toHaveLength(2);
   });
 
-  it('vine_validate fails on nonexistent file', async () => {
+  it('vine_read validate fails on nonexistent file', async () => {
     const result = (await client.callTool({
-      name: 'vine_validate',
-      arguments: { file: '/nonexistent/path/missing.vine' },
+      name: 'vine_read',
+      arguments: { file: '/nonexistent/path/missing.vine', action: 'validate' },
     })) as ToolResult;
     expect(result.isError).toBe(true);
   });
 });
 
-describe('MCP protocol — mutation tools', () => {
-  it('vine_set_status mutates and persists', async () => {
+describe('MCP protocol — vine_write', () => {
+  it('vine_write set_status mutates and persists', async () => {
     const file = makeTempVine();
     const result = (await client.callTool({
-      name: 'vine_set_status',
-      arguments: { file, id: 'leaf', status: 'complete' },
+      name: 'vine_write',
+      arguments: {
+        file,
+        operations: [{ op: 'set_status', id: 'leaf', status: 'complete' }],
+      },
     })) as ToolResult;
     expect(result.isError).toBeFalsy();
 

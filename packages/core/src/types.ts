@@ -128,3 +128,23 @@ export function isConcreteTask(task: Task): task is ConcreteTask {
 export function getSpriteUri(task: Task): string | undefined {
   return task.annotations.get('sprite')?.[0];
 }
+
+// ---------------------------------------------------------------------------
+// Batch operation types
+// ---------------------------------------------------------------------------
+
+/**
+ * A single operation in a batch mutation.
+ *
+ * Use with {@link applyBatch} to apply multiple mutations atomically — the
+ * graph is validated only once after all operations have been applied.
+ */
+export type Operation =
+  | { op: 'add_task'; id: string; name: string; status?: Status; description?: string; dependsOn?: string[] }
+  | { op: 'remove_task'; id: string }
+  | { op: 'set_status'; id: string; status: Status }
+  | { op: 'update'; id: string; name?: string; description?: string; decisions?: string[] }
+  | { op: 'add_dep'; taskId: string; depId: string }
+  | { op: 'remove_dep'; taskId: string; depId: string }
+  | { op: 'add_ref'; id: string; name: string; vine: string; description?: string; dependsOn?: string[]; decisions?: string[] }
+  | { op: 'update_ref_uri'; id: string; uri: string };

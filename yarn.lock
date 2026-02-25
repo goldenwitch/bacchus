@@ -1319,26 +1319,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@secretlint/secretlint-rule-no-dotenv@npm:^11.3.1":
-  version: 11.3.1
-  resolution: "@secretlint/secretlint-rule-no-dotenv@npm:11.3.1"
-  dependencies:
-    "@secretlint/types": "npm:11.3.1"
-  checksum: 10c0/2266b0dba78b6cc94392be9d8446fcd5b91988e1e822c95dc0edbf90851d44f09715e7abdba2fd042b44eea164051c0a8b4e5c70c465af24bb9bf0cfc4a3277a
-  languageName: node
-  linkType: hard
-
 "@secretlint/secretlint-rule-preset-recommend@npm:^10.1.2":
   version: 10.2.2
   resolution: "@secretlint/secretlint-rule-preset-recommend@npm:10.2.2"
   checksum: 10c0/41f0e471bc906aade6c188d728cf18e64a70eb21cd0432299532111da4a9187e3fa6e70b1abb7f9845ef6aa7927e82e72f4bbc47306734c4911f2170a22e888e
-  languageName: node
-  linkType: hard
-
-"@secretlint/secretlint-rule-preset-recommend@npm:^11.3.1":
-  version: 11.3.1
-  resolution: "@secretlint/secretlint-rule-preset-recommend@npm:11.3.1"
-  checksum: 10c0/a187266d77d55cb2cf8748b7dc839d1e446847696bfad5cad787ddea9086b37a5f35a644e217cd9f5b39664cd006b88d96414a39df18e05b292576d7ce111f25
   languageName: node
   linkType: hard
 
@@ -1349,13 +1333,6 @@ __metadata:
     "@secretlint/types": "npm:^10.2.2"
     istextorbinary: "npm:^9.5.0"
   checksum: 10c0/381d55fd2ddc54311f33b466b3755b4269f44e5928e0a35421c9dd64c7d3c0df2c871d47338b42f979a9b547993359ff75fd3f1623f00b8b427ef5c6d4d362bb
-  languageName: node
-  linkType: hard
-
-"@secretlint/types@npm:11.3.1":
-  version: 11.3.1
-  resolution: "@secretlint/types@npm:11.3.1"
-  checksum: 10c0/99529e2cd943315b4c627e1a291f49df44317b4699465212e7d4841b7d61a9bac9dfce56af092191d900184b0469dddac8d4c2fb6ac5bf012b1b245727644e21
   languageName: node
   linkType: hard
 
@@ -2340,8 +2317,6 @@ __metadata:
   resolution: "bacchus-vine@workspace:packages/vscode"
   dependencies:
     "@modelcontextprotocol/sdk": "npm:^1.12.1"
-    "@secretlint/secretlint-rule-no-dotenv": "npm:^11.3.1"
-    "@secretlint/secretlint-rule-preset-recommend": "npm:^11.3.1"
     "@types/node": "npm:^22.0.0"
     "@types/vscode": "npm:^1.99.0"
     "@vscode/test-electron": "npm:^2.5.0"

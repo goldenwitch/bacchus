@@ -3,6 +3,7 @@ export type {
   Attachment,
   AttachmentClass,
   ConcreteTask,
+  Operation,
   RefTask,
   Status,
   Task,
@@ -39,6 +40,7 @@ export {
 export {
   addRef,
   addTask,
+  applyBatch,
   removeTask,
   setStatus,
   updateTask,

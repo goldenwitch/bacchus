@@ -10,38 +10,28 @@ For the full MCP tool reference, see [docs/MCP.md](docs/MCP.md).
 ## Quick Start
 
 ```
-1. Call vine_next_tasks to get the execution frontier
-2. Pick up ready_to_start tasks in parallel (spawn sub-agents)
-3. Each sub-agent: do the work → record artifacts/decisions → set status
-4. Call vine_next_tasks again → newly unblocked tasks appear
-5. Mark ready_to_complete tasks as complete
-6. Expand needs_expansion ref nodes
-7. Repeat until root is complete
+1. Read `vine://spec/brief` resource for format knowledge and orchestration guide
+2. Dispatch a sub-agent with the .vine file path and instructions to:
+   a. Call vine_next to get the execution frontier
+   b. Handle housekeeping (expand refs, complete reviewed tasks)
+   c. Pick up one ready_to_start task, do the work, set status to reviewing
+   d. Report back what was done and current progress
+3. Read the sub-agent's report — decide whether to spawn more, escalate, or stop
+4. Repeat until sub-agent reports root is complete
 ```
 
 ---
 
 ## Tool Summary
 
-| Category      | Tool                     | Description                                                         |
-| ------------- | ------------------------ | ------------------------------------------------------------------- |
-| **Execution** | `vine_next_tasks`        | Returns the execution frontier: ready, completable, and expandable. |
-| **Read-only** | `vine_validate`          | Parse and validate a `.vine` file.                                  |
-|               | `vine_show`              | High-level graph summary.                                           |
-|               | `vine_list`              | List tasks (optional status/search filters).                        |
-|               | `vine_get_task`          | Full detail for one task by ID.                                     |
-|               | `vine_get_descendants`   | Transitive downstream subtree.                                      |
-|               | `vine_search`            | Case-insensitive text search.                                       |
-| **Mutations** | `vine_set_status`        | Update a task's status.                                             |
-|               | `vine_update_task`       | Update name, description, or decisions.                             |
-|               | `vine_add_task`          | Add a task.                                                         |
-|               | `vine_remove_task`       | Remove a task and clean up edges.                                   |
-|               | `vine_add_dependency`    | Add a dependency edge.                                              |
-|               | `vine_remove_dependency` | Remove a dependency edge.                                           |
-| **Ref nodes** | `vine_expand_ref`        | Expand a ref by inlining a child graph.                             |
-|               | `vine_add_ref`           | Add a reference node.                                               |
-|               | `vine_update_ref_uri`    | Update a ref node's URI.                                            |
-|               | `vine_get_refs`          | List all reference nodes.                                           |
+| Category       | Tool/Resource       | Description                                                                       |
+| -------------- | ------------------- | --------------------------------------------------------------------------------- |
+| **Spec**       | `vine://spec/brief` | MCP resource: condensed VINE format + execution guide. Read first.                |
+|                | `vine://spec/full`  | MCP resource: complete VINE v1.2.0 spec with ABNF and expansion algorithm.        |
+| **Read**       | `vine_read`         | Query the graph: summary, list, task detail, descendants, search, refs, validate. |
+| **Execution**  | `vine_next`         | Returns the execution frontier: ready, completable, expandable, progress.         |
+| **Mutations**  | `vine_write`        | Batch mutations: add/remove tasks, set status, update, manage deps and refs.      |
+| **Expansion**  | `vine_expand`       | Expand a ref node by inlining an external .vine graph.                            |
 
 ---
 
@@ -49,59 +39,60 @@ For the full MCP tool reference, see [docs/MCP.md](docs/MCP.md).
 
 ### Core Loop
 
-The execution of a `.vine` file follows a simple loop driven by `vine_next_tasks`:
+The orchestrator never calls VINE tools directly. Instead, it dispatches sub-agents who interact with the `.vine` file autonomously. The orchestrator preserves its context for planning and coordination.
 
 ```
-┌─────────────────────────────────────────────────┐
-│                vine_next_tasks                  │
-│                                                 │
-│  Returns:                                       │
-│    ready_to_start    → tasks to pick up NOW     │
-│    ready_to_complete → reviewing tasks to close │
-│    needs_expansion   → ref nodes to inline      │
-│    progress          → completion stats         │
-└──────────────────┬──────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│              Orchestrator Agent                   │
+│                                                   │
+│  Knows: file path, high-level goal, progress     │
+│  Does NOT call: vine_next, vine_read, vine_write │
+│                                                   │
+│  Loop:                                            │
+│    1. Dispatch sub-agent(s) with .vine path       │
+│    2. Read sub-agent report (task done, progress) │
+│    3. Decide: spawn more? escalate? stop?         │
+│    4. Repeat until root_status == "complete"      │
+└──────────────────┬───────────────────────────────┘
                    │
        ┌───────────┼───────────────┐
        ▼           ▼               ▼
-  ┌─────────┐ ┌──────────┐ ┌────────────┐
-  │ Start   │ │ Complete │ │  Expand    │
-  │ tasks   │ │ reviewed │ │  refs      │
-  │ (||)    │ │ tasks    │ │            │
-  └────┬────┘ └─────┬────┘ └──────┬─────┘
-       │            │              │
-       └────────────┴──────────────┘
-                    │
-                    ▼
-            vine_next_tasks
-              (repeat)
+  ┌──────────┐ ┌──────────┐ ┌──────────┐
+  │ Sub-     │ │ Sub-     │ │ Sub-     │
+  │ Agent    │ │ Agent    │ │ Agent    │
+  │          │ │          │ │          │
+  │ vine_next│ │ vine_next│ │ vine_next│
+  │ → work   │ │ → work   │ │ → work   │
+  │ → report │ │ → report │ │ → report │
+  └──────────┘ └──────────┘ └──────────┘
 ```
 
 ### Step-by-Step
 
-1. **Get the frontier**: Call `vine_next_tasks` with the `.vine` file path. It returns:
-   - **`ready_to_start`** — tasks whose dependencies are all `complete` or `reviewing`, and whose own status is `notstarted` or `planning`. These are safe to begin.
-   - **`ready_to_complete`** — tasks in `reviewing` where at least one dependant has advanced to `started` or beyond. The consumer has picked up the output; the reviewing task is done.
-   - **`needs_expansion`** — ref nodes on the frontier. These proxy external `.vine` files and must be expanded before inner tasks become visible.
-   - **`progress`** — `{ total, complete, percentage, root_id, root_status, by_status }`.
+1. **Dispatch a sub-agent**: The orchestrator spawns a sub-agent with:
+   - The `.vine` file path
+   - Instructions to call `vine_next`, handle housekeeping, pick up one task, and report back
+   - Any high-level guidance relevant to the current phase
 
-2. **Handle ref nodes first**: For each entry in `needs_expansion`, call `vine_expand_ref` to inline the child graph, then re-call `vine_next_tasks` — the newly-inlined tasks will now appear in `ready_to_start`.
+2. **Sub-agent executes autonomously**: The sub-agent runs the full task lifecycle (see [Sub-Agent Workflow](#sub-agent-workflow) below):
+   - Calls `vine_next` to discover the execution frontier
+   - Expands ref nodes if needed (`vine_expand`)
+   - Marks reviewed tasks as complete (`vine_write`)
+   - Claims one `ready_to_start` task, does the work, sets status to `reviewing`
+   - Reports back: what task was completed, decisions made, and current `progress`
 
-3. **Pick up ready tasks in parallel**: Spawn a sub-agent for each `ready_to_start` task. Each sub-agent:
+3. **Orchestrator reads the report**: The sub-agent's report contains:
+   - Which task was worked on and its outcome
+   - Current progress (`{ total, complete, percentage, root_status }`)
+   - Any blocked tasks or issues requiring escalation
 
-   a. **Sets status to `started`** — `vine_set_status(file, id, "started")`
+4. **Orchestrator decides next action**:
+   - If `root_status === "complete"` → done
+   - If multiple tasks are ready → spawn parallel sub-agents
+   - If a task is blocked → escalate to human or retry
+   - Otherwise → dispatch another sub-agent
 
-   b. **Reads the task** — `vine_get_task(file, id)` to get the full description, decisions, and any existing attachments/guidance.
-
-   c. **Does the work** — executes whatever the task describes. This is the domain-specific part: writing code, running tests, drafting a document, etc.
-
-   d. **Records artifacts** — as work products are created, call `vine_update_task` to add `> decision` notes explaining choices made. If the task produces files, reference them in the description or as attachments.
-
-   e. **Sets status to `reviewing`** — `vine_set_status(file, id, "reviewing")` when the work is believed complete but hasn't been consumed by dependants yet.
-
-4. **Complete reviewed tasks**: After `vine_next_tasks` returns tasks in `ready_to_complete`, mark each one as `complete` via `vine_set_status(file, id, "complete")`. This signals that dependants have consumed the output.
-
-5. **Repeat**: Call `vine_next_tasks` again. Newly unblocked tasks appear in `ready_to_start`. Continue until `progress.root_status === "complete"`.
+5. **Repeat** until `root_status === "complete"`.
 
 ### Status Lifecycle
 
@@ -128,32 +119,42 @@ notstarted ──► started ──► reviewing ──► complete
 The `reviewing` status is the key coordination mechanism between tasks:
 
 1. A leaf task finishes its work and moves to `reviewing`.
-2. `vine_next_tasks` sees that the leaf's dependants now have their dependencies satisfied (since `reviewing` satisfies dependencies). The dependants appear in `ready_to_start`.
-3. A dependant picks up the work, reads the leaf's output (artifacts, decisions), and sets itself to `started`.
-4. On the next `vine_next_tasks` call, the leaf appears in `ready_to_complete` — because a dependant has started consuming its output.
-5. The orchestrator marks the leaf `complete`.
+2. `vine_next` sees that the leaf's dependants now have their dependencies satisfied (since `reviewing` satisfies dependencies). The dependants appear in `ready_to_start`.
+3. A sub-agent picks up a dependant, reads the leaf's output (artifacts, decisions), and sets the dependant to `started`.
+4. On the next `vine_next` call, the leaf appears in `ready_to_complete` — because a dependant has started consuming its output.
+5. The next sub-agent's housekeeping phase marks the leaf `complete`.
 
 This means the `.vine` file itself is the shared state. Every agent reads and writes it.
 
 ---
 
-## Parallelization with Sub-Agents
+## Orchestrator / Sub-Agent Pattern
 
-The execution model is inherently parallel. At any point, `vine_next_tasks` may return multiple tasks in `ready_to_start`. These should be distributed across sub-agents for concurrent execution.
+The orchestrator stays lightweight — it never calls VINE tools directly. This preserves the orchestrator's context window for planning, coordination, and error handling. All VINE interaction happens inside sub-agents.
 
-### Orchestrator / Sub-Agent Pattern
+### Why Delegate?
+
+- **Context preservation**: The orchestrator doesn't consume context on graph structures, task details, or frontier data. It stays focused on the big picture.
+- **Stateless sub-agents**: Each sub-agent is self-contained. It queries the graph, does one unit of work, and reports back. No state carries between sub-agent invocations.
+- **Natural parallelism**: The orchestrator can dispatch multiple sub-agents simultaneously when progress reports indicate multiple tasks are ready.
+
+### Architecture
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                  Orchestrator Agent                   │
 │                                                      │
-│  1. vine_next_tasks(file) → frontier                 │
-│  2. For each ready task: spawn sub-agent             │
-│  3. Wait for sub-agents to complete                  │
-│  4. vine_next_tasks(file) → next frontier            │
-│  5. Mark ready_to_complete tasks as complete         │
-│  6. Expand any needs_expansion refs                  │
-│  7. Repeat until root is complete                    │
+│  Context: file path, goal, progress snapshots        │
+│  Does: dispatch, coordinate, escalate                │
+│  Does NOT: call vine_next, vine_read, vine_write     │
+│                                                      │
+│  Loop:                                               │
+│    1. Dispatch sub-agent(s) with .vine path          │
+│    2. Read report: task done + progress snapshot      │
+│    3. If root complete → stop                        │
+│    4. If blocked → escalate or retry                 │
+│    5. If ready_count > 1 → spawn parallel agents     │
+│    6. Else → dispatch next sub-agent                 │
 └──────────┬───────────┬───────────┬───────────────────┘
            │           │           │
            ▼           ▼           ▼
@@ -161,11 +162,11 @@ The execution model is inherently parallel. At any point, `vine_next_tasks` may 
       │ Sub-    │ │ Sub-    │ │ Sub-    │
       │ Agent 1 │ │ Agent 2 │ │ Agent 3 │
       │         │ │         │ │         │
-      │ • read  │ │ • read  │ │ • read  │
-      │   task  │ │   task  │ │   task  │
+      │ • next  │ │ • next  │ │ • next  │
+      │ • house │ │ • house │ │ • house │
+      │   keep  │ │   keep  │ │   keep  │
       │ • work  │ │ • work  │ │ • work  │
-      │ • write │ │ • write │ │ • write │
-      │   vine  │ │   vine  │ │   vine  │
+      │ • report│ │ • report│ │ • report│
       └─────────┘ └─────────┘ └─────────┘
 ```
 
@@ -174,61 +175,78 @@ The execution model is inherently parallel. At any point, `vine_next_tasks` may 
 ```
 function execute(file):
     loop:
-        frontier = vine_next_tasks(file)
+        report = dispatch_sub_agent(file, instructions="""
+            1. Call vine_next(file) to get the execution frontier
+            2. For each ref in needs_expansion: call vine_expand
+            3. For each task in ready_to_complete: vine_write set_status complete
+            4. Pick ONE task from ready_to_start
+            5. Claim it (set_status started), read it (vine_read task), do the work
+            6. Record decisions (vine_write update), set_status reviewing
+            7. Call vine_next again for fresh progress
+            8. Report back: { task_completed, decisions, progress, blocked_tasks }
+        """)
 
-        if frontier.progress.root_status == "complete":
+        if report.progress.root_status == "complete":
             return "Done"
 
-        # Phase 1: Expand any ref nodes
-        for ref in frontier.needs_expansion:
-            vine_expand_ref(file, ref.id, ref.vine)
+        if report.blocked_tasks:
+            handle_blocked(report.blocked_tasks)
 
-        if frontier.needs_expansion is not empty:
-            continue  # re-evaluate frontier after expansion
-
-        # Phase 2: Complete reviewed tasks
-        for task in frontier.ready_to_complete:
-            vine_set_status(file, task.id, "complete")
-
-        # Phase 3: Start ready tasks in parallel
-        sub_agents = []
-        for task in frontier.ready_to_start:
-            agent = spawn_sub_agent(file, task)
-            sub_agents.append(agent)
-
-        wait_for_all(sub_agents)
+        if report.progress.ready_count > 1:
+            # Multiple tasks available — fan out
+            dispatch_parallel_sub_agents(file, count=report.progress.ready_count)
 ```
 
-### Sub-Agent Pseudocode
+### Sub-Agent Workflow
+
+Each sub-agent runs this sequence autonomously:
 
 ```
-function execute_task(file, task_id):
-    # 1. Claim the task
-    vine_set_status(file, task_id, "started")
+function sub_agent_execute(file):
+    # Phase 1: Discover what needs doing
+    frontier = vine_next(file)
 
-    # 2. Read full context
-    task = vine_get_task(file, task_id)
+    # Phase 2: Housekeeping — expand refs, complete reviewed tasks
+    for ref in frontier.needs_expansion:
+        vine_expand(file, ref.id, ref.vine)
 
-    # 3. Do the work described in task.description
-    #    Use task.decisions for prior context
-    #    Use task.attachments for guidance/artifacts
+    if frontier.needs_expansion is not empty:
+        frontier = vine_next(file)  # re-evaluate after expansion
+
+    for task in frontier.ready_to_complete:
+        vine_write(file, [{ op: "set_status", id: task.id, status: "complete" }])
+
+    # Phase 3: Pick up one task
+    if frontier.ready_to_start is empty:
+        return { task_completed: null, progress: frontier.progress }
+
+    task_id = frontier.ready_to_start[0].id
+
+    # Phase 4: Claim → Read → Work → Record → Review
+    vine_write(file, [{ op: "set_status", id: task_id, status: "started" }])
+    task = vine_read(file, action: "task", id: task_id)
     result = do_work(task)
+    vine_write(file, [{ op: "update", id: task_id, decisions: [...result.decisions] }])
+    vine_write(file, [{ op: "set_status", id: task_id, status: "reviewing" }])
 
-    # 4. Record decisions made during execution
-    vine_update_task(file, task_id, decisions=[
-        ...task.decisions,
-        "> Used approach X because of Y"
-    ])
-
-    # 5. Mark as reviewing
-    vine_set_status(file, task_id, "reviewing")
+    # Phase 5: Get fresh progress and report back
+    frontier = vine_next(file)
+    return {
+        task_completed: task_id,
+        decisions: result.decisions,
+        progress: frontier.progress,
+        ready_count: len(frontier.ready_to_start),
+        blocked_tasks: [t for t in frontier if t.status == "blocked"]
+    }
 ```
 
 ### Concurrency Notes
 
-- **File-level serialization**: The `.vine` file is the single source of truth. Sub-agents should read-modify-write atomically. In practice, MCP tool calls are serialized per-file through the server, so concurrent sub-agents calling `vine_set_status` on different tasks in the same file are safe.
-- **No premature completion**: A task should only move to `reviewing` when its work is genuinely done. The orchestrator uses `ready_to_complete` — not a timer — to decide when to finalize.
-- **Blocked tasks**: If a sub-agent encounters an obstacle, it should `vine_set_status(file, id, "blocked")` and add a `> decision` explaining why. The orchestrator can surface this to a human.
+- **File-level serialization**: The `.vine` file is the single source of truth. MCP tool calls are serialized per-file through the server, so concurrent sub-agents calling `vine_write` on different tasks in the same file are safe.
+- **One task per sub-agent**: Each sub-agent picks up exactly one task. This keeps sub-agents focused and makes progress reports unambiguous.
+- **Parallel fan-out**: When a sub-agent reports `ready_count > 1`, the orchestrator can dispatch multiple sub-agents simultaneously. Each will call `vine_next` independently and claim a different task.
+- **Blocked tasks**: If a sub-agent encounters an obstacle, it should `vine_write(file, [{ op: "set_status", id: id, status: "blocked" }])` and add a `> decision` explaining why. The orchestrator can surface this to a human.
+- **No premature completion**: A task should only move to `reviewing` when its work is genuinely done. The housekeeping phase uses `ready_to_complete` — not a timer — to decide when to finalize.
 
 ---
 
@@ -238,9 +256,9 @@ Ref nodes are proxies for external `.vine` files. They let you compose large pla
 
 During execution, when a ref node appears in `needs_expansion`:
 
-1. Call `vine_expand_ref(file, ref_id, child_file)` — this inlines the child graph's tasks into the parent, replacing the ref node.
+1. Call `vine_expand(file, ref_id, child_file)` — this inlines the child graph's tasks into the parent, replacing the ref node.
 2. The child root's tasks become concrete tasks with prefixed IDs (e.g., `ref-id/child-task`).
-3. Re-call `vine_next_tasks` — the inlined tasks now appear in the frontier.
+3. Re-call `vine_next` — the inlined tasks now appear in the frontier.
 
 Example: if `project.vine` contains `ref [infra] Infrastructure (./infra.vine)`, after expansion the tasks from `infra.vine` appear as `infra/setup-vpc`, `infra/configure-dns`, etc.
 
@@ -267,20 +285,21 @@ pr-ready
 
 ### Execution Trace
 
-**Round 1** — `vine_next_tasks` returns:
+**Round 1** — Orchestrator dispatches a sub-agent. Sub-agent calls `vine_next`:
 
 ```json
 { "ready_to_start": [{ "id": "branch", ... }] }
 ```
 
-One sub-agent picks up `branch`:
+Sub-agent picks up `branch`:
 
 - Sets `branch` → `started`
 - Creates a feature branch from latest main
 - Adds decision: `> Branched from main at abc123`
 - Sets `branch` → `reviewing`
+- Reports back: `{ task_completed: "branch", progress: { ... }, ready_count: 1 }`
 
-**Round 2** — `vine_next_tasks` returns:
+**Round 2** — Orchestrator dispatches another sub-agent. Sub-agent calls `vine_next`:
 
 ```json
 {
@@ -289,73 +308,38 @@ One sub-agent picks up `branch`:
 }
 ```
 
-- Mark `branch` → `complete`
+- Housekeeping: marks `branch` → `complete`
 - Sub-agent picks up `changes`:
   - Writes code, makes commits
   - Adds decisions: `> Refactored X for clarity`, `> Added tests for edge case Y`
   - Sets `changes` → `reviewing`
+- Reports back: `{ task_completed: "changes", ready_count: 6 }`
 
-**Round 3** — `vine_next_tasks` returns:
+**Round 3** — Orchestrator sees `ready_count: 6` → dispatches **six sub-agents in parallel**. Each calls `vine_next` independently, claims one task:
 
-```json
-{
-  "ready_to_start": [
-    { "id": "typecheck" },
-    { "id": "lint" },
-    { "id": "format-check" },
-    { "id": "test" },
-    { "id": "e2e" },
-    { "id": "build-vscode" }
-  ],
-  "ready_to_complete": [{ "id": "changes" }]
-}
-```
-
-- Mark `changes` → `complete`
-- **Six sub-agents in parallel**, each running their respective check:
-  - `typecheck`: runs `yarn typecheck`, records pass/fail
-  - `lint`: runs `yarn lint`, records result
-  - `format-check`: runs `yarn format:check`
-  - `test`: runs `yarn test`, adds artifact for coverage
-  - `e2e`: runs `yarn e2e`, adds artifact for report
-  - `build-vscode`: runs `yarn build:vscode`
+- First sub-agent also handles housekeeping: marks `changes` → `complete`
+- `typecheck`: runs `yarn typecheck`, records pass/fail
+- `lint`: runs `yarn lint`, records result
+- `format-check`: runs `yarn format:check`
+- `test`: runs `yarn test`, adds artifact for coverage
+- `e2e`: runs `yarn e2e`, adds artifact for report
+- `build-vscode`: runs `yarn build:vscode`
 - Each sets their task → `reviewing` on success, `blocked` on failure
 
-**Round 4** — All CI checks reviewing. `vine_next_tasks` returns:
+**Round 4** — All CI checks reviewing. Orchestrator dispatches sub-agent:
 
-```json
-{
-  "ready_to_start": [{ "id": "open-pr" }],
-  "ready_to_complete": []
-}
-```
-
+- Housekeeping: no `ready_to_complete` yet (no dependant started)
 - Sub-agent for `open-pr`:
   - Opens a PR with a clear description
   - Adds decision: `> PR #42 opened against main`
   - Sets `open-pr` → `reviewing`
 
-**Round 5** — `open-pr` dependant (`ci-green`) starts:
+**Round 5** — Sub-agent calls `vine_next`. `open-pr` dependant (`ci-green`) is ready:
 
-```json
-{
-  "ready_to_start": [{ "id": "ci-green" }],
-  "ready_to_complete": [
-    { "id": "typecheck" },
-    { "id": "lint" },
-    { "id": "format-check" },
-    { "id": "test" },
-    { "id": "e2e" },
-    { "id": "build-vscode" },
-    { "id": "open-pr" }
-  ]
-}
-```
-
-- Mark all `ready_to_complete` tasks → `complete`
+- Housekeeping: marks `typecheck`, `lint`, `format-check`, `test`, `e2e`, `build-vscode`, `open-pr` → `complete`
 - Sub-agent for `ci-green`: verifies GitHub Actions pass, sets → `reviewing`
 
-**Rounds 6–7** — `review` picks up, then `pr-ready` closes out. Root is `complete`.
+**Rounds 6–7** — `review` picks up, then `pr-ready` closes out. Sub-agent reports `root_status: "complete"`. Orchestrator stops.
 
 ---
 
@@ -366,10 +350,10 @@ One sub-agent picks up `branch`:
 When a task produces work products, reference them so downstream tasks can consume them:
 
 ```
-vine_update_task(file, "test", decisions=[
+vine_write(file, [{ op: "update", id: "test", decisions: [
     "> All 48 tests passing",
     "> Coverage: 94% lines, 88% branches"
-])
+] }])
 ```
 
 For files, add them as attachment lines in the task description or reference them in decisions.
@@ -379,11 +363,11 @@ For files, add them as attachment lines in the task description or reference the
 Every non-trivial choice should be recorded as a `> decision` line:
 
 ```
-vine_update_task(file, "changes", decisions=[
+vine_write(file, [{ op: "update", id: "changes", decisions: [
     "> Used getActionableTasks pure function in @bacchus/core",
-    "> Kept vine_next_tasks read-only for MCP stateless model",
+    "> Kept vine_next read-only for MCP stateless model",
     "> Ref expansion is flagged, not automatic"
-])
+] }])
 ```
 
 These serve as context for upstream tasks and as an audit trail.
@@ -393,7 +377,7 @@ These serve as context for upstream tasks and as an audit trail.
 - Update the `.vine` file **as you go** — don't batch status changes.
 - Set `started` immediately when picking up a task.
 - Set `reviewing` as soon as work is complete, before moving on.
-- This ensures `vine_next_tasks` always reflects the true state of work.
+- This ensures `vine_next` always reflects the true state of work.
 
 ### Error Recovery
 
@@ -410,7 +394,7 @@ If a task fails:
 ```
 packages/
   core/     — Parser, serializer, graph queries, mutations (pure functions)
-  mcp/      — MCP server (stdio, 17 tools, @modelcontextprotocol/sdk)
+  mcp/      — MCP server (stdio, 4 tools + 2 resources, @modelcontextprotocol/sdk)
   cli/      — Command-line interface for .vine files
   ui/       — Browser app for visualization (Svelte + D3)
   vscode/   — VS Code extension (bundles MCP server)
