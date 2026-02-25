@@ -1,0 +1,70 @@
+vine 1.1.0
+prefix: polish
+title: Polish & Performance
+---
+[root] Polish & Performance (notstarted)
+-> error-handling
+-> performance
+-> responsive
+-> visuals
+---
+[responsive] Responsive Layout (notstarted)
+-> flex-layout
+-> sidebar-collapse
+---
+[flex-layout] Flexible Canvas Layout (notstarted)
+Canvas fills all available space beside the sidebar using CSS flexbox or grid.
+Maintain correct aspect handling on window resize without distortion.
+---
+[sidebar-collapse] Collapsible Sidebar (notstarted)
+On viewports narrower than 768px, collapse the sidebar into a toggleable overlay panel.
+Add a hamburger/menu button to show/hide it.
+-> flex-layout
+> VALIDATION NOTE: The collapse breakpoint is 768px. Below that width, hide the sidebar with display:none and show a hamburger/☰ toggle button. Clicking the toggle shows the sidebar as a fixed-position overlay panel on top of the canvas. Above 768px, the sidebar reappears inline and the toggle button hides.
+---
+[performance] Performance Optimization (notstarted)
+-> perf-profiling
+-> spatial-hash
+---
+[spatial-hash] Spatial Hash Broad Phase (notstarted)
+Replace the brute-force O(n²) broad phase with a spatial hash grid.
+Cell size should be configurable, defaulting to 2× the largest body radius.
+---
+[perf-profiling] Performance Profiling (notstarted)
+Profile the simulation with 100+ dynamic bodies.
+Target: maintain ≥ 55 FPS on mid-range hardware.
+Identify and optimize any bottlenecks in collision detection or rendering.
+-> spatial-hash
+---
+[visuals] Visual Polish (notstarted)
+-> body-colors
+-> shadows
+-> smooth-camera
+---
+[body-colors] Body Colors by Shape Type (notstarted)
+Circles get a blue palette, rectangles get an orange palette, other polygons get green.
+Static bodies are dark gray. Selected body gets a bright highlight outline.
+---
+[shadows] Subtle Drop Shadows (notstarted)
+Add a soft drop shadow beneath each body using `ctx.shadowBlur` and `ctx.shadowOffset`.
+Keep it subtle — 2px blur, 1px offset, low opacity.
+-> body-colors
+---
+[smooth-camera] Smooth Camera Transitions (notstarted)
+Animate camera pan and zoom changes with easing (lerp toward target over ~10 frames).
+Scene changes smoothly transition the camera to the new scene's default view.
+-> body-colors
+---
+[error-handling] Error Handling & Recovery (notstarted)
+-> nan-guard
+-> simulation-reset
+---
+[nan-guard] NaN Guard on Physics Values (notstarted)
+After each integration step, check body positions and velocities for NaN/Infinity.
+If detected, freeze the affected body and log a warning to the console.
+> VALIDATION NOTE: Check for NaN/Infinity after EVERY integration step, not just at the end of a frame. If a body has NaN position or velocity, freeze it immediately (set velocity to zero, mark as static temporarily). Log a console warning with the body ID.
+---
+[simulation-reset] Graceful Simulation Recovery (notstarted)
+If more than 3 bodies enter NaN state, automatically pause the simulation and show a warning banner.
+Offer a "Reset Scene" action in the banner.
+-> nan-guard

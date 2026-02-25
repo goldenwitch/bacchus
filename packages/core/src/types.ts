@@ -140,11 +140,14 @@ export function getSpriteUri(task: Task): string | undefined {
  * graph is validated only once after all operations have been applied.
  */
 export type Operation =
-  | { op: 'add_task'; id: string; name: string; status?: Status; description?: string; dependsOn?: string[] }
+  | { op: 'create'; version?: string }
+  | { op: 'add_task'; id: string; name: string; status?: Status; description?: string; dependsOn?: string[]; annotations?: Record<string, string[]> }
   | { op: 'remove_task'; id: string }
   | { op: 'set_status'; id: string; status: Status }
-  | { op: 'update'; id: string; name?: string; description?: string; decisions?: string[] }
+  | { op: 'claim'; id: string }
+  | { op: 'update'; id: string; name?: string; description?: string; decisions?: string[]; attachments?: Attachment[]; annotations?: Record<string, string[]> }
   | { op: 'add_dep'; taskId: string; depId: string }
   | { op: 'remove_dep'; taskId: string; depId: string }
   | { op: 'add_ref'; id: string; name: string; vine: string; description?: string; dependsOn?: string[]; decisions?: string[] }
-  | { op: 'update_ref_uri'; id: string; uri: string };
+  | { op: 'update_ref_uri'; id: string; uri: string }
+  | { op: 'extract_to_ref'; id: string; vine: string; refName?: string };

@@ -332,7 +332,7 @@ export function applyBatch(
           dependencies: op.dependsOn ?? [],
           decisions: [],
           attachments: [],
-          annotations: EMPTY_ANNOTATIONS,
+          annotations: op.annotations ? new Map(Object.entries(op.annotations)) : EMPTY_ANNOTATIONS,
         };
         tasks.set(op.id, newTask);
         order.push(op.id);
@@ -395,6 +395,18 @@ export function applyBatch(
         break;
       }
 
+      case 'claim': {
+        const task = tasks.get(op.id);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.id}`);
+        }
+        if (task.kind === 'ref') {
+          throw new VineError(`Cannot claim reference node "${op.id}".`);
+        }
+        tasks.set(op.id, { ...task, status: 'started' as Status });
+        break;
+      }
+
       case 'update': {
         const task = tasks.get(op.id);
         if (!task) {
@@ -404,6 +416,15 @@ export function applyBatch(
         if (op.name !== undefined) patch.shortName = op.name;
         if (op.description !== undefined) patch.description = op.description;
         if (op.decisions !== undefined) patch.decisions = op.decisions;
+        if (op.attachments !== undefined) {
+          if (task.kind === 'ref') {
+            throw new VineError(`Cannot set attachments on reference node "${op.id}".`);
+          }
+          patch.attachments = op.attachments;
+        }
+        if (op.annotations !== undefined) {
+          patch.annotations = new Map(Object.entries(op.annotations));
+        }
         tasks.set(op.id, { ...task, ...patch } as Task);
         break;
       }
@@ -463,6 +484,14 @@ export function applyBatch(
           dependencies: task.dependencies.filter((d) => d !== op.depId),
         } as Task);
         break;
+      }
+
+      case 'extract_to_ref': {
+        throw new VineError('The "extract_to_ref" operation is handled at the server level.');
+      }
+
+      case 'create': {
+        throw new VineError('The "create" operation must be the first operation and is handled at the server level.');
       }
 
       default: {

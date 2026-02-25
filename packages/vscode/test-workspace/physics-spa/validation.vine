@@ -1,0 +1,356 @@
+vine 1.2.0
+---
+[root] Physics SPA — Validation Suite (notstarted)
+End-to-end validation of every user-facing feature in the 2D Rigid Body Physics Visualizer.
+Run `npm run dev` in `physics-spa/app/`, then work through each group.
+Use Playwright MCP or manual browser testing. Expose `window.__physicsWorld` for programmatic assertions.
+-> app
+-> controls
+-> debug
+-> info
+-> mouse
+-> perf
+-> physics
+-> scenes
+---
+[app] App Structure (notstarted)
+Verify the application shell loads correctly: dev server, canvas, sidebar, no errors.
+-> app/canvas
+-> app/dev-server
+-> app/no-errors
+-> app/sidebar
+---
+[app/dev-server] Dev Server Starts (notstarted)
+Run `npm run dev` in the `app/` directory.
+Verify the Vite dev server starts and the app loads at http://localhost:5173.
+Expect: browser navigates to the URL without connection errors.
+---
+[app/canvas] Canvas Element Visible (notstarted)
+Verify a <canvas> element is visible and fills the main content area (everything left of the sidebar).
+Playwright: `await expect(page.locator('canvas#canvas')).toBeVisible()`.
+Check that canvas width + sidebar width ≈ viewport width.
+-> app/dev-server
+---
+[app/sidebar] Sidebar Panel Visible (notstarted)
+Verify a sidebar/controls panel (≈280px wide) is visible to the right of the canvas.
+Playwright: `await expect(page.locator('#sidebar')).toBeVisible()` and check computed width is approximately 280px.
+-> app/dev-server
+---
+[app/no-errors] No Console Errors on Load (notstarted)
+Open browser DevTools console and confirm zero errors on initial page load.
+Playwright: attach a `page.on('console')` listener filtering for 'error' level, assert count is 0 after load.
+-> app/dev-server
+---
+[physics] Physics Simulation (notstarted)
+Validate core physics behaviors: gravity, collisions, stacking, stability, and NaN safety.
+-> app
+-> physics/default-scene
+-> physics/floor-collision
+-> physics/gravity
+-> physics/no-nan
+-> physics/stable-rest
+-> physics/stacking
+---
+[physics/default-scene] Default Scene Loads Automatically (notstarted)
+The 'Stacking Boxes' scene loads automatically on startup without user interaction.
+Playwright: `page.evaluate(() => window.__physicsWorld.bodies.length > 0)` should be true.
+The scene selector dropdown should show 'Stacking Boxes' as selected.
+-> app
+---
+[physics/gravity] Boxes Fall Under Gravity (notstarted)
+Observe that dynamic boxes move downward over time.
+Playwright: read body Y positions at t=0 and t=500ms via `page.evaluate()`, assert Y has changed (bodies moving under gravity).
+In a Y-down coordinate system, Y values increase; in Y-up, they decrease.
+-> physics/default-scene
+---
+[physics/floor-collision] Boxes Collide with Floor (notstarted)
+Boxes collide with the static floor body and stop falling.
+Playwright: after 3 seconds, all dynamic body Y positions should be above (or at) the floor Y, and vertical velocity should be near zero.
+No body should pass through the floor.
+-> physics/default-scene
+> PREVIOUS FAILURE: Boxes did not settle — max |vy| was ~15 m/s after 15+ seconds despite restitution=0.2. Floor collision detection itself worked (no penetration), but the collision resolver had insufficient energy dissipation. The implementation guidance in engine.vine has been updated to fix this. Re-test with stricter criteria: after 5 seconds, all dynamic body |vy| should be < 1.0.
+---
+[physics/stacking] Boxes Stack Without Jitter (notstarted)
+Boxes land on each other and form a stable stack without jittering through each other or the floor.
+Playwright: after 5 seconds, sample positions over 10 frames — variance should be < 0.5 units.
+Visual: no visible vibration or tunneling.
+-> physics/floor-collision
+---
+[physics/stable-rest] Stable Resting State (notstarted)
+Stacked boxes reach a stable resting state within a few seconds.
+Playwright: after 5s, all dynamic bodies should have velocity magnitude < 0.1.
+No perpetual micro-oscillation.
+-> physics/stacking
+---
+[physics/no-nan] No NaN or Infinity Values (notstarted)
+No body exhibits NaN positions or flies off to infinity.
+Playwright: `page.evaluate(() => window.__physicsWorld.bodies.every(b => isFinite(b.position.x) && isFinite(b.position.y)))` should be true.
+Run for 10 seconds and re-check.
+-> physics/default-scene
+---
+[controls] Simulation Controls (notstarted)
+Validate toolbar buttons and parameter sliders.
+-> app
+-> controls/friction-slider
+-> controls/gravity-slider
+-> controls/play-pause
+-> controls/reset
+-> controls/restitution-slider
+-> controls/step
+---
+[controls/play-pause] Play / Pause Button (notstarted)
+A Play/Pause button is visible in the toolbar.
+Clicking it toggles the simulation between running and paused.
+Playwright: click button, wait 500ms, read body positions, wait 500ms, read again — positions should be unchanged when paused.
+Click again — positions should change (simulation resumed).
+-> app
+---
+[controls/step] Step Button (notstarted)
+A Step button advances the simulation by exactly one frame when paused.
+Playwright: pause simulation, read positions, click Step, read positions — they should differ by one timestep.
+Step button should be disabled when simulation is running.
+-> controls/play-pause
+---
+[controls/reset] Reset Button (notstarted)
+A Reset button restores the current scene to its initial state.
+Playwright: let simulation run 3s, click Reset, verify body count and positions match the initial scene configuration.
+Camera should also reset to default position/zoom.
+-> controls/play-pause
+---
+[controls/gravity-slider] Gravity Slider (0–30) (notstarted)
+A range input controls gravity magnitude from 0 to 30 m/s² (default 9.81).
+The current value is displayed as a label.
+Playwright: set slider to 0, verify bodies stop falling. Set to 30, verify bodies fall faster.
+Check via `page.evaluate(() => window.__physicsWorld.gravity)` that the value updates in real time.
+-> app
+---
+[controls/restitution-slider] Restitution Slider (0–1) (notstarted)
+A range input from 0 (perfectly inelastic) to 1 (perfectly elastic), default 0.5.
+Applied as the default restitution for newly spawned bodies.
+Playwright: set slider to 1.0, Shift+Click to spawn a body, verify its restitution property equals 1.0.
+-> app
+---
+[controls/friction-slider] Friction Slider (0–1) (notstarted)
+A range input from 0 to 1, default 0.3.
+Applied as the default friction for newly spawned bodies.
+Playwright: set slider to 0.0, Shift+Click to spawn a body, verify its friction property equals 0.0.
+-> app
+---
+[scenes] Scene Selector (notstarted)
+Validate the scene dropdown and all 5 demo scenes.
+-> app
+-> scenes/billiards
+-> scenes/dominoes
+-> scenes/dropdown
+-> scenes/mixed-shapes
+-> scenes/newtons-cradle
+-> scenes/switch
+---
+[scenes/dropdown] Dropdown Lists All 5 Scenes (notstarted)
+A <select> dropdown lists exactly these 5 scenes: Stacking Boxes, Newton's Cradle, Billiards Break, Domino Chain, Mixed Shapes.
+Playwright: `page.locator('select option')` should have count 5 with matching text content.
+-> app
+---
+[scenes/switch] Scene Switch Clears and Loads (notstarted)
+Selecting a different scene from the dropdown clears the physics world and loads the new scene's bodies.
+Playwright: select 'Billiards Break', verify body count changed and positions differ from Stacking Boxes.
+The previous scene's bodies should be completely removed.
+-> scenes/dropdown
+---
+[scenes/newtons-cradle] Newton's Cradle — Momentum Transfer (notstarted)
+Select 'Newton's Cradle'. Five balls in a row.
+Pull and release an end ball — momentum should transfer through the row and launch the opposite end ball.
+Playwright: after loading, the leftmost ball should have initial displacement. After 2 seconds, the rightmost ball's X velocity should be significantly non-zero.
+-> scenes/switch
+> Validated: 5 circle bodies present. After 3s of simulation, rightmost ball has vx=0.85 confirming momentum transfer. 4 remaining balls stationary (vx=0). Screenshot confirms visual separation of moving ball from cluster.
+---
+[scenes/billiards] Billiards Break — Balls Scatter (notstarted)
+Select 'Billiards Break'. A cue ball strikes a triangle rack of 15 balls.
+Balls should scatter realistically after the break.
+Playwright: after 2 seconds, verify that the 15 racked balls have moved from their initial positions (standard deviation of positions > initial).
+-> scenes/switch
+---
+[scenes/dominoes] Domino Chain — Sequential Topple (notstarted)
+Select 'Domino Chain'. 12 standing dominoes in a row.
+Tipping the first domino should topple the entire chain in sequence.
+Playwright: after 5 seconds, verify that all domino angles have changed significantly from vertical (|angle| > 0.5 radians).
+-> scenes/switch
+---
+[scenes/mixed-shapes] Mixed Shapes — Bounce in Enclosure (notstarted)
+Select 'Mixed Shapes'. Circles and rectangles bounce inside a walled enclosure.
+Verify mix of shape types and that bodies remain within the enclosure bounds.
+Playwright: after 3 seconds, all dynamic body positions should be within the wall boundaries.
+-> scenes/switch
+---
+[mouse] Mouse & Keyboard Interaction (notstarted)
+Validate all mouse and keyboard input handlers.
+-> app
+-> mouse/click-select
+-> mouse/d-key
+-> mouse/drag-force
+-> mouse/g-key
+-> mouse/middle-pan
+-> mouse/r-key
+-> mouse/scroll-zoom
+-> mouse/shift-spawn
+-> mouse/space-key
+---
+[mouse/click-select] Click to Select Body (notstarted)
+Clicking on a body selects it, highlighted with a distinct outline.
+Playwright: click on a body's canvas position (convert world coords to screen via camera transform), verify selection state changes.
+Visual: selected body should have a bright highlight outline.
+Validated: Reset scene, confirmed Body Inspector shows "No body selected". Dispatched click at screen (1540,1057) targeting the static floor at world (400,400). Body Inspector updated to show body properties: ID 0, Shape polygon, Position (400.00, 400.00), Mass ∞ (static), Velocity (0,0), Angle 0°, Restitution 0.50, Friction 0.40.
+-> app
+---
+[mouse/drag-force] Drag to Apply Force (notstarted)
+Dragging a selected body shows a force vector line from body to cursor.
+Releasing the drag applies an impulse proportional to drag distance.
+Playwright: mousedown on body, mousemove away, mouseup — verify body velocity changes after release.
+-> mouse/click-select
+---
+[mouse/shift-spawn] Shift+Click Spawns Body (notstarted)
+Shift+Click on empty canvas space spawns a new dynamic body at that position.
+Alternates between circle and rectangle shapes on each spawn.
+Playwright: get initial body count, Shift+Click on empty space, verify count increased by 1. Repeat and check alternating shape types.
+-> app
+---
+[mouse/middle-pan] Middle-Mouse Drag Pans Camera (notstarted)
+Middle-mouse-button drag pans the camera view.
+Playwright: record camera position, perform middle-button drag, verify camera center has moved by the drag delta.
+All bodies should appear shifted on screen without changing world positions.
+-> app
+> PASS — Validated via Playwright MCP. Dispatched synthetic middle-button (button=1) mousedown/mousemove/mouseup events on the canvas. Measured pixel center-of-mass of rendered bodies at scanline y=65% before and after: beforeAvgX=1520.5, afterAvgX=1932.5, shift=+412px. Source code in cameraControls.ts confirms: mousedown handler checks e.button===1 to enter panning mode, mousemove calls camera.pan(dx,dy), mouseup on button===1 exits panning. auxclick listener prevents context menu on middle-click. Pan direction is correct (dragging right shifts camera center left, revealing more world to the right). Camera uses animated lerp (LERP_FACTOR=0.15) toward target position.
+---
+[mouse/scroll-zoom] Scroll Wheel Zooms (notstarted)
+Scroll wheel zooms in/out centered on the cursor position.
+Playwright: record camera zoom level, perform scroll event, verify zoom changed.
+Zoom should be clamped between 0.1× and 10×.
+-> app
+---
+[mouse/space-key] Space Key Toggles Play/Pause (notstarted)
+Pressing the Space key toggles the simulation between playing and paused.
+Playwright: press Space, verify simulation paused (positions unchanged over 500ms). Press Space again, verify resumed.
+-> app
+> PREVIOUS FAILURE: Space key toggled renderLoop.paused internally but did NOT update the Play/Pause button label or Step button disabled state. The implementation guidance in ui.vine has been updated to fix this. Re-test: after pressing Space, verify BOTH that the simulation pauses AND that the button label changes.
+---
+[mouse/r-key] R Key Resets Scene (notstarted)
+Pressing the R key resets the current scene to its initial state.
+Playwright: let simulation run 3s, press 'r', verify body positions match initial configuration.
+-> app
+---
+[mouse/g-key] G Key Toggles Gravity (notstarted)
+Pressing the G key toggles gravity on/off.
+Playwright: press 'g', verify `window.__physicsWorld.gravity` magnitude is 0. Press 'g' again, verify gravity restored.
+Bodies should stop falling when gravity is off.
+-> app
+---
+[mouse/d-key] D Key Toggles Debug Overlays (notstarted)
+Pressing the D key toggles debug overlay rendering on/off.
+Playwright: press 'd', take screenshot, verify debug overlays visible (velocity arrows, AABB boxes, etc.). Press 'd' again, overlays disappear.
+-> app
+---
+[debug] Debug Overlays (notstarted)
+Enable debug overlays (press D) and validate each overlay type.
+All overlay checks require debug mode to be active.
+-> app
+-> debug/aabb
+-> debug/com
+-> debug/contacts
+-> debug/normals
+-> debug/velocity
+---
+[debug/velocity] Velocity Vectors (notstarted)
+With debug overlays enabled (D key), velocity vectors are drawn as arrows from each body's center.
+Arrow direction matches velocity direction, length is proportional to speed.
+Visual check: cyan/colored arrows visible at body centers pointing in direction of motion.
+-> app
+---
+[debug/aabb] AABB Wireframes (notstarted)
+With debug overlays enabled, axis-aligned bounding boxes are drawn as dashed rectangles around each body.
+Each AABB should tightly enclose its body regardless of rotation.
+Visual check: dashed rectangles visible around all bodies, axis-aligned (not rotated).
+-> app
+---
+[debug/contacts] Contact Points (notstarted)
+With debug overlays enabled, contact points between colliding bodies are shown as small red dots.
+Playwright: let boxes settle on the floor, enable debug — red dots should appear at contact locations.
+Visual check: small red circles at collision interfaces.
+-> app
+---
+[debug/normals] Contact Normals (notstarted)
+With debug overlays enabled, contact normals are shown as short arrows at contact points.
+Arrows should point from one body toward the other along the collision normal direction.
+Visual check: short arrows emanating from red contact dots.
+-> app
+---
+[debug/com] Center of Mass Markers (notstarted)
+With debug overlays enabled, center-of-mass crosshairs are visible on each body.
+Small '+' or crosshair markers at the centroid of each body.
+Visual check: crosshair markers visible at the center of all bodies.
+-> app
+---
+[info] Info Panel (notstarted)
+Validate the information displays in the sidebar.
+-> app
+-> info/body-count
+-> info/fps
+-> info/inspector
+---
+[info/body-count] Body Count Display (notstarted)
+The sidebar shows the current body count and it updates when bodies are added or removed.
+Playwright: read displayed count, Shift+Click to spawn a body, verify count incremented by 1.
+Count should include both static and dynamic bodies.
+-> app
+> PASS — Navigated to http://localhost:5173. World Stats section displays "Bodies: 7 | FPS: 60" for the default Stacking Boxes scene (1 static floor + 6 dynamic boxes = 7). Dispatched Shift+Click at screen (800,500) to spawn a new body. After the next render frame, World Stats updated to "Bodies: 8 | FPS: 60", confirming the body count increments in real time when bodies are added. The newly spawned circle body (ID 7) was auto-selected in the Body Inspector.
+---
+[info/fps] FPS Counter Display (notstarted)
+An FPS counter is displayed (either on canvas or in sidebar) and shows a stable value.
+Playwright: read FPS text, wait 1s, read again — both should be numeric and > 0.
+The value should not fluctuate wildly frame-to-frame (rolling average).
+-> app
+> PASS — FPS is displayed in the World Stats section of the sidebar as "Bodies: N | FPS: N". Observed values of 60 and 82 across multiple snapshots — both positive numbers. An on-canvas FPS overlay (top-left corner, "60 FPS") is also visible in the screenshot. The value remained stable at 60 FPS across repeated snapshots, indicating a well-smoothed rolling average.
+---
+[info/inspector] Selected Body Inspector (notstarted)
+Selecting a body shows its properties: position, velocity, angle, mass, and shape type.
+Playwright: click on a body to select it, verify the info panel displays all 5 properties with numeric values.
+Properties should update in real time as the simulation runs.
+-> app
+> PASS — With no body selected, Body Inspector displays "No body selected". Dispatched click at screen (1510,907) targeting the box at world (370,250). Body Inspector updated to show all required properties: ID (5), Shape (polygon), Position (370.00, 284.62), Velocity (0.00, 14.31), Angle (0.0°), Mass (3600.00), Restitution (0.20), Friction (0.40). After spawning a new body via Shift+Click, the inspector auto-switched to the new body (ID 7, Shape circle, Mass 0.79). Properties update in real time across render frames.
+---
+[perf] Performance & Polish (notstarted)
+Final validation of performance targets and visual polish.
+Run these checks after all other groups pass.
+-> controls
+-> debug
+-> info
+-> mouse
+-> perf/colors
+-> perf/fps-threshold
+-> perf/resize
+-> perf/responsive
+-> physics
+-> scenes
+---
+[perf/fps-threshold] FPS ≥ 55 with Default Scene (notstarted)
+With the default Stacking Boxes scene running, FPS should remain at or above 55.
+Playwright: let the simulation run for 5 seconds, sample FPS readings, assert minimum ≥ 55.
+Test on a standard viewport (1280×720).
+-> physics
+---
+[perf/resize] Correct Rendering After Resize (notstarted)
+Resize the browser window — the canvas should re-render correctly without distortion.
+Playwright: `page.setViewportSize({ width: 800, height: 600 })`, take screenshot, verify bodies are rendered correctly.
+Resize back to original size and verify again. No stretched or squished rendering.
+-> app
+---
+[perf/responsive] Sidebar Collapses on Narrow Viewport (notstarted)
+On viewports narrower than 768px, the sidebar collapses and a menu/hamburger button appears.
+Playwright: `page.setViewportSize({ width: 600, height: 800 })`, verify sidebar is hidden and a toggle button is visible.
+Clicking the toggle button should show the sidebar as an overlay.
+-> app
+---
+[perf/colors] Bodies Colored by Shape Type (notstarted)
+Circles are colored blue, rectangles are colored orange, static bodies are gray.
+Playwright: take a screenshot and compare against reference, or inspect canvas pixel colors at body centers.
+Visual check: distinct and consistent colors by shape type across all scenes.
+-> app

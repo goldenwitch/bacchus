@@ -20,18 +20,22 @@ import {
   expandVineRef,
   applyBatch,
   isValidStatus,
+  getDependencies,
+  getDependants,
   VineError,
   VineParseError,
   VineValidationError,
   EMPTY_ANNOTATIONS,
 } from '@bacchus/core';
-import type { ConcreteTask, Operation } from '@bacchus/core';
+import type { ConcreteTask, Operation, Attachment } from '@bacchus/core';
 
 import {
   readGraph,
   writeGraph,
   readFileContent,
   resolvePath,
+  resolveNewPath,
+  createGraph,
   setRoots,
   getRoots,
 } from '../src/io.js';
@@ -732,5 +736,291 @@ describe('vine_next', () => {
     expect(result.progress.complete).toBe(1); // child-a
     expect(result.progress.percentage).toBe(25);
     expect(result.progress.rootStatus).toBe('started');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// vine_next enhancements
+// ---------------------------------------------------------------------------
+
+describe('vine_next enhancements', () => {
+  it('blocked tasks with satisfied deps appear in blocked list', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    // Set leaf to complete, child-b to blocked
+    graph = applyBatch(graph, [
+      { op: 'set_status', id: 'leaf', status: 'complete' },
+      { op: 'set_status', id: 'child-b', status: 'blocked' },
+    ]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const result = getActionableTasks(reloaded);
+    expect(result.blocked.map((t) => t.id)).toContain('child-b');
+  });
+
+  it('readyCount is set in progress', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    const graph = readGraph(file);
+    const result = getActionableTasks(graph);
+    expect(result.progress.readyCount).toBe(result.ready.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// vine_next root completion
+// ---------------------------------------------------------------------------
+
+describe('vine_next root completion', () => {
+  it('reviewing root with all others complete appears in completable', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    // Set everything to complete except root which is reviewing
+    graph = applyBatch(graph, [
+      { op: 'set_status', id: 'leaf', status: 'complete' },
+      { op: 'set_status', id: 'child-a', status: 'complete' },
+      { op: 'set_status', id: 'child-b', status: 'complete' },
+      { op: 'set_status', id: 'root', status: 'reviewing' },
+    ]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const result = getActionableTasks(reloaded);
+    expect(result.completable.map((t) => t.id)).toContain('root');
+  });
+
+  it('reviewing root with incomplete tasks does NOT appear in completable', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    graph = applyBatch(graph, [
+      { op: 'set_status', id: 'leaf', status: 'complete' },
+      { op: 'set_status', id: 'child-b', status: 'started' },
+      { op: 'set_status', id: 'root', status: 'reviewing' },
+    ]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const result = getActionableTasks(reloaded);
+    expect(result.completable.map((t) => t.id)).not.toContain('root');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createGraph
+// ---------------------------------------------------------------------------
+
+describe('createGraph', () => {
+  it('creates a new .vine file', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'new-project.vine');
+    const graph = parse(SAMPLE_VINE);
+    createGraph(file, graph);
+    const reloaded = readGraph(file);
+    expect(reloaded.tasks.size).toBe(4);
+  });
+
+  it('throws if file already exists', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    const graph = parse(SAMPLE_VINE);
+    expect(() => createGraph(file, graph)).toThrow('already exists');
+  });
+
+  it('creates parent directories if needed', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'subdir', 'nested', 'plan.vine');
+    const graph = parse(SAMPLE_VINE);
+    createGraph(file, graph);
+    const reloaded = readGraph(file);
+    expect(reloaded.tasks.size).toBe(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveNewPath
+// ---------------------------------------------------------------------------
+
+describe('resolveNewPath', () => {
+  it('appends .vine when no extension', () => {
+    const result = resolveNewPath('my-plan');
+    expect(result.endsWith('.vine')).toBe(true);
+  });
+
+  it('does not append .vine when extension exists', () => {
+    const result = resolveNewPath('my-plan.vine');
+    expect(result.endsWith('.vine.vine')).toBe(false);
+    expect(result.endsWith('.vine')).toBe(true);
+  });
+
+  it('returns absolute path unchanged', () => {
+    const abs = join(tmpdir(), 'test.vine');
+    expect(resolveNewPath(abs)).toBe(abs);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// claim operation
+// ---------------------------------------------------------------------------
+
+describe('claim operation', () => {
+  it('sets task status to started', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    graph = applyBatch(graph, [{ op: 'claim', id: 'leaf' }]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const task = getTask(reloaded, 'leaf') as ConcreteTask;
+    expect(task.status).toBe('started');
+  });
+
+  it('throws on ref node', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'ref.vine');
+    writeFileSync(file, REF_VINE, 'utf-8');
+    const graph = readGraph(file);
+    expect(() => applyBatch(graph, [{ op: 'claim', id: 'ext-ref' }])).toThrow(VineError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// create operation (server-level only)
+// ---------------------------------------------------------------------------
+
+describe('create operation', () => {
+  it('throws when used in applyBatch (server-level only)', () => {
+    const graph = readGraph(writeSample(makeTempDir()));
+    expect(() => applyBatch(graph, [{ op: 'create' } as any])).toThrow(VineError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// update with attachments and annotations
+// ---------------------------------------------------------------------------
+
+describe('update with attachments and annotations', () => {
+  it('sets attachments on a task', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    const attachment: Attachment = { class: 'artifact', mime: 'text/plain', uri: 'https://example.com/report.txt' };
+    graph = applyBatch(graph, [
+      { op: 'update', id: 'child-a', attachments: [attachment] },
+    ]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const task = getTask(reloaded, 'child-a') as ConcreteTask;
+    expect(task.attachments).toHaveLength(1);
+    expect(task.attachments[0].uri).toBe('https://example.com/report.txt');
+  });
+
+  it('sets annotations on a task', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    graph = applyBatch(graph, [
+      { op: 'update', id: 'child-a', annotations: { sprite: ['./icon.svg'] } },
+    ]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const task = getTask(reloaded, 'child-a');
+    expect(task.annotations.get('sprite')).toEqual(['./icon.svg']);
+  });
+
+  it('rejects attachments on ref nodes', () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'ref.vine');
+    writeFileSync(file, REF_VINE, 'utf-8');
+    const graph = readGraph(file);
+    const attachment: Attachment = { class: 'artifact', mime: 'text/plain', uri: 'https://example.com/x.txt' };
+    expect(() => applyBatch(graph, [
+      { op: 'update', id: 'ext-ref', attachments: [attachment] },
+    ])).toThrow(VineError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// add_task with annotations
+// ---------------------------------------------------------------------------
+
+describe('add_task with annotations', () => {
+  it('creates task with annotations via applyBatch', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    let graph = readGraph(file);
+    graph = applyBatch(graph, [
+      { op: 'add_task', id: 'annotated', name: 'Annotated Task', dependsOn: ['leaf'], annotations: { sprite: ['./sprite.svg'], priority: ['high'] } },
+      { op: 'add_dep', taskId: 'root', depId: 'annotated' },
+    ]);
+    writeGraph(file, graph);
+    const reloaded = readGraph(file);
+    const task = getTask(reloaded, 'annotated');
+    expect(task.annotations.get('sprite')).toEqual(['./sprite.svg']);
+    expect(task.annotations.get('priority')).toEqual(['high']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// extract_to_ref operation (server-level only)
+// ---------------------------------------------------------------------------
+
+describe('extract_to_ref operation', () => {
+  it('throws when used in applyBatch (server-level only)', () => {
+    const graph = readGraph(writeSample(makeTempDir()));
+    expect(() => applyBatch(graph, [
+      { op: 'extract_to_ref', id: 'child-a', vine: './child-a.vine' } as any,
+    ])).toThrow(VineError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// error details
+// ---------------------------------------------------------------------------
+
+describe('error details', () => {
+  it('VineValidationError includes details', () => {
+    const graph = readGraph(writeSample(makeTempDir()));
+    try {
+      // Create an island — should fail with no-islands constraint
+      applyBatch(graph, [
+        { op: 'add_task', id: 'island', name: 'Island Task' },
+      ]);
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(VineValidationError);
+      if (err instanceof VineValidationError) {
+        expect(err.constraint).toBe('no-islands');
+        expect(err.details).toBeDefined();
+        if ('islandTaskIds' in err.details) {
+          expect(err.details.islandTaskIds).toContain('island');
+        }
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dependency context
+// ---------------------------------------------------------------------------
+
+describe('dependency context', () => {
+  it('getDependencies returns resolved dependency objects', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    const graph = readGraph(file);
+    const deps = getDependencies(graph, 'child-a');
+    expect(deps).toHaveLength(1);
+    expect(deps[0].id).toBe('leaf');
+  });
+
+  it('getDependants returns upstream tasks', () => {
+    const dir = makeTempDir();
+    const file = writeSample(dir);
+    const graph = readGraph(file);
+    const dependants = getDependants(graph, 'leaf');
+    const ids = dependants.map((t) => t.id);
+    expect(ids).toContain('child-a');
+    expect(ids).toContain('child-b');
   });
 });
