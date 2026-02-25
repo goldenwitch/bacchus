@@ -1,0 +1,101 @@
+vine 1.1.0
+prefix: ui
+title: Controls & Interaction
+---
+[root] Controls & Interaction (notstarted)
+-> info-panel
+-> keyboard-shortcuts
+-> mouse-interaction
+-> params-panel
+-> scene-selector
+-> toolbar
+---
+[toolbar] Simulation Toolbar (notstarted)
+-> play-pause
+-> reset-btn
+-> step-btn
+> VALIDATION FIX: The toolbar module must export references or update methods for each button so that keyboard shortcut handlers can synchronize UI state. Use a pattern like: export function setPlayPauseState(paused: boolean) that updates both the play/pause button label and the step button's disabled property.
+---
+[play-pause] Play / Pause Button (notstarted)
+Toggle button that starts or pauses the physics simulation.
+Update button icon/label to reflect current state.
+> VALIDATION BUG FIX: Expose a public method like updateState(paused: boolean) that sets the button label ('▶ Play' when paused, '⏸ Pause' when running) AND toggles the Step button's disabled attribute. This method must be callable from BOTH the button's click handler AND the keyboard shortcut handler (Space key). The initial button state must match the initial renderLoop.paused value. Previous bug: Space key toggled simulation without updating button UI.
+---
+[step-btn] Single Step Button (notstarted)
+Advance the simulation by exactly one fixed timestep.
+Only enabled when the simulation is paused.
+-> play-pause
+---
+[reset-btn] Reset Button (notstarted)
+Reload the current scene to its initial state.
+Reset camera position and zoom to defaults.
+-> play-pause
+---
+[params-panel] Parameter Panel (notstarted)
+-> friction-slider
+-> gravity-slider
+-> restitution-slider
+-> timestep-select
+---
+[gravity-slider] Gravity Slider (notstarted)
+Range input controlling gravity magnitude from 0 to 30 m/s² (default 9.81).
+Display current value as a label.
+Update physics world gravity in real time as the slider moves.
+> VALIDATION NOTE: When gravity is toggled off via the G keyboard shortcut, the slider label must update to show '0' (or the current gravity magnitude). When toggled back on, it must restore to the previous value. Provide a public updateDisplay(value: number) method or emit an event that the keyboard handler can call.
+---
+[restitution-slider] Restitution Slider (notstarted)
+Range input from 0 (perfectly inelastic) to 1 (perfectly elastic), default 0.5.
+Applied as the default restitution for newly spawned bodies.
+---
+[friction-slider] Friction Slider (notstarted)
+Range input from 0 to 1, default 0.3.
+Applied as the default friction for newly spawned bodies.
+---
+[timestep-select] Timestep Selector (notstarted)
+Dropdown to choose fixed timestep: 1/30, 1/60, 1/120, or 1/240 seconds.
+Default 1/60. Changing this restarts the simulation.
+---
+[scene-selector] Scene Selector Dropdown (notstarted)
+A `<select>` dropdown listing all available demo scenes by name.
+On change: clear the physics world, load the selected scene's body configuration, and reset the camera.
+---
+[info-panel] Info Panel (notstarted)
+-> body-inspector
+-> world-stats
+---
+[world-stats] World Stats Display (notstarted)
+Show body count, active (non-sleeping) count, and current FPS.
+Update every frame.
+---
+[body-inspector] Selected Body Inspector (notstarted)
+When a body is selected, display its position, velocity, angle, mass, and shape type.
+Update in real time as the simulation runs.
+---
+[mouse-interaction] Mouse Interaction (notstarted)
+-> body-drag
+-> body-select
+-> body-spawn
+---
+[body-select] Click to Select Body (notstarted)
+On click, ray-test against all bodies to find the one under the cursor.
+Highlight the selected body with a distinct outline color.
+> VALIDATION NOTE: Use point-in-shape testing (not just AABB). For circles: check distance from click point to body center < radius. For polygons: use a point-in-polygon test with the body's transformed vertices. Convert screen coordinates to world coordinates using the camera's screenToWorld() method before testing.
+---
+[body-drag] Drag to Apply Force (notstarted)
+Click and drag on a body to show a force vector (line from body to cursor).
+On release, apply an impulse to the body proportional to the drag distance.
+-> body-select
+> VALIDATION NOTE: The drag impulse uses a slingshot mechanic: impulse direction is from cursor TOWARD the body (opposite to drag direction). Scale the impulse magnitude by a constant (e.g., IMPULSE_SCALE = 5). The impulse formula: impulse = (dragStart - dragEnd) * IMPULSE_SCALE. Apply via body.applyImpulse(impulse, contactPoint) which affects both linear and angular velocity.
+---
+[body-spawn] Shift+Click to Spawn Body (notstarted)
+Shift+click on empty canvas space spawns a new dynamic body at that position.
+Alternate between circle and rectangle shapes on each spawn.
+---
+[keyboard-shortcuts] Keyboard Shortcuts (notstarted)
+Space — toggle play/pause.
+R — reset current scene.
+G — toggle gravity on/off.
+D — toggle debug overlays on/off.
+Display a small help tooltip showing shortcuts when user presses '?'.
+-> toolbar
+> VALIDATION BUG FIX: All keyboard shortcuts that change state must synchronize the corresponding UI controls. Specifically: (1) Space key must call the toolbar's play/pause update method after toggling renderLoop.paused so the button label and Step button disabled state stay in sync. (2) G key must update the gravity slider's displayed value and input element value after toggling gravity on/off. (3) R key must ensure all UI controls reflect the reset state. Wire keyboard handlers through the same code paths as button click handlers rather than directly mutating state.

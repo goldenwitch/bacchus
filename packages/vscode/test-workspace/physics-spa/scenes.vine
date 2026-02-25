@@ -1,0 +1,59 @@
+vine 1.1.0
+prefix: scenes
+title: Demo Scenes
+---
+[root] Demo Scenes (notstarted)
+-> billiards
+-> dominoes
+-> mixed-shapes
+-> newtons-cradle
+-> scene-loader
+-> stacking-boxes
+---
+[scene-loader] Scene Loader Interface (notstarted)
+Define a `Scene` interface: `{ name: string, description: string, setup: (world: PhysicsWorld) => void }`.
+Create a scene registry that maps scene names to setup functions.
+Export a `loadScene(name, world)` function and a `getSceneNames()` function.
+> VALIDATION NOTE: The scene loader must call world.clear() before setting up a new scene to ensure no bodies from the previous scene remain. Expose window.__physicsWorld globally in dev mode for Playwright-based automated testing.
+---
+[stacking-boxes] Stacking Boxes Scene (notstarted)
+Create a static floor body (wide, thin rectangle) at the bottom of the world.
+Drop 6 dynamic box bodies of varying sizes from staggered heights above the floor.
+Boxes should fall under gravity, collide with the floor and each other, and settle into a stable stack.
+This is the default scene loaded on startup.
+Use restitution 0.2 and friction 0.4 for stable stacking behavior.
+-> scene-loader
+> This scene is the primary test for stable resting contacts and stacking.
+> VALIDATION REQUIREMENT: This is the primary stability test. After 5 seconds of simulation, ALL dynamic boxes must have velocity magnitude < 0.1 (fully settled). If boxes still bounce after 5s with restitution=0.2 and friction=0.4, the collision resolver needs more iterations or better energy dissipation. Test with: world.bodies.filter(b => !b.isStatic).every(b => Math.hypot(b.velocity.x, b.velocity.y) < 0.1). Boxes must not tunnel through the floor or each other.
+---
+[newtons-cradle] Newton's Cradle Scene (notstarted)
+Create 5 circle bodies arranged in a horizontal row, touching.
+Each ball is suspended from a fixed point by a distance constraint (simulated via position correction each frame).
+Pull the leftmost ball outward and release — momentum transfers through the row, launching the rightmost ball.
+-> scene-loader
+> Demonstrates conservation of momentum and energy with elastic collisions (restitution ≈ 1.0).
+---
+[billiards] Billiards Break Scene (notstarted)
+Arrange 15 circle bodies in a tight triangle rack formation.
+Place a cue ball offset to the left.
+Apply a strong initial impulse to the cue ball toward the rack.
+Add static wall bodies forming a rectangular boundary (the table cushions).
+Use restitution 0.9 and friction 0.1 for realistic billiard physics.
+-> scene-loader
+---
+[dominoes] Domino Chain Scene (notstarted)
+Place 12 tall, thin rectangle bodies (aspect ratio ~1:4) in a row, equally spaced, standing upright on a static floor.
+Apply a small impulse to the first domino to tip it into the second.
+The chain reaction should topple all dominoes in sequence.
+Use friction 0.5 and restitution 0.1 for realistic toppling dynamics.
+-> scene-loader
+> Tests sequential collision propagation and angular momentum transfer.
+---
+[mixed-shapes] Mixed Shapes Scene (notstarted)
+Create 4 static wall bodies forming a rectangular enclosure.
+Spawn 8–12 random bodies: mix of circles (3 sizes) and rectangles (2 sizes), at random positions inside the enclosure.
+Give each body a random initial velocity.
+Bodies bounce off walls and each other in a contained environment.
+Use moderate restitution (0.6) for lively bouncing.
+-> scene-loader
+> VALIDATION NOTE: Seed the random number generator or use a deterministic layout so that the scene produces a consistent mix of shape types. The previous implementation produced 9 circles and only 1 polygon out of 10 bodies — aim for a more balanced mix (at least 3 of each type).

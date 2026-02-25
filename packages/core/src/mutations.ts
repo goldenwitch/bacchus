@@ -1,10 +1,12 @@
 import type {
   ConcreteTask,
+  Operation,
   RefTask,
   Status,
   Task,
   VineGraph,
 } from './types.js';
+import { EMPTY_ANNOTATIONS } from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 
@@ -287,6 +289,219 @@ export function removeDependency(
     graph.order,
     graph,
   );
+  validate(next);
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Batch mutations
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply a sequence of operations to a graph atomically.
+ *
+ * Unlike the individual mutation functions, `applyBatch` performs **no
+ * intermediate validation** — the graph is validated only once after all
+ * operations have been applied. This allows operations that would
+ * transiently violate structural constraints (e.g., adding a disconnected
+ * task and then wiring it in) to succeed as long as the *final* graph is
+ * valid.
+ *
+ * @throws {VineError} on precondition failures (duplicate id, not found, …).
+ * @throws {VineValidationError} if the final graph is structurally invalid.
+ */
+export function applyBatch(
+  graph: VineGraph,
+  operations: readonly Operation[],
+): VineGraph {
+  const tasks = new Map(graph.tasks);
+  let order = [...graph.order];
+
+  for (const op of operations) {
+    switch (op.op) {
+      case 'add_task': {
+        if (tasks.has(op.id)) {
+          throw new VineError(`Task "${op.id}" already exists.`);
+        }
+        const newTask: ConcreteTask = {
+          kind: 'task',
+          id: op.id,
+          shortName: op.name,
+          status: op.status ?? 'notstarted',
+          description: op.description ?? '',
+          dependencies: op.dependsOn ?? [],
+          decisions: [],
+          attachments: [],
+          annotations: op.annotations ? new Map(Object.entries(op.annotations)) : EMPTY_ANNOTATIONS,
+        };
+        tasks.set(op.id, newTask);
+        order.push(op.id);
+        break;
+      }
+
+      case 'add_ref': {
+        if (tasks.has(op.id)) {
+          throw new VineError(`Task "${op.id}" already exists.`);
+        }
+        if (!op.vine) {
+          throw new VineError('Ref node must have a non-empty vine URI');
+        }
+        const newRef: RefTask = {
+          kind: 'ref',
+          id: op.id,
+          shortName: op.name,
+          vine: op.vine,
+          description: op.description ?? '',
+          dependencies: op.dependsOn ?? [],
+          decisions: op.decisions ?? [],
+          annotations: EMPTY_ANNOTATIONS,
+        };
+        tasks.set(op.id, newRef);
+        order.push(op.id);
+        break;
+      }
+
+      case 'remove_task': {
+        if (!tasks.has(op.id)) {
+          throw new VineError(`Task not found: ${op.id}`);
+        }
+        if (op.id === order[0]) {
+          throw new VineError('Cannot remove the root task.');
+        }
+        tasks.delete(op.id);
+        for (const [tid, t] of tasks) {
+          if (t.dependencies.includes(op.id)) {
+            tasks.set(tid, {
+              ...t,
+              dependencies: t.dependencies.filter((d) => d !== op.id),
+            } as Task);
+          }
+        }
+        order = order.filter((tid) => tid !== op.id);
+        break;
+      }
+
+      case 'set_status': {
+        const task = tasks.get(op.id);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.id}`);
+        }
+        if (task.kind === 'ref') {
+          throw new VineError(
+            `Cannot set status on reference node "${op.id}".`,
+          );
+        }
+        tasks.set(op.id, { ...task, status: op.status });
+        break;
+      }
+
+      case 'claim': {
+        const task = tasks.get(op.id);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.id}`);
+        }
+        if (task.kind === 'ref') {
+          throw new VineError(`Cannot claim reference node "${op.id}".`);
+        }
+        tasks.set(op.id, { ...task, status: 'started' as Status });
+        break;
+      }
+
+      case 'update': {
+        const task = tasks.get(op.id);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.id}`);
+        }
+        const patch: Record<string, unknown> = {};
+        if (op.name !== undefined) patch.shortName = op.name;
+        if (op.description !== undefined) patch.description = op.description;
+        if (op.decisions !== undefined) patch.decisions = op.decisions;
+        if (op.attachments !== undefined) {
+          if (task.kind === 'ref') {
+            throw new VineError(`Cannot set attachments on reference node "${op.id}".`);
+          }
+          patch.attachments = op.attachments;
+        }
+        if (op.annotations !== undefined) {
+          patch.annotations = new Map(Object.entries(op.annotations));
+        }
+        tasks.set(op.id, { ...task, ...patch } as Task);
+        break;
+      }
+
+      case 'update_ref_uri': {
+        const task = tasks.get(op.id);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.id}`);
+        }
+        if (task.kind !== 'ref') {
+          throw new VineError(
+            'updateRefUri can only be called on ref nodes',
+          );
+        }
+        if (!op.uri || typeof op.uri !== 'string') {
+          throw new VineError('Ref URI must be a non-empty string');
+        }
+        tasks.set(op.id, { ...task, vine: op.uri });
+        break;
+      }
+
+      case 'add_dep': {
+        const task = tasks.get(op.taskId);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.taskId}`);
+        }
+        if (!tasks.has(op.depId)) {
+          throw new VineError(`Task not found: ${op.depId}`);
+        }
+        if (task.dependencies.includes(op.depId)) {
+          throw new VineError(
+            `Task "${op.taskId}" already depends on "${op.depId}".`,
+          );
+        }
+        tasks.set(op.taskId, {
+          ...task,
+          dependencies: [...task.dependencies, op.depId],
+        } as Task);
+        break;
+      }
+
+      case 'remove_dep': {
+        const task = tasks.get(op.taskId);
+        if (!task) {
+          throw new VineError(`Task not found: ${op.taskId}`);
+        }
+        if (!tasks.has(op.depId)) {
+          throw new VineError(`Task not found: ${op.depId}`);
+        }
+        if (!task.dependencies.includes(op.depId)) {
+          throw new VineError(
+            `Task "${op.taskId}" does not depend on "${op.depId}".`,
+          );
+        }
+        tasks.set(op.taskId, {
+          ...task,
+          dependencies: task.dependencies.filter((d) => d !== op.depId),
+        } as Task);
+        break;
+      }
+
+      case 'extract_to_ref': {
+        throw new VineError('The "extract_to_ref" operation is handled at the server level.');
+      }
+
+      case 'create': {
+        throw new VineError('The "create" operation must be the first operation and is handled at the server level.');
+      }
+
+      default: {
+        const _exhaustive: never = op;
+        throw new VineError(`Unknown operation: ${JSON.stringify(_exhaustive)}`);
+      }
+    }
+  }
+
+  const next = buildGraph(tasks, order, graph);
   validate(next);
   return next;
 }

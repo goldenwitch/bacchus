@@ -37,6 +37,9 @@ playwright-report/
 # Logs
 *.log
 
+# VS Code extension packages
+*.vsix
+
 # Editor
 *.swp
 *.swo

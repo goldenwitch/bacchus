@@ -32,14 +32,14 @@ The extension uses the VS Code Language Model API to wire the VINE MCP server:
 4. The provider sets the working directory (`cwd`) to the first workspace folder so relative `.vine` paths resolve correctly.
 5. `resolveMcpServerDefinition` passes the definition through unchanged.
 
-All tools from `@bacchus/mcp` are automatically available through this provider:
+All 4 tools from `@bacchus/mcp` are automatically available through this provider:
 
-| Category  | Tools                                                                                                                       |
-| --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Read-only | `vine_validate`, `vine_show`, `vine_list`, `vine_get_task`, `vine_get_descendants`, `vine_search`                           |
-| Execution | `vine_next_tasks`                                                                                                           |
-| Mutations | `vine_add_task`, `vine_remove_task`, `vine_set_status`, `vine_update_task`, `vine_add_dependency`, `vine_remove_dependency` |
-| Ref nodes | `vine_add_ref`, `vine_expand_ref`, `vine_update_ref_uri`, `vine_get_refs`                                                   |
+| Category  | Tool           | Description                                         |
+| --------- | -------------- | --------------------------------------------------- |
+| Read-only | `vine_read`    | Unified query (summary, list, task, descendants, search, refs, validate) |
+| Execution | `vine_next`    | Execution frontier (ready tasks, progress)           |
+| Mutations | `vine_write`   | Batch mutations (add/remove tasks, set status, etc.) |
+| Ref nodes | `vine_expand`  | Expand reference nodes by inlining child graphs      |
 
 See [MCP.md](MCP.md) for full tool documentation.
 
@@ -114,9 +114,9 @@ The esbuild configuration ([esbuild.mjs](../packages/vscode/esbuild.mjs)) produc
 [mcp-protocol.test.ts](../packages/vscode/__tests__/mcp-protocol.test.ts) — end-to-end communication with the bundled server over stdio:
 
 - Builds `dist/server.js` if needed, then spawns it via `StdioClientTransport`
-- Verifies `tools/list` returns all 17 tools
-- Exercises read-only tools (`vine_validate`, `vine_show`, `vine_list`) against temp `.vine` files
-- Exercises mutation tools (`vine_set_status`) and verifies the file is modified on disk
+- Verifies `tools/list` returns all 4 tools
+- Exercises read-only tools (`vine_read`) against temp `.vine` files
+- Exercises mutation tools (`vine_write`) and verifies the file is modified on disk
 - Tests error responses for nonexistent files
 
 ### VS Code Integration Tests

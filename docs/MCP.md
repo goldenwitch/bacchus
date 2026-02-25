@@ -1,6 +1,6 @@
 # @bacchus/mcp
 
-stdio-based MCP server exposing the VINE task graph API for AI tool-use. Built on [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk), reuses `@bacchus/core` pure functions with isolated file I/O.
+stdio-based MCP server exposing the VINE task graph API as 4 tools and 2 MCP resources for AI tool-use. Built on [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk), reuses `@bacchus/core` pure functions with isolated file I/O.
 
 ---
 
@@ -20,207 +20,54 @@ The `--cwd` flag changes the process working directory and registers it as a roo
 
 ---
 
+## Resources
+
+The server exposes two MCP resources containing the VINE specification:
+
+### `vine://spec/brief`
+
+Condensed VINE format specification with execution guide and tool reference (~200 lines). Read this first when executing a .vine file contextlessly.
+
+### `vine://spec/full`
+
+Complete VINE v1.2.0 format specification including ABNF grammar, expansion algorithm, serialization rules, and examples (~700 lines).
+
+---
+
 ## Tool Reference
 
-The server exposes 17 tools. All tools accept a `file` parameter (path to a `.vine` file, absolute or relative to cwd/registered roots). Relative paths without an extension are automatically resolved with `.vine` appended.
+The server exposes 4 tools. All tools accept a `file` parameter (path to a `.vine` file, absolute or relative to cwd/registered roots). Relative paths without an extension are automatically resolved with `.vine` appended.
 
-### Read-Only Tools
+### `vine_read`
 
-#### `vine_validate`
+Query a .vine task graph. The `action` parameter selects the query type.
 
-Parse and validate a `.vine` file. Use this first when opening an unfamiliar file to confirm it is well-formed.
+| Parameter | Type   | Required | Description                                                               |
+| --------- | ------ | -------- | ------------------------------------------------------------------------- |
+| `file`    | string | Yes      | Path to the `.vine` file                                                  |
+| `action`  | string | Yes      | One of: `summary`, `list`, `task`, `context`, `descendants`, `search`, `refs`, `validate` |
+| `id`      | string | No       | Task ID (required for `task` and `descendants`)                           |
+| `status`  | string | No       | Status filter (for `list`)                                                |
+| `query`   | string | No       | Search query (for `list` or `search`)                                     |
 
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
+**Actions:**
 
-**Returns**: `"Valid — <n> task(s)."` on success, or a parse/validation error message.
-
----
-
-#### `vine_show`
-
-Return a high-level summary: root task, total/leaf counts, and per-status breakdown.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-
-**Returns**: Multi-line text with root info, task counts, and status breakdown.
-
----
-
-#### `vine_list`
-
-List tasks, optionally filtered by status or a search string.
-
-| Parameter | Type   | Required | Description                                                                                |
-| --------- | ------ | -------- | ------------------------------------------------------------------------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file                                                                   |
-| `status`  | string | No       | Filter by status (`complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked`) |
-| `search`  | string | No       | Case-insensitive text search across names and descriptions                                 |
-
-**Returns**: JSON array of task objects.
+| Action        | Description                                                                     | Returns                               |
+| ------------- | ------------------------------------------------------------------------------- | ------------------------------------- |
+| `validate`    | Parse and validate the file                                                      | `"Valid — <n> task(s)."`              |
+| `summary`     | Root task, total/leaf counts, per-status breakdown                               | Multi-line text summary               |
+| `list`        | All tasks, optionally filtered by `status` or `query`                            | JSON array of task objects            |
+| `task`        | Full detail for one task by ID                                                   | JSON task object                      |
+| `context`     | Full task detail plus resolved dependencies (status, decisions, attachments) and dependant list | JSON object with `resolved_dependencies` and `dependant_tasks` |
+| `descendants` | Transitive downstream subtree (blast radius)                                     | JSON array of `{ id, shortName }`     |
+| `search`      | Case-insensitive text search across names and descriptions                       | JSON array of matching task objects    |
+| `refs`        | All reference nodes                                                              | JSON array of `{ id, shortName, vine, dependencies }` |
 
 ---
 
-#### `vine_get_task`
+### `vine_next`
 
-Return full details of a single task by ID, including description, status, dependencies, decisions, and attachments.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-| `id`      | string | Yes      | Task ID                  |
-
-**Returns**: JSON object with all task fields.
-
----
-
-#### `vine_get_descendants`
-
-Return all tasks that transitively depend on the given task (its full downstream subtree). Useful for assessing the blast radius of a change.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-| `id`      | string | Yes      | Task ID                  |
-
-**Returns**: JSON array of `{ id, shortName }` objects.
-
----
-
-#### `vine_search`
-
-Case-insensitive text search across task names and descriptions. Returns matching tasks with full detail.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-| `query`   | string | Yes      | Search string            |
-
-**Returns**: JSON array of matching task objects.
-
----
-
-### Execution Tools
-
-#### `vine_next_tasks`
-
-Analyse the current execution state of a `.vine` graph and return the frontier of actionable work. Designed for iterative execution loops: call this → act on results → call again.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-
-**Returns**: JSON object with four sections:
-
-| Section             | Description                                                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ready_to_start`    | Tasks whose dependencies are all satisfied (`complete` or `reviewing`) and whose status is `notstarted` or `planning`. Pick these up in parallel.             |
-| `ready_to_complete` | Tasks in `reviewing` status where at least one dependant has started consuming their output (`started`, `reviewing`, or `complete`). Safe to mark `complete`. |
-| `needs_expansion`   | Ref nodes on the frontier whose dependencies are all satisfied. Must be expanded via `vine_expand_ref` before their inner tasks become visible.               |
-| `progress`          | Aggregate stats: `total`, `complete`, `percentage`, `root_id`, `root_status`, `by_status` (per-status counts).                                                |
-
----
-
-### Mutation Tools
-
-All mutation tools read the file, apply the change using `@bacchus/core` pure functions, and write the result back to disk.
-
-#### `vine_add_task`
-
-Add a new task to the graph.
-
-| Parameter     | Type     | Required | Description                                                                                                           |
-| ------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
-| `file`        | string   | Yes      | Path to the `.vine` file                                                                                              |
-| `id`          | string   | Yes      | Unique task identifier                                                                                                |
-| `name`        | string   | Yes      | Short task name                                                                                                       |
-| `status`      | string   | No       | Status (default: `notstarted`). Valid values: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
-| `description` | string   | No       | Task description text                                                                                                 |
-| `dependsOn`   | string[] | No       | List of dependency task IDs                                                                                           |
-
-**Returns**: `'Task "<id>" added.'`
-
----
-
-#### `vine_remove_task`
-
-Remove a task and all references to it from the graph. Dependency edges pointing to the removed task are dropped from other tasks.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-| `id`      | string | Yes      | Task ID to remove        |
-
-**Returns**: `'Task "<id>" removed.'`
-
----
-
-#### `vine_set_status`
-
-Update a task's status.
-
-| Parameter | Type   | Required | Description                                                                                       |
-| --------- | ------ | -------- | ------------------------------------------------------------------------------------------------- |
-| `file`    | string | Yes      | Path to the `.vine` file                                                                          |
-| `id`      | string | Yes      | Task ID                                                                                           |
-| `status`  | string | Yes      | New status. Valid values: `complete`, `started`, `reviewing`, `planning`, `notstarted`, `blocked` |
-
-**Returns**: `'Task "<id>" status set to "<status>".'`
-
----
-
-#### `vine_update_task`
-
-Update a task's name, description, and/or decisions list. Does **not** change status — use `vine_set_status` for that. Pass only the fields you want to change; omitted fields are left untouched.
-
-| Parameter     | Type     | Required | Description                            |
-| ------------- | -------- | -------- | -------------------------------------- |
-| `file`        | string   | Yes      | Path to the `.vine` file               |
-| `id`          | string   | Yes      | Task ID                                |
-| `name`        | string   | No       | New short name                         |
-| `description` | string   | No       | New description                        |
-| `decisions`   | string[] | No       | New decisions list (replaces existing) |
-
-**Returns**: `'Task "<id>" updated.'`
-
----
-
-#### `vine_add_dependency`
-
-Add a dependency edge: `taskId` depends on `depId`. The validator rejects cycles, so this is safe to call speculatively.
-
-| Parameter | Type   | Required | Description                        |
-| --------- | ------ | -------- | ---------------------------------- |
-| `file`    | string | Yes      | Path to the `.vine` file           |
-| `taskId`  | string | Yes      | Task that will gain the dependency |
-| `depId`   | string | Yes      | Task being depended on             |
-
-**Returns**: `'Dependency added: "<taskId>" now depends on "<depId>".'`
-
----
-
-#### `vine_remove_dependency`
-
-Remove a dependency edge: `taskId` no longer depends on `depId`. Only removes the edge, not the tasks themselves.
-
-| Parameter | Type   | Required | Description                        |
-| --------- | ------ | -------- | ---------------------------------- |
-| `file`    | string | Yes      | Path to the `.vine` file           |
-| `taskId`  | string | Yes      | Task that will lose the dependency |
-| `depId`   | string | Yes      | Task being un-depended             |
-
-**Returns**: `'Dependency removed: "<taskId>" no longer depends on "<depId>".'`
-
----
-
-### Execution Tools
-
-#### `vine_next_tasks`
-
-Analyse the current execution state of a `.vine` graph and return the frontier of actionable work. Returns three lists plus a progress snapshot. Call this tool in a loop: act on the results using mutation tools, then call `vine_next_tasks` again. The loop terminates when the root task is complete.
+Return the execution frontier — the set of tasks that can be acted on right now.
 
 | Parameter | Type   | Required | Description              |
 | --------- | ------ | -------- | ------------------------ |
@@ -228,38 +75,62 @@ Analyse the current execution state of a `.vine` graph and return the frontier o
 
 **Returns** (JSON):
 
-| Field               | Description                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ready_to_start`    | Tasks whose dependencies are all satisfied (`notstarted` or `planning`) — pick these up              |
-| `ready_to_complete` | Tasks in `reviewing` where a dependant has started consuming output — safe to mark `complete`        |
-| `needs_expansion`   | Ref nodes on the frontier that must be expanded via `vine_expand_ref` before inner tasks are visible |
-| `progress`          | `{ total, complete, percentage, root_id, root_status, by_status }`                                   |
+| Field               | Description                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| `ready_to_start`    | Tasks whose deps are all satisfied (complete/reviewing) and status is notstarted/planning             |
+| `ready_to_complete` | Tasks in reviewing where a dependant has started consuming output — safe to mark complete              |
+| `needs_expansion`   | Ref nodes on the frontier that must be expanded via `vine_expand` before inner tasks become visible   |
+| `blocked`           | Tasks with status blocked whose dependencies are all satisfied                                        |
+| `progress`          | `{ total, complete, percentage, ready_count, root_id, root_status, by_status }`                       |
+
+**Orchestration loop**: The orchestrator dispatches sub-agents that call `vine_next` themselves, handle housekeeping (expand refs, complete reviewed tasks), pick up one task, do the work, and report back progress. The orchestrator never calls VINE tools directly — it preserves its context for planning and coordination. See [AGENTS.md](../AGENTS.md) for the full pattern.
 
 ---
 
-### Ref Node Tools
+### `vine_write`
 
-#### `vine_add_ref`
+Apply one or more mutations atomically. Operations are applied in order; the graph is validated once at the end and written to disk.
 
-Add a reference node to a VINE graph. Reference nodes are proxies for external `.vine` files.
+| Parameter    | Type    | Required | Description                                        |
+| ------------ | ------- | -------- | -------------------------------------------------- |
+| `file`       | string  | Yes      | Path to the `.vine` file                           |
+| `operations` | array   | Yes      | Array of operation objects (minimum 1)             |
 
-| Parameter     | Type     | Required | Description                      |
-| ------------- | -------- | -------- | -------------------------------- |
-| `file`        | string   | Yes      | Path to the `.vine` file         |
-| `id`          | string   | Yes      | Unique ID                        |
-| `name`        | string   | Yes      | Display name                     |
-| `vine`        | string   | Yes      | URI to the external `.vine` file |
-| `description` | string   | No       | Description text                 |
-| `depends_on`  | string[] | No       | IDs of dependencies              |
-| `decisions`   | string[] | No       | Decision lines                   |
+**Operations** (each object has an `op` field):
 
-**Returns**: `'Ref "<id>" added.'`
+| Op                | Fields                                                                     | Description                            |
+| ----------------- | -------------------------------------------------------------------------- | -------------------------------------- |
+| `create`          | `version?`                                                                 | Bootstrap a new .vine file (must be first op) |
+| `add_task`        | `id`, `name`, `status?`, `description?`, `dependsOn?: string[]`, `annotations?: Record<string, string[]>` | Add a new concrete task                |
+| `remove_task`     | `id`                                                                       | Remove a task and clean up edges       |
+| `set_status`      | `id`, `status`                                                             | Change task status                     |
+| `update`          | `id`, `name?`, `description?`, `decisions?: string[]`, `attachments?: Attachment[]`, `annotations?: Record<string, string[]>` | Update task metadata                   |
+| `claim`           | `id`                                                                       | Set task to started with dependency context    |
+| `extract_to_ref`  | `id`, `vine`, `refName?`                                                   | Extract task to child .vine, replace with ref  |
+| `add_dep`         | `taskId`, `depId`                                                          | Add a dependency edge                  |
+| `remove_dep`      | `taskId`, `depId`                                                          | Remove a dependency edge               |
+| `add_ref`         | `id`, `name`, `vine`, `description?`, `dependsOn?: string[]`, `decisions?: string[]` | Add a reference node     |
+| `update_ref_uri`  | `id`, `uri`                                                                | Update a ref node's URI                |
+
+**Batch semantics**: Validation runs only after all operations, so you can add a task and wire it into the graph in one call (solving the island-rule constraint that previously made `add_task` fail for disconnected nodes).
+
+**Returns** (JSON): Structured response with:
+
+| Field               | Description                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `summary`           | Human-readable summary of applied operations                                      |
+| `progress`          | `{ total, complete, percentage, ready_count, root_id, root_status, by_status }`   |
+| `ready_to_start`    | Tasks ready to pick up (same as `vine_next`)                                      |
+| `ready_to_complete` | Tasks safe to mark complete                                                       |
+| `blocked`           | Blocked tasks with satisfied dependencies                                         |
+| `needs_expansion`   | Ref nodes needing expansion                                                       |
+| `claimed`           | (When `claim` op used) Full task detail with resolved dependency context           |
 
 ---
 
-#### `vine_expand_ref`
+### `vine_expand`
 
-Expand a reference node by inlining an external VINE graph. The ref node is replaced with the child graph's content.
+Expand a reference node by inlining an external .vine graph. The ref node is replaced with the child graph's tasks.
 
 | Parameter    | Type   | Required | Description                              |
 | ------------ | ------ | -------- | ---------------------------------------- |
@@ -268,32 +139,6 @@ Expand a reference node by inlining an external VINE graph. The ref node is repl
 | `child_file` | string | Yes      | Path to the child `.vine` file to inline |
 
 **Returns**: `'Ref "<ref_id>" expanded.'`
-
----
-
-#### `vine_update_ref_uri`
-
-Update the URI of a reference node.
-
-| Parameter | Type   | Required | Description               |
-| --------- | ------ | -------- | ------------------------- |
-| `file`    | string | Yes      | Path to the `.vine` file  |
-| `id`      | string | Yes      | ID of the reference node  |
-| `uri`     | string | Yes      | New URI for the reference |
-
-**Returns**: `'Ref "<id>" URI updated.'`
-
----
-
-#### `vine_get_refs`
-
-List all reference nodes in a VINE graph.
-
-| Parameter | Type   | Required | Description              |
-| --------- | ------ | -------- | ------------------------ |
-| `file`    | string | Yes      | Path to the `.vine` file |
-
-**Returns** (JSON): Array of `{ id, shortName, vine, dependencies }` objects.
 
 ---
 
@@ -366,27 +211,48 @@ Tests live in [server.test.ts](../packages/mcp/__tests__/server.test.ts) and cov
 - `resolvePath`: absolute paths, relative to cwd, relative to registered roots, `.vine` extension inference, cwd-over-roots precedence, fallback behavior
 - `setRoots` / `getRoots` lifecycle
 
-### Read-Only Operations
+### `vine_read` Operations
 
-Each tool's underlying `@bacchus/core` function is exercised against a 4-task sample fixture:
+Each action's underlying `@bacchus/core` function is exercised against a 4-task sample fixture:
 
-- `vine_validate` — parse returns valid graph with correct task count
-- `vine_show` — `getSummary` returns correct root, totals, and per-status breakdown
-- `vine_list` — lists all tasks; `filterByStatus` and `searchTasks` filter correctly
-- `vine_get_task` — `getTask` returns correct details
-- `vine_get_descendants` — `getDescendants` returns transitive dependants
-- `vine_search` — `searchTasks` finds tasks by keyword
+- `validate` — parse returns valid graph with correct task count
+- `summary` — `getSummary` returns correct root, totals, and per-status breakdown
+- `list` — lists all tasks; `filterByStatus` and `searchTasks` filter correctly
+- `task` — `getTask` returns correct details
+- `descendants` — `getDescendants` returns transitive dependants
+- `search` — `searchTasks` finds tasks by keyword
+- `refs` — `getRefs` returns all reference nodes
 
-### Mutation Operations
+### `vine_write` Batch Mutations
 
-Each mutation is exercised as write → re-read → verify:
+Batch operations are exercised via `applyBatch` as write → re-read → verify:
 
-- `vine_add_task` — adds task, verifies new count
-- `vine_remove_task` — removes non-root task, verifies absence
-- `vine_set_status` — changes status, verifies new value
-- `vine_update_task` — updates name/description, verifies fields
-- `vine_add_dependency` — adds edge, verifies dependency list
-- `vine_remove_dependency` — removes edge, verifies absence
+- `add_task` — adds task, verifies new count
+- `remove_task` — removes non-root task, verifies absence
+- `set_status` — changes status, verifies new value
+- `update` — updates name/description/decisions, verifies fields
+- `add_dep` — adds edge, verifies dependency list
+- `remove_dep` — removes edge, verifies absence
+- `add_ref` — adds reference node, verifies presence
+- `update_ref_uri` — updates ref URI, verifies new value
+- Multi-operation batches — add task + wire dependency in one call
+
+### `vine_next` Execution Frontier
+
+- Returns `ready_to_start`, `ready_to_complete`, `needs_expansion`, and `progress`
+- Correctly identifies tasks whose dependencies are satisfied
+- Flags ref nodes that need expansion
+
+### `vine_expand` Reference Expansion
+
+- Inlines child graph tasks into parent
+- Prefixes child task IDs with ref ID
+- Re-wires dependencies correctly
+
+### Resources
+
+- `vine://spec/brief` — returns condensed spec content
+- `vine://spec/full` — returns full spec content
 
 ### Error Handling
 
@@ -398,7 +264,7 @@ Each mutation is exercised as write → re-read → verify:
 
 ### Protocol-Level Tests
 
-The VS Code package includes [mcp-protocol.test.ts](../packages/vscode/__tests__/mcp-protocol.test.ts) which tests end-to-end MCP communication: spawns `dist/server.js` via `StdioClientTransport`, calls `tools/list`, and exercises tools over the wire.
+The VS Code package includes [mcp-protocol.test.ts](../packages/vscode/__tests__/mcp-protocol.test.ts) which tests end-to-end MCP communication: spawns `dist/server.js` via `StdioClientTransport`, calls `tools/list`, and exercises the 4 tools over the wire.
 
 ---
 
@@ -421,17 +287,14 @@ The VS Code package includes [mcp-protocol.test.ts](../packages/vscode/__tests__
 │                                              │
 │  server.ts                                   │
 │    ├─ McpServer (@modelcontextprotocol/sdk)  │
-│    ├─ Tool handlers (17 tools)               │
-│    │   ├─ Read: validate, show, list,        │
-│    │   │        get_task, get_descendants,    │
-│    │   │        search                        │
-│    │   ├─ Exec: next_tasks                    │
-│    │   ├─ Write: add_task, remove_task,      │
-│    │   │         set_status, update_task,     │
-│    │   │         add_dependency,              │
-│    │   │         remove_dependency            │
-│    │   └─ Ref: add_ref, expand_ref,          │
-│    │          update_ref_uri, get_refs        │
+│    ├─ Resources:                             │
+│    │   ├─ vine://spec/brief                  │
+│    │   └─ vine://spec/full                   │
+│    ├─ Tools (4):                             │
+│    │   ├─ vine_read  (unified query)         │
+│    │   ├─ vine_next  (execution frontier)    │
+│    │   ├─ vine_write (batch mutations)       │
+│    │   └─ vine_expand (ref expansion)        │
 │    └─ MCP roots discovery                    │
 │                                              │
 │  io.ts                                       │

@@ -1,0 +1,477 @@
+vine 1.1.0
+title: Rigid Body Physics Visualizer
+---
+[root] Rigid Body Physics Visualizer (notstarted)
+A single-page application for visualizing 2D rigid body physics. Vite + TypeScript + Canvas 2D, zero runtime dependencies.
+-> engine
+-> polish
+-> renderer
+-> scenes
+-> setup
+-> ui
+> 2D Canvas over WebGL/Three.js — simpler to validate, faster to implement, more deterministic.
+> Zero runtime deps — pure TypeScript, no physics library.
+---
+[setup] Project Setup (notstarted)
+-> setup/dev-scripts
+-> setup/html-entry
+-> setup/scaffold
+-> setup/structure
+---
+[setup/scaffold] Scaffold Vite + TypeScript Project (notstarted)
+Run `npm create vite@latest` with the vanilla-ts template.
+Configure `tsconfig.json` with strict mode enabled.
+> Use vanilla-ts template — no framework needed for Canvas work.
+---
+[setup/structure] Create Source Directory Structure (notstarted)
+Create `src/engine/`, `src/renderer/`, `src/ui/`, `src/scenes/`, and `src/main.ts`.
+Each directory will contain an `index.ts` barrel export.
+-> setup/scaffold
+---
+[setup/html-entry] Create HTML Entry Point (notstarted)
+Set up `index.html` with a full-viewport `<canvas id="canvas">` element and a `<div id="sidebar">` panel beside it.
+Link the main TypeScript entry point.
+Use CSS grid or flexbox: canvas fills remaining space, sidebar is 280px fixed width on the right.
+-> setup/scaffold
+---
+[setup/dev-scripts] Configure Dev Server & Build (notstarted)
+Verify `npm run dev` starts the dev server with hot reload.
+Verify `npm run build` produces a working production build.
+Add `npm run preview` script if not already present.
+-> setup/scaffold
+---
+[engine] Physics Engine (notstarted)
+Central 2D rigid body physics engine written in pure TypeScript.
+-> engine/bodies
+-> engine/collision
+-> engine/forces
+-> engine/integration
+-> engine/math
+-> engine/resolution
+-> engine/world
+-> setup
+---
+[engine/math] Math Utilities (notstarted)
+Core math primitives for 2D physics calculations.
+-> engine/mat2
+-> engine/vec2
+---
+[engine/vec2] Vec2 Class (notstarted)
+Implement a `Vec2` class with: add, subtract, scale, dot product, cross product (scalar for 2D), length, normalize, rotate, distance, and static factory methods (zero, fromAngle).
+All methods return new instances (immutable style) with in-place variants for performance-critical paths.
+---
+[engine/mat2] Mat2 Rotation Matrix (notstarted)
+Implement a 2×2 rotation matrix for transforming shapes.
+Support creation from angle, multiply with Vec2, transpose.
+-> engine/vec2
+---
+[engine/bodies] Rigid Body System (notstarted)
+Container for rigid body types and shape definitions.
+-> engine/body-class
+-> engine/shapes
+---
+[engine/body-class] RigidBody Class (notstarted)
+Properties: position (Vec2), velocity (Vec2), angle (number), angularVelocity (number), mass, inverseMass, inertia, inverseInertia, restitution (0–1), friction (0–1), isStatic (boolean).
+Methods: applyForce, applyImpulse, applyTorque, integrateForces, integrateVelocity.
+Static bodies have inverseMass = 0 and inverseInertia = 0.
+-> engine/math
+---
+[engine/shapes] Shape Types (notstarted)
+Define a Shape union type: Circle { type: 'circle', radius } and Polygon { type: 'polygon', vertices: Vec2[] }.
+Include helper to compute AABB from any shape + body transform.
+Include mass/inertia calculation from shape geometry and density.
+Rectangles are a convenience factory that creates a Polygon with 4 vertices.
+-> engine/math
+---
+[engine/forces] Force Generators (notstarted)
+Implement gravity (constant downward acceleration), linear damping (velocity × factor), and an API for applying user impulses at a world point.
+Gravity should be configurable (default 9.81 m/s² downward).
+-> engine/bodies
+> VALIDATION FIX: Include linear velocity damping (e.g., multiply velocity by 0.999 each step) and angular velocity damping (angularVelocity *= 0.999). This helps bodies reach a stable resting state and prevents perpetual micro-oscillation. The damping should be subtle enough not to visibly affect fast-moving bodies but sufficient to settle slow-moving ones.
+---
+[engine/collision] Collision Detection (notstarted)
+Full collision detection pipeline from broad phase through contact generation.
+-> engine/broad-phase
+-> engine/manifold
+-> engine/narrow-phase
+---
+[engine/broad-phase] Broad Phase — AABB Overlap (notstarted)
+Generate candidate pairs by testing axis-aligned bounding box overlaps.
+Start with brute-force O(n²) pair check; optimize later in polish phase.
+-> engine/bodies
+---
+[engine/narrow-phase] Narrow Phase — SAT & Circle Tests (notstarted)
+Implement circle-circle, circle-polygon, and polygon-polygon collision tests.
+Polygon-polygon uses Separating Axis Theorem (SAT).
+Return null for no collision, or a Contact object on intersection.
+-> engine/broad-phase
+> SAT chosen over GJK for simplicity — sufficient for convex shapes.
+---
+[engine/manifold] Contact Manifold (notstarted)
+Define a Contact type: { bodyA, bodyB, normal: Vec2, penetration: number, contactPoints: Vec2[] }.
+Support 1 or 2 contact points for polygon edges.
+-> engine/narrow-phase
+---
+[engine/resolution] Collision Resolution (notstarted)
+Full collision response pipeline including impulse solving and correction.
+-> engine/impulse-solver
+-> engine/positional-correction
+---
+[engine/impulse-solver] Impulse-Based Response (notstarted)
+Compute and apply collision impulses using coefficient of restitution.
+Handle both linear and angular impulse components.
+Apply Coulomb friction impulse (tangential component clamped by μ × normal impulse).
+-> engine/bodies
+-> engine/manifold
+> VALIDATION BUG: Previous implementation had insufficient energy dissipation — boxes bounced indefinitely (vy ~15 m/s after 15 seconds) instead of settling. Ensure the impulse solver correctly accumulates and applies friction impulses. Use velocity-level Coulomb friction: compute tangent impulse jT = -(relVel · tangent) / effectiveMass, then clamp |jT| ≤ μ × |jN|. Also apply angular velocity changes from friction.
+---
+[engine/positional-correction] Positional Correction (notstarted)
+Apply Baumgarte stabilization to prevent bodies from sinking into each other.
+Use a bias factor (typically 0.2–0.8) and a penetration slop threshold (0.01).
+-> engine/impulse-solver
+> VALIDATION BUG: Baumgarte correction alone was not enough for stable stacking. Use bias factor 0.2 and slop 0.01. Consider running the collision solver multiple iterations per step (4–8) to improve convergence. The resolver must handle the case where velocity is very small but penetration persists — the position correction must still push bodies apart.
+---
+[engine/integration] Time Integration (notstarted)
+Integration subsystem for advancing the simulation forward in time.
+-> engine/integrator
+-> engine/timestep
+---
+[engine/integrator] Semi-Implicit Euler Integrator (notstarted)
+Update velocity from accumulated forces, then update position from new velocity.
+Clear forces after each integration step.
+-> engine/bodies
+---
+[engine/timestep] Fixed Timestep Accumulator (notstarted)
+Implement a fixed timestep loop (default 1/60s) with a delta-time accumulator.
+Run multiple physics steps per frame if needed to catch up.
+Provide interpolation factor (alpha) for smooth rendering between physics steps.
+-> engine/integrator
+> Fixed timestep ensures deterministic simulation across machines.
+---
+[engine/world] PhysicsWorld Class (notstarted)
+Central simulation manager: owns an array of RigidBody instances.
+`step(dt)` method runs: accumulate forces → broad phase → narrow phase → resolve → integrate.
+Methods: addBody, removeBody, step, setGravity, clear.
+Expose the interpolation alpha for the renderer.
+-> engine/collision
+-> engine/forces
+-> engine/integration
+-> engine/resolution
+> VALIDATION FIX: Run the collision detection + resolution step multiple iterations per physics step (default 4–8 iterations). Each iteration: detect contacts, compute impulses, apply correction. This iterative approach dramatically improves stacking stability and energy dissipation. Also apply linear and angular velocity damping (multiply by 0.999 per step) to help bodies reach rest.
+---
+[renderer] Canvas Renderer (notstarted)
+-> engine
+-> renderer/camera
+-> renderer/canvas-setup
+-> renderer/debug-overlays
+-> renderer/render-loop
+-> renderer/shape-drawing
+---
+[renderer/canvas-setup] Canvas Setup (notstarted)
+-> renderer/context-init
+-> renderer/dpr-scaling
+-> renderer/resize-handler
+---
+[renderer/context-init] Get 2D Rendering Context (notstarted)
+Acquire the CanvasRenderingContext2D from the canvas element.
+Set default stroke/fill styles and line widths.
+---
+[renderer/dpr-scaling] Device Pixel Ratio Scaling (notstarted)
+Scale the canvas backing store by `window.devicePixelRatio` for crisp rendering on HiDPI displays.
+Apply inverse CSS scale so the canvas layout size remains unchanged.
+-> renderer/context-init
+---
+[renderer/resize-handler] Resize Observer (notstarted)
+Attach a ResizeObserver to the canvas container.
+On resize: update canvas dimensions, re-apply DPR scaling, and notify the camera.
+-> renderer/dpr-scaling
+---
+[renderer/camera] Camera System (notstarted)
+-> renderer/camera-pan
+-> renderer/camera-transform
+-> renderer/camera-zoom
+---
+[renderer/camera-transform] World-to-Screen Transform (notstarted)
+Maintain camera position (center of view) and zoom level.
+Provide worldToScreen(point) and screenToWorld(point) conversion methods.
+Apply the transform via ctx.setTransform() before drawing.
+-> renderer/canvas-setup
+---
+[renderer/camera-pan] Pan — Click & Drag (notstarted)
+Middle-mouse-button drag pans the camera.
+Track drag start position, compute delta, update camera center.
+-> renderer/camera-transform
+---
+[renderer/camera-zoom] Zoom — Scroll Wheel (notstarted)
+Scroll wheel zooms in/out centered on the mouse cursor position.
+Clamp zoom level between 0.1× and 10×.
+-> renderer/camera-transform
+---
+[renderer/shape-drawing] Shape Drawing (notstarted)
+-> renderer/draw-circle
+-> renderer/draw-polygon
+---
+[renderer/draw-circle] Draw Circles (notstarted)
+Render circle bodies with fill + stroke.
+Draw a radius line to indicate rotation angle.
+-> renderer/camera
+---
+[renderer/draw-polygon] Draw Polygons (notstarted)
+Render convex polygon bodies (including rectangles) with fill + stroke.
+Transform vertices by body position and rotation before drawing.
+-> renderer/camera
+---
+[renderer/debug-overlays] Debug Overlays (notstarted)
+-> renderer/aabb-wireframes
+-> renderer/com-markers
+-> renderer/contact-vis
+-> renderer/velocity-vectors
+---
+[renderer/velocity-vectors] Velocity Vectors (notstarted)
+Draw an arrow from each body's center showing its linear velocity direction and magnitude.
+Scale arrow length proportionally; use a distinct color (e.g., cyan).
+-> renderer/shape-drawing
+---
+[renderer/aabb-wireframes] AABB Wireframes (notstarted)
+Draw the axis-aligned bounding box of each body as a dashed rectangle.
+-> renderer/shape-drawing
+---
+[renderer/contact-vis] Contact Point Visualization (notstarted)
+Draw contact points as small red dots and contact normals as short arrows.
+-> renderer/shape-drawing
+---
+[renderer/com-markers] Center of Mass Markers (notstarted)
+Draw a small crosshair at each body's center of mass.
+-> renderer/shape-drawing
+---
+[renderer/render-loop] Render Loop (notstarted)
+-> renderer/fps-counter
+-> renderer/raf-loop
+---
+[renderer/raf-loop] requestAnimationFrame Loop (notstarted)
+Run the render cycle: clear canvas → apply camera transform → draw all bodies → draw debug overlays (if enabled).
+Use the physics world's interpolation alpha to interpolate body positions for smooth rendering.
+-> renderer/debug-overlays
+---
+[renderer/fps-counter] FPS Counter (notstarted)
+Calculate and display frames per second as an overlay in the top-left corner of the canvas.
+Use a rolling average over the last 60 frames for stability.
+-> renderer/raf-loop
+---
+[ui] Controls & Interaction (notstarted)
+-> renderer
+-> ui/info-panel
+-> ui/keyboard-shortcuts
+-> ui/mouse-interaction
+-> ui/params-panel
+-> ui/scene-selector
+-> ui/toolbar
+---
+[ui/toolbar] Simulation Toolbar (notstarted)
+-> ui/play-pause
+-> ui/reset-btn
+-> ui/step-btn
+---
+[ui/play-pause] Play / Pause Button (notstarted)
+Toggle button that starts or pauses the physics simulation.
+Update button icon/label to reflect current state.
+> VALIDATION FIX: Expose a public method (e.g., updatePlayPauseLabel(paused: boolean)) that updates the button text/icon and the Step button's disabled state. This method must be callable from both the button click handler AND the keyboard shortcut handler to keep them in sync. The initial button state must match the initial simulation state.
+---
+[ui/step-btn] Single Step Button (notstarted)
+Advance the simulation by exactly one fixed timestep.
+Only enabled when the simulation is paused.
+-> ui/play-pause
+---
+[ui/reset-btn] Reset Button (notstarted)
+Reload the current scene to its initial state.
+Reset camera position and zoom to defaults.
+-> ui/play-pause
+---
+[ui/params-panel] Parameter Panel (notstarted)
+-> ui/friction-slider
+-> ui/gravity-slider
+-> ui/restitution-slider
+-> ui/timestep-select
+---
+[ui/gravity-slider] Gravity Slider (notstarted)
+Range input controlling gravity magnitude from 0 to 30 m/s² (default 9.81).
+Display current value as a label.
+Update physics world gravity in real time as the slider moves.
+---
+[ui/restitution-slider] Restitution Slider (notstarted)
+Range input from 0 (perfectly inelastic) to 1 (perfectly elastic), default 0.5.
+Applied as the default restitution for newly spawned bodies.
+---
+[ui/friction-slider] Friction Slider (notstarted)
+Range input from 0 to 1, default 0.3.
+Applied as the default friction for newly spawned bodies.
+---
+[ui/timestep-select] Timestep Selector (notstarted)
+Dropdown to choose fixed timestep: 1/30, 1/60, 1/120, or 1/240 seconds.
+Default 1/60. Changing this restarts the simulation.
+---
+[ui/scene-selector] Scene Selector Dropdown (notstarted)
+A `<select>` dropdown listing all available demo scenes by name.
+On change: clear the physics world, load the selected scene's body configuration, and reset the camera.
+---
+[ui/info-panel] Info Panel (notstarted)
+-> ui/body-inspector
+-> ui/world-stats
+---
+[ui/world-stats] World Stats Display (notstarted)
+Show body count, active (non-sleeping) count, and current FPS.
+Update every frame.
+---
+[ui/body-inspector] Selected Body Inspector (notstarted)
+When a body is selected, display its position, velocity, angle, mass, and shape type.
+Update in real time as the simulation runs.
+---
+[ui/mouse-interaction] Mouse Interaction (notstarted)
+-> ui/body-drag
+-> ui/body-select
+-> ui/body-spawn
+---
+[ui/body-select] Click to Select Body (notstarted)
+On click, ray-test against all bodies to find the one under the cursor.
+Highlight the selected body with a distinct outline color.
+---
+[ui/body-drag] Drag to Apply Force (notstarted)
+Click and drag on a body to show a force vector (line from body to cursor).
+On release, apply an impulse to the body proportional to the drag distance.
+-> ui/body-select
+---
+[ui/body-spawn] Shift+Click to Spawn Body (notstarted)
+Shift+click on empty canvas space spawns a new dynamic body at that position.
+Alternate between circle and rectangle shapes on each spawn.
+---
+[ui/keyboard-shortcuts] Keyboard Shortcuts (notstarted)
+Space — toggle play/pause.
+R — reset current scene.
+G — toggle gravity on/off.
+D — toggle debug overlays on/off.
+Display a small help tooltip showing shortcuts when user presses '?'.
+-> ui/toolbar
+> VALIDATION BUG: The keyboard handler must update the toolbar UI state when toggling play/pause via Space key. Call the same function the toolbar button uses (e.g., toolbar.updatePlayPauseLabel()) so the button label stays in sync. Same principle for the G key and the gravity slider label — when toggling gravity via keyboard, update the slider DOM to reflect the new value. All keyboard shortcuts must keep the UI controls synchronized.
+---
+[scenes] Demo Scenes (notstarted)
+-> engine
+-> renderer
+-> scenes/billiards
+-> scenes/dominoes
+-> scenes/mixed-shapes
+-> scenes/newtons-cradle
+-> scenes/scene-loader
+-> scenes/stacking-boxes
+-> ui
+---
+[scenes/scene-loader] Scene Loader Interface (notstarted)
+Define a `Scene` interface: `{ name: string, description: string, setup: (world: PhysicsWorld) => void }`.
+Create a scene registry that maps scene names to setup functions.
+Export a `loadScene(name, world)` function and a `getSceneNames()` function.
+---
+[scenes/stacking-boxes] Stacking Boxes Scene (notstarted)
+Create a static floor body (wide, thin rectangle) at the bottom of the world.
+Drop 6 dynamic box bodies of varying sizes from staggered heights above the floor.
+Boxes should fall under gravity, collide with the floor and each other, and settle into a stable stack.
+This is the default scene loaded on startup.
+Use restitution 0.2 and friction 0.4 for stable stacking behavior.
+-> scenes/scene-loader
+> This scene is the primary test for stable resting contacts and stacking.
+> VALIDATION REQUIREMENT: After the simulation runs for 5 seconds, all dynamic boxes must have velocity magnitude < 0.1 (settled). If boxes are still bouncing after 5 seconds, the collision resolution is not dissipating enough energy. Verify this by checking: world.bodies.filter(b => !b.isStatic).every(b => Math.sqrt(b.velocity.x² + b.velocity.y²) < 0.1). Use low restitution (0.2) and moderate friction (0.4).
+---
+[scenes/newtons-cradle] Newton's Cradle Scene (notstarted)
+Create 5 circle bodies arranged in a horizontal row, touching.
+Each ball is suspended from a fixed point by a distance constraint (simulated via position correction each frame).
+Pull the leftmost ball outward and release — momentum transfers through the row, launching the rightmost ball.
+-> scenes/scene-loader
+> Demonstrates conservation of momentum and energy with elastic collisions (restitution ≈ 1.0).
+---
+[scenes/billiards] Billiards Break Scene (notstarted)
+Arrange 15 circle bodies in a tight triangle rack formation.
+Place a cue ball offset to the left.
+Apply a strong initial impulse to the cue ball toward the rack.
+Add static wall bodies forming a rectangular boundary (the table cushions).
+Use restitution 0.9 and friction 0.1 for realistic billiard physics.
+-> scenes/scene-loader
+---
+[scenes/dominoes] Domino Chain Scene (notstarted)
+Place 12 tall, thin rectangle bodies (aspect ratio ~1:4) in a row, equally spaced, standing upright on a static floor.
+Apply a small impulse to the first domino to tip it into the second.
+The chain reaction should topple all dominoes in sequence.
+Use friction 0.5 and restitution 0.1 for realistic toppling dynamics.
+-> scenes/scene-loader
+> Tests sequential collision propagation and angular momentum transfer.
+---
+[scenes/mixed-shapes] Mixed Shapes Scene (notstarted)
+Create 4 static wall bodies forming a rectangular enclosure.
+Spawn 8–12 random bodies: mix of circles (3 sizes) and rectangles (2 sizes), at random positions inside the enclosure.
+Give each body a random initial velocity.
+Bodies bounce off walls and each other in a contained environment.
+Use moderate restitution (0.6) for lively bouncing.
+-> scenes/scene-loader
+---
+[polish] Polish & Performance (notstarted)
+-> polish/error-handling
+-> polish/performance
+-> polish/responsive
+-> polish/visuals
+-> scenes
+---
+[polish/responsive] Responsive Layout (notstarted)
+-> polish/flex-layout
+-> polish/sidebar-collapse
+---
+[polish/flex-layout] Flexible Canvas Layout (notstarted)
+Canvas fills all available space beside the sidebar using CSS flexbox or grid.
+Maintain correct aspect handling on window resize without distortion.
+---
+[polish/sidebar-collapse] Collapsible Sidebar (notstarted)
+On viewports narrower than 768px, collapse the sidebar into a toggleable overlay panel.
+Add a hamburger/menu button to show/hide it.
+-> polish/flex-layout
+---
+[polish/performance] Performance Optimization (notstarted)
+-> polish/perf-profiling
+-> polish/spatial-hash
+---
+[polish/spatial-hash] Spatial Hash Broad Phase (notstarted)
+Replace the brute-force O(n²) broad phase with a spatial hash grid.
+Cell size should be configurable, defaulting to 2× the largest body radius.
+---
+[polish/perf-profiling] Performance Profiling (notstarted)
+Profile the simulation with 100+ dynamic bodies.
+Target: maintain ≥ 55 FPS on mid-range hardware.
+Identify and optimize any bottlenecks in collision detection or rendering.
+-> polish/spatial-hash
+---
+[polish/visuals] Visual Polish (notstarted)
+-> polish/body-colors
+-> polish/shadows
+-> polish/smooth-camera
+---
+[polish/body-colors] Body Colors by Shape Type (notstarted)
+Circles get a blue palette, rectangles get an orange palette, other polygons get green.
+Static bodies are dark gray. Selected body gets a bright highlight outline.
+---
+[polish/shadows] Subtle Drop Shadows (notstarted)
+Add a soft drop shadow beneath each body using `ctx.shadowBlur` and `ctx.shadowOffset`.
+Keep it subtle — 2px blur, 1px offset, low opacity.
+-> polish/body-colors
+---
+[polish/smooth-camera] Smooth Camera Transitions (notstarted)
+Animate camera pan and zoom changes with easing (lerp toward target over ~10 frames).
+Scene changes smoothly transition the camera to the new scene's default view.
+-> polish/body-colors
+---
+[polish/error-handling] Error Handling & Recovery (notstarted)
+-> polish/nan-guard
+-> polish/simulation-reset
+---
+[polish/nan-guard] NaN Guard on Physics Values (notstarted)
+After each integration step, check body positions and velocities for NaN/Infinity.
+If detected, freeze the affected body and log a warning to the console.
+---
+[polish/simulation-reset] Graceful Simulation Recovery (notstarted)
+If more than 3 bodies enter NaN state, automatically pause the simulation and show a warning banner.
+Offer a "Reset Scene" action in the banner.
+-> polish/nan-guard

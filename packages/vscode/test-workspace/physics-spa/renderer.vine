@@ -1,0 +1,104 @@
+vine 1.1.0
+prefix: renderer
+title: Canvas Renderer
+---
+[root] Canvas Renderer (notstarted)
+-> camera
+-> canvas-setup
+-> debug-overlays
+-> render-loop
+-> shape-drawing
+---
+[canvas-setup] Canvas Setup (notstarted)
+-> context-init
+-> dpr-scaling
+-> resize-handler
+---
+[context-init] Get 2D Rendering Context (notstarted)
+Acquire the CanvasRenderingContext2D from the canvas element.
+Set default stroke/fill styles and line widths.
+---
+[dpr-scaling] Device Pixel Ratio Scaling (notstarted)
+Scale the canvas backing store by `window.devicePixelRatio` for crisp rendering on HiDPI displays.
+Apply inverse CSS scale so the canvas layout size remains unchanged.
+-> context-init
+---
+[resize-handler] Resize Observer (notstarted)
+Attach a ResizeObserver to the canvas container.
+On resize: update canvas dimensions, re-apply DPR scaling, and notify the camera.
+-> dpr-scaling
+---
+[camera] Camera System (notstarted)
+-> camera-pan
+-> camera-transform
+-> camera-zoom
+---
+[camera-transform] World-to-Screen Transform (notstarted)
+Maintain camera position (center of view) and zoom level.
+Provide worldToScreen(point) and screenToWorld(point) conversion methods.
+Apply the transform via ctx.setTransform() before drawing.
+-> canvas-setup
+---
+[camera-pan] Pan — Click & Drag (notstarted)
+Middle-mouse-button drag pans the camera.
+Track drag start position, compute delta, update camera center.
+-> camera-transform
+> VALIDATION NOTE: Use e.button === 1 (middle mouse button) to detect panning. Add an auxclick event listener to prevent the default context menu on middle-click. Use animated lerp (LERP_FACTOR ~0.15) toward the target camera position for smooth panning.
+---
+[camera-zoom] Zoom — Scroll Wheel (notstarted)
+Scroll wheel zooms in/out centered on the mouse cursor position.
+Clamp zoom level between 0.1× and 10×.
+-> camera-transform
+---
+[shape-drawing] Shape Drawing (notstarted)
+-> draw-circle
+-> draw-polygon
+---
+[draw-circle] Draw Circles (notstarted)
+Render circle bodies with fill + stroke.
+Draw a radius line to indicate rotation angle.
+-> camera
+---
+[draw-polygon] Draw Polygons (notstarted)
+Render convex polygon bodies (including rectangles) with fill + stroke.
+Transform vertices by body position and rotation before drawing.
+-> camera
+---
+[debug-overlays] Debug Overlays (notstarted)
+-> aabb-wireframes
+-> com-markers
+-> contact-vis
+-> velocity-vectors
+---
+[velocity-vectors] Velocity Vectors (notstarted)
+Draw an arrow from each body's center showing its linear velocity direction and magnitude.
+Scale arrow length proportionally; use a distinct color (e.g., cyan).
+-> shape-drawing
+---
+[aabb-wireframes] AABB Wireframes (notstarted)
+Draw the axis-aligned bounding box of each body as a dashed rectangle.
+-> shape-drawing
+---
+[contact-vis] Contact Point Visualization (notstarted)
+Draw contact points as small red dots and contact normals as short arrows.
+-> shape-drawing
+---
+[com-markers] Center of Mass Markers (notstarted)
+Draw a small crosshair at each body's center of mass.
+-> shape-drawing
+---
+[render-loop] Render Loop (notstarted)
+-> fps-counter
+-> raf-loop
+> VALIDATION NOTE: Expose window.__debugEnabled on the global scope so Playwright MCP tests can verify debug overlay toggle state programmatically.
+---
+[raf-loop] requestAnimationFrame Loop (notstarted)
+Run the render cycle: clear canvas → apply camera transform → draw all bodies → draw debug overlays (if enabled).
+Use the physics world's interpolation alpha to interpolate body positions for smooth rendering.
+-> debug-overlays
+---
+[fps-counter] FPS Counter (notstarted)
+Calculate and display frames per second as an overlay in the top-left corner of the canvas.
+Use a rolling average over the last 60 frames for stability.
+-> raf-loop
+> VALIDATION NOTE: Display FPS both as a canvas overlay (top-left corner) AND in the sidebar World Stats section as 'Bodies: N | FPS: N'. Use a rolling average over 60 frames for stability — the displayed value should not fluctuate wildly.

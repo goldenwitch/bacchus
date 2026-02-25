@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { extname, isAbsolute, resolve } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, extname, isAbsolute, resolve } from 'node:path';
 import { parse, serialize } from '@bacchus/core';
 import type { VineGraph } from '@bacchus/core';
 
@@ -66,6 +66,17 @@ export function resolvePath(file: string): string {
   return resolve(file);
 }
 
+/**
+ * Resolve a path for a file that may not exist yet (for creation).
+ * Appends `.vine` extension if the input has no extension.
+ * Does not probe the filesystem — purely path-based resolution.
+ */
+export function resolveNewPath(file: string): string {
+  const withExt = needsVineExtension(file) ? `${file}.vine` : file;
+  if (isAbsolute(withExt)) return withExt;
+  return resolve(withExt);
+}
+
 // ---------------------------------------------------------------------------
 // Graph I/O
 // ---------------------------------------------------------------------------
@@ -91,6 +102,28 @@ export function readFileContent(filePath: string): string {
  * Serialize a VineGraph and write it back to disk.
  */
 export function writeGraph(filePath: string, graph: VineGraph): void {
+  const resolved = resolvePath(filePath);
+  const dir = dirname(resolved);
+  mkdirSync(dir, { recursive: true });
   const content = serialize(graph);
-  writeFileSync(resolvePath(filePath), content, 'utf-8');
+  writeFileSync(resolved, content, 'utf-8');
+}
+
+/**
+ * Create a new .vine file on disk. Uses `resolveNewPath` for the target
+ * path (so the file does not need to exist before this call).
+ * Creates parent directories as needed.
+ *
+ * @throws if the file already exists.
+ */
+export function createGraph(filePath: string, graph: VineGraph): string {
+  const resolved = resolveNewPath(filePath);
+  if (existsSync(resolved)) {
+    throw new Error(`File already exists: ${resolved}`);
+  }
+  const dir = dirname(resolved);
+  mkdirSync(dir, { recursive: true });
+  const content = serialize(graph);
+  writeFileSync(resolved, content, 'utf-8');
+  return resolved;
 }

@@ -1,0 +1,695 @@
+/**
+ * Full VINE specification text served as an MCP resource.
+ */
+export const SPEC_FULL = `\
+# VINE Format Specification — Version 1.2.0
+
+## Overview
+
+A \`.vine\` file is a plain-text, line-oriented format for describing a directed acyclic task graph. It is designed to be hand-authored, formally grammar-defined, trivially parseable, and diffable in version control.
+
+Every \`.vine\` file begins with a **magic line** declaring its format version. A conforming parser reads only the first line before deciding which version-specific rules to apply. If the first line does not match \`vine <version>\`, the file is **invalid**.
+
+### Changes from v1.1.0
+
+Version 1.2.0 is a backward-compatible extension of v1.1.0. A v1.2.0 parser **must** also accept v1.0.0 and v1.1.0 files. The additions are:
+
+| Feature                  | Summary                                                      |
+| ------------------------ | ------------------------------------------------------------ |
+| **Header annotations**   | Optional \`@key(value,...)\` clauses trailing any header line. |
+| **\`@sprite\` annotation** | Specifies a custom SVG sprite for node rendering.            |
+
+A v1.1.0 file contains no header annotations — the parser produces the same result regardless of which version it was written for.
+
+## File Structure
+
+A \`.vine\` file has three regions:
+
+1. **Preamble** — magic line + optional metadata, terminated by the default delimiter (\`---\`)
+2. **Node blocks** — one or more, separated by the delimiter. Each block is either a **task block** or a **reference block**.
+3. **Root convention** — the **first** block is the root of the graph
+
+\`\`\`
+vine 1.2.0                    <- magic line
+title: My Project Plan        <- metadata (optional)
+prefix: my-proj               <- metadata (optional)
+delimiter: ===                <- metadata (optional)
+---                           <- preamble terminator (always ---)
+[root] Root Task (started) @sprite(./sprites/root.svg)
+                              <- first block = root (task, with annotation)
+...
+===                           <- block separator (custom delimiter)
+ref [sub] Sub-Project (./sub-project.vine) @sprite(./sprites/sub.svg)
+                              <- reference (URI in parens, with annotation)
+===
+[child] Child Task (planning) <- concrete task
+...
+\`\`\`
+
+## Preamble
+
+### Magic Line
+
+The first line of every \`.vine\` file **must** be:
+
+\`\`\`
+vine <version>
+\`\`\`
+
+where \`<version>\` is a [SemVer](https://semver.org/) string. For this specification: \`vine 1.2.0\`.
+
+A parser reads this line to determine which version-specific rules to apply. Files without a valid magic line are rejected.
+
+### Metadata
+
+Lines between the magic line and the first \`---\` are **metadata**, specified as \`key: value\` pairs (one per line). Leading and trailing whitespace on both key and value is trimmed.
+
+**Defined keys**
+
+| Key         | Required | Default | Description                                                                                      |
+| ----------- | -------- | ------- | ------------------------------------------------------------------------------------------------ |
+| \`title\`     | no       | —       | Human-readable name for the graph.                                                               |
+| \`delimiter\` | no       | \`---\`   | String used on its own line to separate node blocks.                                             |
+| \`prefix\`    | no       | —       | ID namespace prefix used when this graph is inlined into a parent (see [Expansion](#expansion)). |
+
+Unknown keys are preserved but ignored by conforming parsers. This allows forward-compatible extension without a version bump for non-structural metadata.
+
+### Preamble Terminator
+
+The preamble is **always** terminated by a line containing exactly \`---\` (three hyphens, no leading or trailing whitespace). This is true even when a custom \`delimiter\` is specified — the preamble terminator is fixed to avoid a bootstrap problem (the parser must finish reading metadata before it knows the delimiter).
+
+After the preamble terminator, all subsequent block boundaries use the configured delimiter.
+
+## Delimiter
+
+The delimiter is a line containing **exactly** the delimiter string — no leading or trailing whitespace. It separates consecutive node blocks and marks the boundary between the preamble and the first block.
+
+- **Default**: \`---\` (three hyphens)
+- **Custom**: set via the \`delimiter\` metadata key
+
+Because the delimiter is a standalone separator line, description text within a node block may contain blank lines without ambiguity.
+
+## Node Blocks
+
+Every node block begins with a **header line** that determines the block type:
+
+| Header form           | Block type          | Description                            |
+| --------------------- | ------------------- | -------------------------------------- |
+| \`[id] Name (status)\`  | **Task block**      | A concrete task with a status keyword. |
+| \`ref [id] Name (URI)\` | **Reference block** | A proxy for an external \`.vine\` graph. |
+
+Both block types share a single ID namespace. Either header form may be followed by optional [header annotations](#header-annotations).
+
+---
+
+## Task Block
+
+Each task block consists of:
+
+1. **Header line** (required, exactly one) — the first line of the block
+2. **Body lines** (optional, zero or more) — all subsequent lines until the next delimiter or end of file
+
+### Header Line
+
+\`\`\`
+[id] Short Name (status) [@key(values) ...]
+\`\`\`
+
+| Component            | Rules                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| \`id\`                 | Enclosed in \`[ ]\`. One or more \`/\`-separated segments, each \`[a-zA-Z0-9-]+\`. Unique within the file. |
+| \`Short Name\`         | Free text between \`]\` and \`(\`. Leading/trailing whitespace trimmed.                                  |
+| \`status\`             | Enclosed in \`( )\`. One of the status keywords below.                                                 |
+| \`[@key(values) ...]\` | Optional trailing annotations. See [Header Annotations](#header-annotations).                        |
+
+**Header regex:**
+
+\`\`\`
+^\\[([a-zA-Z0-9-]+(?:/[a-zA-Z0-9-]+)*)\\]\\s+(.+?)\\s+\\((complete|started|reviewing|planning|notstarted|blocked)\\)((?:\\s+@[a-zA-Z][a-zA-Z0-9]*\\([^)]*\\))*)$
+\`\`\`
+
+### Status Keywords
+
+| Keyword      | Meaning                                               |
+| ------------ | ----------------------------------------------------- |
+| \`complete\`   | Finished — 100% done.                                 |
+| \`started\`    | Implementation in progress, not yet complete.         |
+| \`reviewing\`  | Work believed complete, pending review by dependants. |
+| \`planning\`   | Planning started but not yet complete.                |
+| \`notstarted\` | Planning complete, work not yet begun.                |
+| \`blocked\`    | Needs intervention to resume.                         |
+
+### Body Lines
+
+Body lines follow the header and are classified by prefix. The parser checks prefixes in priority order — the **first match wins**:
+
+| Priority | Prefix       | Meaning         | Example                                               |
+| -------- | ------------ | --------------- | ----------------------------------------------------- |
+| 1        | \`-> \`        | **Dependency**  | \`-> setup-db\`                                         |
+| 2        | \`> \`         | **Decision**    | \`> Use PostgreSQL over SQLite\`                        |
+| 3        | \`@artifact \` | **Artifact**    | \`@artifact application/pdf https://example.com/r.pdf\` |
+| 4        | \`@guidance \` | **Guidance**    | \`@guidance text/markdown https://example.com/g.md\`    |
+| 5        | \`@file \`     | **File**        | \`@file image/png https://example.com/sketch.png\`      |
+| 6        | _(none)_     | **Description** | \`Build the authentication flow.\`                      |
+
+Body lines may appear in **any order**. The serializer normalizes to a canonical order (see [Serialization](#serialization)).
+
+**Description lines** preserve newlines. Multiple description lines are joined with \`\\n\` (not space). Blank lines within a task block (between the header and the next delimiter) are preserved as empty description lines.
+
+## Attachments
+
+Attachments associate external resources with a task. Each attachment line specifies a **class**, a **MIME type**, and a **URI**:
+
+\`\`\`
+@<class> <mime-type> <uri>
+\`\`\`
+
+| Class      | Semantics                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| \`artifact\` | Product of work. A reviewer examines artifacts to judge whether the task was completed.               |
+| \`guidance\` | Context or constraints on the work. Available during review to verify work respected its limitations. |
+| \`file\`     | Any other attached resource. Carries no semantic classification beyond what the MIME type conveys.    |
+
+- MIME types follow [RFC 6838](https://datatracker.ietf.org/doc/html/rfc6838).
+- URIs follow [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986). Relative URIs are resolved against the \`.vine\` file's location.
+- Multiple attachments per task are allowed.
+- Lines starting with \`@\` followed by an unrecognized class are treated as description text.
+
+---
+
+## Reference Block
+
+A reference block acts as a proxy for an external \`.vine\` graph. It participates in the dependency graph like any other node — other tasks may depend on it, and it may declare its own dependencies.
+
+### Reference Header Line
+
+\`\`\`
+ref [id] Short Name (URI) [@key(values) ...]
+\`\`\`
+
+| Component            | Rules                                                                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| \`ref\`                | Keyword prefix. Distinguishes reference blocks from task blocks on the first token.                                                                                                                                   |
+| \`id\`                 | Enclosed in \`[ ]\`. Same rules as task IDs, unique within the file.                                                                                                                                                    |
+| \`Short Name\`         | Free text between \`]\` and \`(\`. Leading/trailing whitespace trimmed.                                                                                                                                                   |
+| \`URI\`                | Enclosed in \`( )\`. Non-whitespace printable ASCII. Follows [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986). Relative URIs resolved against the \`.vine\` file's location. Must point to a valid \`.vine\` file. |
+| \`[@key(values) ...]\` | Optional trailing annotations. See [Header Annotations](#header-annotations).                                                                                                                                         |
+
+**Reference header regex:**
+
+\`\`\`
+^ref\\s+\\[([a-zA-Z0-9-]+(?:/[a-zA-Z0-9-]+)*)\\]\\s+(.+?)\\s+\\((\\S+)\\)((?:\\s+@[a-zA-Z][a-zA-Z0-9]*\\([^)]*\\))*)$
+\`\`\`
+
+### Reference Body Lines
+
+Body lines on a reference block follow the same prefix-priority dispatch as task blocks, minus attachments:
+
+| Allowed | Prefix   | Meaning         | Example                            |
+| ------- | -------- | --------------- | ---------------------------------- |
+| **Yes** | \`-> \`    | **Dependency**  | \`-> brand-guidelines\`              |
+| **Yes** | \`> \`     | **Decision**    | \`> Use shared tokens\`              |
+| **Yes** | _(none)_ | **Description** | \`Shared component library.\`        |
+| **No**  | \`@*\`     | **Attachment**  | _(not allowed on reference nodes)_ |
+
+Description lines serve as a summary visible without fetching the referenced graph.
+
+Dependencies declared on a reference node are merged with the child root's dependencies during [expansion](#expansion). Decisions are likewise merged with the child root's decisions.
+
+---
+
+## Header Annotations
+
+Header annotations are optional \`@key(value,...)\` clauses that appear after the closing parenthesis of a header line. They provide extensible, forward-compatible metadata on individual nodes.
+
+### Syntax
+
+\`\`\`
+@key(value1,value2,...)
+\`\`\`
+
+| Component | Rules                                                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| \`@\`       | Literal prefix. Distinguishes annotations from other text.                                                                    |
+| \`key\`     | \`[a-zA-Z][a-zA-Z0-9]*\`. Case-sensitive.                                                                                       |
+| \`(...)\`   | Parentheses enclose a comma-separated value list.                                                                             |
+| Values    | Each value is a non-empty sequence of characters excluding \`)\` and \`,\`. Leading/trailing whitespace on each value is trimmed. |
+
+Multiple annotations may appear on a single header, separated by whitespace. The order is not significant.
+
+**Annotation regex (single):**
+
+\`\`\`
+@([a-zA-Z][a-zA-Z0-9]*)\\(([^)]*)\\)
+\`\`\`
+
+### Defined Annotations
+
+| Annotation | Applies to | Description                                                                                                       |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| \`@sprite\`  | Task, Ref  | URI of a custom SVG sprite for rendering. Single value. Relative URIs resolved against the \`.vine\` file location. |
+
+Unknown annotation keys are preserved but ignored by conforming parsers, enabling forward-compatible extension.
+
+### Examples
+
+\`\`\`
+[auth] Build Auth Flow (started) @sprite(./sprites/auth-shield.svg)
+\`\`\`
+
+\`\`\`
+ref [ds] Design System (./design-system.vine) @sprite(./sprites/ds-icon.svg)
+\`\`\`
+
+\`\`\`
+[root] Main Project (planning) @sprite(./sprites/root.svg) @priority(high)
+\`\`\`
+
+---
+
+## Ordering
+
+The **first block** in the file is the root. Subsequent blocks follow a top-down order — dependants appear before their dependencies, drilling down toward leaves.
+
+Ordering is **mandatory** and carries semantic meaning: it represents the suggested reading and tackling order. The dependency graph remains the source of truth for parallelism and sequencing.
+
+Task blocks and reference blocks are interleaved freely.
+
+## Constraints
+
+A valid \`.vine\` file must satisfy all of the following:
+
+1. **At least one block** — the file must contain one or more node blocks.
+2. **Unique IDs** — no two blocks (task or reference) may share the same \`id\`.
+3. **Valid dependency refs** — every \`-> <id>\` must reference an \`id\` defined in the same file.
+4. **No cycles** — the dependency graph must be a DAG.
+5. **No islands** — every node must be reachable from the root (first block) by traversing dependency edges.
+6. **Reference URI required** — enforced syntactically by the header grammar.
+7. **No attachments on references** — reference blocks must not contain attachment lines.
+
+## ABNF Grammar
+
+The following grammar is defined per [RFC 5234](https://datatracker.ietf.org/doc/html/rfc5234). It describes the **syntactic** structure of a \`.vine\` file. Structural constraints (uniqueness, cycle-freedom, connectivity) are enforced after parsing.
+
+\`\`\`abnf
+vine-file      = preamble default-delim *WSP LF
+                 node-block *(delim node-block)
+                 [delim]                        ; optional trailing delimiter
+
+preamble       = magic-line *metadata-line
+
+magic-line     = %s"vine" SP version LF
+
+version        = 1*DIGIT "." 1*DIGIT "." 1*DIGIT
+
+metadata-line  = meta-key ":" *WSP meta-value LF
+
+meta-key       = 1*(ALPHA / DIGIT / "-" / "_")
+
+meta-value     = *(%x20-7E)                    ; printable ASCII
+
+default-delim  = %s"---" LF                    ; always three hyphens
+
+delim          = delim-string LF               ; configured delimiter
+
+delim-string   = *(%x20-7E)                    ; defined by metadata or "---"
+
+; A node block is either a task block or a reference block
+node-block     = task-block / ref-block
+
+; -- Task block --
+
+task-block     = task-header LF *task-body-line
+
+task-header    = "[" task-id "]" 1*WSP short-name 1*WSP "(" status ")" *annotation
+
+task-id        = id-segment *("/" id-segment)
+
+id-segment     = 1*(ALPHA / DIGIT / "-")
+
+short-name     = 1*(%x20-7E)                   ; free text, trimmed
+
+status         = %s"complete" / %s"started" / %s"reviewing"
+               / %s"planning" / %s"notstarted" / %s"blocked"
+
+task-body-line = dependency / decision / attachment / description-line
+
+dependency     = %s"->" SP dep-target LF
+
+dep-target     = task-id
+
+decision       = ">" SP decision-text LF
+
+decision-text  = *(%x20-7E)
+
+attachment     = "@" att-class SP mime-type SP uri LF
+
+att-class      = %s"artifact" / %s"guidance" / %s"file"
+
+mime-type      = type "/" subtype
+type           = 1*(ALPHA / DIGIT / "-")
+subtype        = 1*(ALPHA / DIGIT / "-" / ".")
+
+uri            = 1*(%x21-7E)                   ; non-whitespace printable ASCII
+
+description-line = *(%x20-7E) LF               ; any line not matching above
+
+; -- Reference block --
+
+ref-block      = ref-header LF *ref-body-line
+
+ref-header     = %s"ref" 1*WSP "[" task-id "]" 1*WSP short-name 1*WSP "(" uri ")" *annotation
+
+ref-body-line  = dependency / decision / description-line
+                                                ; no attachments allowed
+
+; -- Header annotations --
+
+annotation     = 1*WSP "@" ann-key "(" ann-values ")"
+
+ann-key        = ALPHA *(ALPHA / DIGIT)
+
+ann-values     = ann-value *("," ann-value)
+
+ann-value      = *(%x20-28 / %x2A-2B / %x2D-7E)  ; printable ASCII excluding ) and ,
+\`\`\`
+
+> **Note on \`description-line\`**: In the grammar above, \`description-line\` overlaps with other body-line alternatives syntactically. In practice, parsing uses **prefix-priority dispatch**: a line is tested against dependency, decision, and attachment prefixes in order. Only if none match is the line treated as description. The ABNF captures the character-level syntax; the prefix-priority rule is a semantic constraint on the parser.
+
+## Parsing Algorithm
+
+\`\`\`
+1. Read the first line.
+   - It must match "vine <version>". Extract the version.
+   - If it does not match, reject the file.
+
+2. Dispatch to the parser for the extracted version.
+   For version 1.0.0, 1.1.0, or 1.2.0:
+
+3. Read lines until a line containing exactly "---".
+   - Parse each line as "key: value" metadata.
+   - If a "delimiter" key is present, record its value as DELIM.
+   - If a "prefix" key is present, record its value as PREFIX.
+   - Otherwise, DELIM = "---", PREFIX = undefined.
+
+4. Split the remainder of the file on lines matching DELIM exactly.
+   - Each segment is a raw node block.
+   - Empty trailing segments (from a trailing delimiter) are discarded.
+
+5. For each raw node block:
+   a. The first non-empty line is the header.
+      Try matching the reference header regex: ref [id] Name (URI) [@annotations...]
+      If it matches -> parse as reference block (step 5r).
+      Otherwise, try the task header regex: [id] Name (status) [@annotations...]
+      If it matches -> parse as task block (step 5t).
+      Otherwise -> reject (invalid header).
+
+   5t. Task block:
+       Extract id, short name, status, and annotations from the header.
+       Parse each annotation by extracting the key and comma-separated values.
+       Classify each subsequent line by prefix (priority order):
+         - Starts with "-> "       -> dependency
+         - Starts with "> "        -> decision
+         - Starts with "@artifact " -> artifact
+         - Starts with "@guidance " -> guidance
+         - Starts with "@file "     -> file
+         - Otherwise               -> description line
+       Join description lines with "\\n".
+
+   5r. Reference block:
+       Extract id, short name, URI, and annotations from the header.
+       Parse each annotation by extracting the key and comma-separated values.
+       Classify each subsequent line by prefix (priority order):
+         - Starts with "-> "       -> dependency
+         - Starts with "> "        -> decision
+         - Starts with "@"         -> reject (attachments not allowed)
+         - Otherwise               -> description line
+       Join description lines with "\\n".
+
+6. Build the task graph and validate constraints.
+\`\`\`
+
+## Serialization
+
+The **canonical form** is used for roundtripping and diffing:
+
+1. **Magic line**: \`vine 1.2.0\`
+2. **Metadata**: defined keys in alphabetical order, one per line.
+3. **Preamble terminator**: \`---\`
+4. **Node blocks** in file order (root first), separated by the delimiter
+5. **Task block header**: annotations are appended after the closing status paren in alphabetical key order.
+6. **Task block body line order**:
+   - Description lines (preserving internal newlines)
+   - Dependencies (\`-> ...\`), sorted alphabetically by target id
+   - Decisions (\`> ...\`), in original order
+   - Attachments, grouped by class (\`@artifact\`, \`@guidance\`, \`@file\`), each group in original order
+7. **Reference block header**: annotations are appended after the closing URI paren in alphabetical key order.
+8. **Reference block body line order**:
+   - Description lines (preserving internal newlines)
+   - Dependencies (\`-> ...\`), sorted alphabetically by target id
+   - Decisions (\`> ...\`), in original order
+9. **Trailing newline** after the final block (no trailing delimiter)
+
+---
+
+## Expansion
+
+Expansion is the process of inlining a referenced \`.vine\` graph into the parent graph, replacing the reference node with the concrete tasks from the child graph. Expansion is **optional** — a file with unexpanded reference nodes is well-formed.
+
+Expansion is performed by the **consumer** (UI, CLI, or library) — the parser produces a graph with reference nodes intact.
+
+### Algorithm
+
+Given a parent graph, a reference node ID, and the parsed child graph:
+
+\`\`\`
+expandVineRef(parentGraph, refNodeId, childGraph):
+
+  1. Resolve the ID prefix:
+     a. If childGraph has a \\\`prefix\\\` metadata key -> use its value.
+     b. Otherwise -> use refNodeId as the default prefix.
+     c. An empty string prefix means no prefixing (IDs used as-is).
+
+  2. Remap child graph IDs:
+     a. The child graph's root task is remapped to refNodeId
+        (it takes the reference node's slot in the parent).
+     b. All other child task IDs: newId = prefix + "/" + originalId
+        (when prefix is non-empty).
+     c. All dependency references within child tasks are remapped
+        correspondingly.
+     d. If any remapped ID collides with an existing parent ID
+        (other than refNodeId itself) -> error.
+
+  3. Transform the reference node into a concrete task:
+     a. Adopt the child root's status.
+     b. Adopt the child root's description
+        (the reference node's description is discarded).
+     c. Merge dependencies:
+        refNode's original dependencies U child root's remapped dependencies
+        (deduplicated).
+     d. Merge decisions:
+        child root's decisions + refNode's decisions (appended).
+     e. Adopt the child root's attachments.
+     f. Clear the vine (URI) field — the node is now concrete.
+     g. Preserve annotations from the reference node on the
+        remapped concrete task. Annotations are also preserved
+        on all other remapped child nodes.
+
+  4. Insert all remaining remapped child tasks into the parent graph,
+     maintaining their relative order from the child graph.
+     Position them immediately after the reference node's slot
+     in the parent's ordering.
+
+  5. Validate the composite graph (all standard constraints).
+\`\`\`
+
+### Example
+
+Given this parent graph with a reference node:
+
+\`\`\`vine
+vine 1.2.0
+title: Product Launch
+---
+[launch] Product Launch (planning)
+-> app
+-> marketing
+---
+[app] Build Application (notstarted)
+-> design-system
+---
+[marketing] Marketing Site (notstarted)
+-> design-system
+---
+ref [design-system] Design System (./design-system.vine) @sprite(./sprites/ds-icon.svg)
+Shared component library used across all products.
+\`\`\`
+
+And this child graph at \`./design-system.vine\`:
+
+\`\`\`vine
+vine 1.2.0
+title: Design System
+prefix: ds
+---
+[ship] Ship Design System v1 (started)
+Release the first version of the shared design system.
+-> components
+-> docs
+---
+[docs] Write Documentation (notstarted)
+Usage guides and component API references.
+-> components
+---
+[components] Component Library (started)
+Build reusable UI components (buttons, forms, modals).
+-> tokens
+---
+[tokens] Design Tokens (complete)
+Define colors, spacing, and typography scales.
+\`\`\`
+
+Expanding \`design-system\` with the child graph (prefix = \`ds\`, from child metadata):
+
+1. Child root \`ship\` -> remapped to \`design-system\` (takes the ref node's ID)
+2. Other child IDs: \`docs\` -> \`ds/docs\`, \`components\` -> \`ds/components\`, \`tokens\` -> \`ds/tokens\`.
+3. The reference node becomes a concrete task with \`ship\`'s status (\`started\`), description, and dependencies (\`-> ds/components\`, \`-> ds/docs\`). The \`@sprite\` annotation from the reference node is preserved. The ref node had no additional deps, so no merging needed.
+
+Result:
+
+\`\`\`vine
+vine 1.2.0
+title: Product Launch
+---
+[launch] Product Launch (planning)
+-> app
+-> marketing
+---
+[app] Build Application (notstarted)
+-> design-system
+---
+[marketing] Marketing Site (notstarted)
+-> design-system
+---
+[design-system] Ship Design System v1 (started) @sprite(./sprites/ds-icon.svg)
+Release the first version of the shared design system.
+-> ds/components
+-> ds/docs
+---
+[ds/docs] Write Documentation (notstarted)
+Usage guides and component API references.
+-> ds/components
+---
+[ds/components] Component Library (started)
+Build reusable UI components (buttons, forms, modals).
+-> ds/tokens
+---
+[ds/tokens] Design Tokens (complete)
+Define colors, spacing, and typography scales.
+\`\`\`
+
+---
+
+## Examples
+
+### Minimal
+
+\`\`\`vine
+vine 1.2.0
+---
+[root] My Single Task (notstarted)
+The simplest possible graph.
+\`\`\`
+
+### With Reference Node
+
+\`\`\`vine
+vine 1.2.0
+title: Product Launch
+---
+[launch] Product Launch (planning)
+Ship the product to customers.
+-> app
+-> marketing
+---
+[app] Build Application (notstarted)
+Core product application.
+-> design-system
+---
+[marketing] Marketing Site (notstarted)
+Public-facing marketing pages.
+-> design-system
+---
+ref [design-system] Design System (./design-system.vine)
+Shared component library used across all products.
+\`\`\`
+
+### With Annotations
+
+\`\`\`vine
+vine 1.2.0
+title: Animated Project
+---
+[root] Main Project (planning) @sprite(./sprites/crystal-ball.svg)
+The root of the project.
+-> backend
+-> frontend
+---
+[backend] Backend API (started)
+Build the REST API.
+-> root
+---
+ref [frontend] Frontend App (./frontend.vine) @sprite(./sprites/screen.svg)
+The user-facing application.
+-> root
+\`\`\`
+
+---
+
+## MCP Tool Reference
+
+The VINE MCP server exposes 4 tools and 2 resources for working with \`.vine\` files.
+
+### vine_read
+
+Read tasks from a \`.vine\` file. The \`action\` parameter selects the query type.
+
+| Parameter | Type   | Required | Description                                                        |
+| --------- | ------ | -------- | ------------------------------------------------------------------ |
+| \`file\`    | string | yes      | Path to the .vine file                                             |
+| \`action\`  | string | yes      | One of: summary, list, task, descendants, search, refs, validate   |
+| \`id\`      | string | no       | Task ID (required for task and descendants actions)                |
+| \`status\`  | string | no       | Status filter (for list action)                                    |
+| \`query\`   | string | no       | Search query (for list or search actions)                          |
+
+### vine_next
+
+Return the execution frontier: \`ready_to_start\`, \`ready_to_complete\`, \`needs_expansion\`, and \`progress\`. Call in a loop to drive task execution.
+
+| Parameter | Type   | Required | Description            |
+| --------- | ------ | -------- | ---------------------- |
+| \`file\`    | string | yes      | Path to the .vine file |
+
+### vine_write
+
+Batch-write mutations to a \`.vine\` file. Takes an array of operations applied atomically (validated once at end). Operation types: \`set_status\`, \`update\`, \`add_task\`, \`remove_task\`, \`add_dep\`, \`remove_dep\`, \`add_ref\`, \`update_ref_uri\`.
+
+| Parameter    | Type   | Required | Description                |
+| ------------ | ------ | -------- | -------------------------- |
+| \`file\`       | string | yes      | Path to the .vine file     |
+| \`operations\` | array  | yes      | Array of operation objects |
+
+### vine_expand
+
+Expand a reference node by inlining an external \`.vine\` graph.
+
+| Parameter    | Type   | Required | Description                            |
+| ------------ | ------ | -------- | -------------------------------------- |
+| \`file\`       | string | yes      | Path to the parent .vine file          |
+| \`ref_id\`     | string | yes      | ID of the reference node to expand     |
+| \`child_file\` | string | yes      | Path to the child .vine file to inline |
+
+### Resources
+
+The VINE specification is available as MCP resources at \`vine://spec/brief\` (condensed format + execution guide) and \`vine://spec/full\` (complete spec with ABNF and expansion algorithm).
+`;

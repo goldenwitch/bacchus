@@ -1,0 +1,122 @@
+vine 1.1.0
+prefix: engine
+title: Physics Engine
+---
+[root] Physics Engine (notstarted)
+Central 2D rigid body physics engine written in pure TypeScript.
+-> bodies
+-> collision
+-> forces
+-> integration
+-> math
+-> resolution
+-> world
+---
+[math] Math Utilities (notstarted)
+Core math primitives for 2D physics calculations.
+-> mat2
+-> vec2
+---
+[vec2] Vec2 Class (notstarted)
+Implement a `Vec2` class with: add, subtract, scale, dot product, cross product (scalar for 2D), length, normalize, rotate, distance, and static factory methods (zero, fromAngle).
+All methods return new instances (immutable style) with in-place variants for performance-critical paths.
+---
+[mat2] Mat2 Rotation Matrix (notstarted)
+Implement a 2×2 rotation matrix for transforming shapes.
+Support creation from angle, multiply with Vec2, transpose.
+-> vec2
+---
+[bodies] Rigid Body System (notstarted)
+Container for rigid body types and shape definitions.
+-> body-class
+-> shapes
+> Expose window.__physicsWorld on the global scope in dev mode so that Playwright MCP and browser console can programmatically inspect body states (positions, velocities, angles) for automated testing.
+---
+[body-class] RigidBody Class (notstarted)
+Properties: position (Vec2), velocity (Vec2), angle (number), angularVelocity (number), mass, inverseMass, inertia, inverseInertia, restitution (0–1), friction (0–1), isStatic (boolean).
+Methods: applyForce, applyImpulse, applyTorque, integrateForces, integrateVelocity.
+Static bodies have inverseMass = 0 and inverseInertia = 0.
+-> math
+---
+[shapes] Shape Types (notstarted)
+Define a Shape union type: Circle { type: 'circle', radius } and Polygon { type: 'polygon', vertices: Vec2[] }.
+Include helper to compute AABB from any shape + body transform.
+Include mass/inertia calculation from shape geometry and density.
+Rectangles are a convenience factory that creates a Polygon with 4 vertices.
+-> math
+---
+[forces] Force Generators (notstarted)
+Implement gravity (constant downward acceleration), linear damping (velocity × factor), and an API for applying user impulses at a world point.
+Gravity should be configurable (default 9.81 m/s² downward).
+-> bodies
+> VALIDATION FIX: Apply subtle linear damping (velocity *= 0.999 per step) and angular damping (angularVelocity *= 0.999) during force integration. This prevents perpetual micro-oscillation and helps bodies settle into stable rest within 3-5 seconds under gravity.
+---
+[collision] Collision Detection (notstarted)
+Full collision detection pipeline from broad phase through contact generation.
+-> broad-phase
+-> manifold
+-> narrow-phase
+---
+[broad-phase] Broad Phase — AABB Overlap (notstarted)
+Generate candidate pairs by testing axis-aligned bounding box overlaps.
+Start with brute-force O(n²) pair check; optimize later in polish phase.
+-> bodies
+---
+[narrow-phase] Narrow Phase — SAT & Circle Tests (notstarted)
+Implement circle-circle, circle-polygon, and polygon-polygon collision tests.
+Polygon-polygon uses Separating Axis Theorem (SAT).
+Return null for no collision, or a Contact object on intersection.
+-> broad-phase
+> SAT chosen over GJK for simplicity — sufficient for convex shapes.
+---
+[manifold] Contact Manifold (notstarted)
+Define a Contact type: { bodyA, bodyB, normal: Vec2, penetration: number, contactPoints: Vec2[] }.
+Support 1 or 2 contact points for polygon edges.
+-> narrow-phase
+---
+[resolution] Collision Resolution (notstarted)
+Full collision response pipeline including impulse solving and correction.
+-> impulse-solver
+-> positional-correction
+---
+[impulse-solver] Impulse-Based Response (notstarted)
+Compute and apply collision impulses using coefficient of restitution.
+Handle both linear and angular impulse components.
+Apply Coulomb friction impulse (tangential component clamped by μ × normal impulse).
+-> bodies
+-> manifold
+> VALIDATION BUG FIX: Previous implementation had insufficient energy dissipation — boxes bounced indefinitely (vy ~15 m/s after 15s) instead of settling with restitution=0.2. Ensure: (1) Restitution impulse formula uses min(bodyA.restitution, bodyB.restitution) not average. (2) When relative velocity along normal is very small (< 1.0), clamp restitution to 0 to prevent micro-bouncing. (3) Friction impulse must be computed and applied every iteration. (4) Angular velocity changes from both normal and tangential impulses must be applied.
+---
+[positional-correction] Positional Correction (notstarted)
+Apply Baumgarte stabilization to prevent bodies from sinking into each other.
+Use a bias factor (typically 0.2–0.8) and a penetration slop threshold (0.01).
+-> impulse-solver
+> VALIDATION BUG FIX: Baumgarte stabilization alone was insufficient for stable stacking. Use bias=0.2, slop=0.01. The correction formula is: correction = max(penetration - slop, 0) * bias / (invMassA + invMassB). Apply correction along the contact normal: bodyA.position -= correction * invMassA * normal; bodyB.position += correction * invMassB * normal. Position correction must run AFTER impulse resolution each iteration.
+---
+[integration] Time Integration (notstarted)
+Integration subsystem for advancing the simulation forward in time.
+-> integrator
+-> timestep
+---
+[integrator] Semi-Implicit Euler Integrator (notstarted)
+Update velocity from accumulated forces, then update position from new velocity.
+Clear forces after each integration step.
+-> bodies
+---
+[timestep] Fixed Timestep Accumulator (notstarted)
+Implement a fixed timestep loop (default 1/60s) with a delta-time accumulator.
+Run multiple physics steps per frame if needed to catch up.
+Provide interpolation factor (alpha) for smooth rendering between physics steps.
+-> integrator
+> Fixed timestep ensures deterministic simulation across machines.
+---
+[world] PhysicsWorld Class (notstarted)
+Central simulation manager: owns an array of RigidBody instances.
+`step(dt)` method runs: accumulate forces → broad phase → narrow phase → resolve → integrate.
+Methods: addBody, removeBody, step, setGravity, clear.
+Expose the interpolation alpha for the renderer.
+-> collision
+-> forces
+-> integration
+-> resolution
+> VALIDATION FIX: Run collision detection + resolution in a loop of 4–8 iterations per physics timestep for stable stacking. Each iteration: (1) broad phase, (2) narrow phase, (3) apply impulses for all contacts, (4) apply positional correction. Also apply velocity damping (vel *= 0.999) after integration to help bodies reach rest. Expose window.__physicsWorld in dev mode for testing.

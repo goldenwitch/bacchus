@@ -28,7 +28,7 @@ export function filterByStatus(graph: VineGraph, status: Status): Task[] {
   const result: Task[] = [];
   for (const id of graph.order) {
     const task = getTask(graph, id);
-    if (task.status === status) {
+    if (isConcreteTask(task) && task.status === status) {
       result.push(task);
     }
   }
@@ -167,6 +167,7 @@ export interface ExecutionProgress {
   readonly total: number;
   readonly complete: number;
   readonly percentage: number;
+  readonly readyCount: number;
   readonly rootId: string;
   readonly rootStatus: Status | 'ref';
   readonly byStatus: Readonly<Record<Status, number>>;
@@ -190,6 +191,7 @@ export interface ExecutionProgress {
 export interface ActionableTasks {
   readonly ready: readonly ConcreteTask[];
   readonly completable: readonly ConcreteTask[];
+  readonly blocked: readonly ConcreteTask[];
   readonly expandable: readonly RefTask[];
   readonly progress: ExecutionProgress;
 }
@@ -230,6 +232,7 @@ const CONSUMING_STATUSES: ReadonlySet<Status> = new Set<Status>([
 export function getActionableTasks(graph: VineGraph): ActionableTasks {
   const ready: ConcreteTask[] = [];
   const completable: ConcreteTask[] = [];
+  const blocked: ConcreteTask[] = [];
   const expandable: RefTask[] = [];
 
   let completeCount = 0;
@@ -273,6 +276,12 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
       continue;
     }
 
+    // Blocked tasks whose dependencies are all satisfied.
+    if (task.status === 'blocked') {
+      blocked.push(task);
+      continue;
+    }
+
     // Reviewing tasks: completable when at least one dependant is consuming.
     if (task.status === 'reviewing') {
       const dependants = getDependants(graph, id);
@@ -293,17 +302,39 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
   const root = getTask(graph, rootId);
   const rootStatus: Status | 'ref' = isConcreteTask(root) ? root.status : 'ref';
 
+  // Root completion edge case: the root has no dependants, so it would never
+  // appear in `completable` via the normal "any dependant consuming" check.
+  // If the root is `reviewing` and every other concrete task is complete or
+  // reviewing, it is safe to complete the root.
+  if (
+    isConcreteTask(root) &&
+    root.status === 'reviewing' &&
+    !completable.includes(root)
+  ) {
+    const allOthersFinished = [...graph.tasks.values()].every((t) => {
+      if (t.id === root.id) return true;
+      if (isConcreteTask(t)) return SATISFIED_STATUSES.has(t.status);
+      // Unexpanded ref nodes block root completion.
+      return false;
+    });
+    if (allOthersFinished) {
+      completable.push(root);
+    }
+  }
+
   const total = graph.tasks.size;
   const percentage = total > 0 ? Math.round((completeCount / total) * 100) : 0;
 
   return {
     ready,
     completable,
+    blocked,
     expandable,
     progress: {
       total,
       complete: completeCount,
       percentage,
+      readyCount: ready.length,
       rootId: root.id,
       rootStatus,
       byStatus,

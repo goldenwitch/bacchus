@@ -1,0 +1,31 @@
+vine 1.1.0
+prefix: setup
+title: Project Setup
+---
+[root] Project Setup (notstarted)
+-> dev-scripts
+-> html-entry
+-> scaffold
+-> structure
+---
+[scaffold] Scaffold Vite + TypeScript Project (complete)
+Run `npm create vite@latest` with the vanilla-ts template.
+Configure `tsconfig.json` with strict mode enabled.
+> Use vanilla-ts template — no framework needed for Canvas work.
+---
+[structure] Create Source Directory Structure (notstarted)
+Create `src/engine/`, `src/renderer/`, `src/ui/`, `src/scenes/`, and `src/main.ts`.
+Each directory will contain an `index.ts` barrel export.
+-> scaffold
+---
+[html-entry] Create HTML Entry Point (notstarted)
+Set up `index.html` with a full-viewport `<canvas id="canvas">` element and a `<div id="sidebar">` panel beside it.
+Link the main TypeScript entry point.
+Use CSS grid or flexbox: canvas fills remaining space, sidebar is 280px fixed width on the right.
+-> scaffold
+---
+[dev-scripts] Configure Dev Server & Build (notstarted)
+Verify `npm run dev` starts the dev server with hot reload.
+Verify `npm run build` produces a working production build.
+Add `npm run preview` script if not already present.
+-> scaffold
