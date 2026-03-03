@@ -111,6 +111,8 @@ jobs:
     name: Build VS Code Extension
     needs: check
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -146,6 +148,18 @@ jobs:
           name: bacchus-vine-vsix
           path: packages/vscode/*.vsix
           retention-days: 30
+
+      - name: Publish prerelease to GitHub Releases
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: prerelease
+          name: Prerelease
+          prerelease: true
+          body: |
+            Automated prerelease built from the latest commit on `main`.
+            Commit: ${{ github.sha }}
+          files: packages/vscode/*.vsix
 
   deploy:
     name: Deploy to Cloudflare Pages
