@@ -777,6 +777,10 @@
     {graph}
     onclose={() => (focusedTaskId = null)}
     onfocus={(taskId) => (focusedTaskId = taskId)}
+    onmutate={(newGraph) => {
+      graph = newGraph;
+      onupdate?.(newGraph);
+    }}
   />
   <Tooltip
     task={hoveredTask && !focusedTaskId ? hoveredTask : null}
