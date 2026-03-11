@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Task, Status, VineGraph } from '@bacchus/core';
+  import type { Task, Status, VineGraph, Attachment, AttachmentClass } from '@bacchus/core';
   import {
     getDependencies,
     getDependants,
@@ -45,6 +45,10 @@
   let newDecisionText = $state('');
   let addingDep = $state(false);
   let depQuery = $state('');
+  let addingAttachment = $state(false);
+  let newAttClass = $state<AttachmentClass>('artifact');
+  let newAttMime = $state('');
+  let newAttUri = $state('');
   let errorMessage = $state<string | null>(null);
   let errorTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -63,6 +67,10 @@
     newDecisionText = '';
     addingDep = false;
     depQuery = '';
+    addingAttachment = false;
+    newAttClass = 'artifact';
+    newAttMime = '';
+    newAttUri = '';
     clearError();
   });
 
@@ -174,6 +182,29 @@
     if (!task) return;
     const id = task.id;
     tryMutate(() => removeDependency(graph, id, depId));
+  }
+
+  function handleRemoveAttachment(index: number) {
+    if (!task || task.kind !== 'task') return;
+    const id = task.id;
+    const updated = task.attachments.filter((_, i) => i !== index);
+    tryMutate(() => updateTask(graph, id, { attachments: [...updated] }));
+  }
+
+  function handleAddAttachment() {
+    if (!task || task.kind !== 'task' || !newAttUri.trim()) return;
+    const id = task.id;
+    const newAtt: Attachment = {
+      class: newAttClass,
+      mime: newAttMime.trim() || 'application/octet-stream',
+      uri: newAttUri.trim(),
+    };
+    const updated = [...task.attachments, newAtt];
+    tryMutate(() => updateTask(graph, id, { attachments: updated }));
+    addingAttachment = false;
+    newAttClass = 'artifact';
+    newAttMime = '';
+    newAttUri = '';
   }
 
   // Compute pill text color with proper contrast against status background
@@ -386,34 +417,90 @@
       </div>
     {/if}
 
-    {#if task.kind === 'task' && task.attachments?.length}
+    {#if task.kind === 'task' && (task.attachments?.length || editable)}
       <div class="sidebar-section">
         <h3 class="sidebar-heading">Attachments</h3>
-        <ul class="attachment-list">
-          {#each task.attachments as att (att.uri)}
-            <li class="attachment-item">
-              <span class="attachment-icon">
-                {att.class === 'artifact'
-                  ? '📦'
-                  : att.class === 'guidance'
-                    ? '📘'
-                    : '📄'}
-              </span>
-              <span class="attachment-class"
-                >{att.class.charAt(0).toUpperCase() + att.class.slice(1)}</span
-              >
-              <span class="attachment-mime">{att.mime}</span>
-              <a
-                class="attachment-uri"
-                href={att.uri}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {att.uri.length > 45 ? '…' + att.uri.slice(-42) : att.uri}
-              </a>
-            </li>
-          {/each}
-        </ul>
+        {#if task.attachments?.length}
+          <ul class="attachment-list">
+            {#each task.attachments as att, i (att.uri + i)}
+              <li class="attachment-item">
+                <span class="attachment-icon">
+                  {att.class === 'artifact'
+                    ? '📦'
+                    : att.class === 'guidance'
+                      ? '📘'
+                      : '📄'}
+                </span>
+                <span class="attachment-class"
+                  >{att.class.charAt(0).toUpperCase() + att.class.slice(1)}</span
+                >
+                <span class="attachment-mime">{att.mime}</span>
+                <a
+                  class="attachment-uri"
+                  href={att.uri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {att.uri.length > 45 ? '…' + att.uri.slice(-42) : att.uri}
+                </a>
+                {#if editable}
+                  <button
+                    class="attachment-remove-btn"
+                    aria-label="Remove attachment"
+                    onclick={() => handleRemoveAttachment(i)}
+                  >✕</button>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <span class="dep-empty">None</span>
+        {/if}
+        {#if editable}
+          {#if addingAttachment}
+            <div class="add-attachment-form">
+              <div class="add-attachment-row">
+                <label class="add-attachment-label">Class</label>
+                <select class="add-attachment-select" bind:value={newAttClass}>
+                  <option value="artifact">📦 Artifact</option>
+                  <option value="guidance">📘 Guidance</option>
+                  <option value="file">📄 File</option>
+                </select>
+              </div>
+              <div class="add-attachment-row">
+                <label class="add-attachment-label">MIME</label>
+                <input
+                  class="add-attachment-input"
+                  type="text"
+                  placeholder="e.g. application/pdf"
+                  bind:value={newAttMime}
+                />
+              </div>
+              <div class="add-attachment-row">
+                <label class="add-attachment-label">URI</label>
+                <input
+                  class="add-attachment-input"
+                  type="text"
+                  placeholder="e.g. ./report.pdf"
+                  autofocus
+                  bind:value={newAttUri}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') handleAddAttachment();
+                    if (e.key === 'Escape') { addingAttachment = false; newAttMime = ''; newAttUri = ''; }
+                  }}
+                />
+              </div>
+              <div class="add-attachment-actions">
+                <button class="add-decision-confirm" onclick={handleAddAttachment}>Add</button>
+                <button class="attachment-cancel-btn" onclick={() => { addingAttachment = false; newAttMime = ''; newAttUri = ''; }}>Cancel</button>
+              </div>
+            </div>
+          {:else}
+            <button class="add-btn" onclick={() => { addingAttachment = true; }}>
+              + Add attachment
+            </button>
+          {/if}
+        {/if}
       </div>
     {/if}
 
@@ -1056,6 +1143,111 @@
 
   .attachment-uri:hover {
     text-decoration: underline;
+  }
+
+  .attachment-remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-dimmed);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .attachment-item:hover .attachment-remove-btn {
+    opacity: 1;
+  }
+
+  .attachment-remove-btn:hover {
+    color: #f87171;
+    background: rgba(220, 63, 82, 0.15);
+  }
+
+  .add-attachment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+  }
+
+  .add-attachment-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .add-attachment-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dimmed);
+    width: 40px;
+    flex-shrink: 0;
+  }
+
+  .add-attachment-select {
+    flex: 1;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .add-attachment-select:focus {
+    border-color: var(--color-accent, #60a5fa);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  }
+
+  .add-attachment-input {
+    flex: 1;
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--hover-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 4px 6px;
+    outline: none;
+  }
+
+  .add-attachment-input:focus {
+    border-color: var(--color-accent, #60a5fa);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  }
+
+  .add-attachment-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .attachment-cancel-btn {
+    background: none;
+    border: none;
+    color: var(--text-dimmed);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .attachment-cancel-btn:hover {
+    color: var(--text-tertiary);
+    background: var(--hover-bg);
   }
 
   .sprite-uri {
