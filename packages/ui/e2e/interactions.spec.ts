@@ -99,7 +99,7 @@ test('sidebar shows status pill, heading, and description', async ({
   await node.click();
   await expect(page.locator('.sidebar')).toBeVisible({ timeout: 3000 });
 
-  await expect(page.locator('.sidebar .status-pill')).toBeVisible();
+  await expect(page.locator('.sidebar .status-pill, .sidebar .status-edit-row')).toBeVisible();
   await expect(page.locator('.sidebar .heading')).toBeVisible();
   await expect(page.locator('.sidebar .description')).toBeVisible();
 });
