@@ -12,13 +12,39 @@ const mockOrchestrator = {
 };
 
 // Mock dependencies before importing session
-vi.mock('../../src/lib/chat/anthropic.js', () => ({
-  AnthropicChatService: vi.fn(),
-}));
-
 vi.mock('../../src/lib/chat/apikey.js', () => ({
   getApiKey: vi.fn(() => null),
   setApiKey: vi.fn(),
+}));
+
+vi.mock('../../src/lib/chat/providers.js', () => ({
+  getActiveProvider: vi.fn(() => 'anthropic'),
+  setActiveProvider: vi.fn(),
+  createChatService: vi.fn(() => Promise.resolve({})),
+  PROVIDERS: {
+    anthropic: {
+      label: 'Anthropic',
+      placeholder: 'sk-ant-...',
+      storageKey: 'bacchus:anthropic-key',
+      envVar: 'VITE_ANTHROPIC_API_KEY',
+      defaultModel: 'claude-opus-4-6',
+    },
+    openai: {
+      label: 'OpenAI',
+      placeholder: 'sk-...',
+      storageKey: 'bacchus:openai-key',
+      envVar: 'VITE_OPENAI_API_KEY',
+      defaultModel: 'gpt-4o',
+    },
+    gemini: {
+      label: 'Gemini',
+      placeholder: 'AI...',
+      storageKey: 'bacchus:gemini-key',
+      envVar: 'VITE_GEMINI_API_KEY',
+      defaultModel: 'gemini-2.5-flash',
+    },
+  },
+  PROVIDER_IDS: ['anthropic', 'openai', 'gemini'],
 }));
 
 vi.mock('../../src/lib/chat/orchestrator.js', () => ({
@@ -45,23 +71,25 @@ describe('ChatSession', () => {
     expect(session.isReady).toBe(false);
   });
 
-  it('becomes ready after saveApiKey', () => {
+  it('becomes ready after saveApiKey', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
-    expect(setApiKey).toHaveBeenCalledWith('sk-key');
+    // saveApiKey fires async initOrchestrator; wait for the microtask
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
+    expect(setApiKey).toHaveBeenCalledWith('sk-key', 'anthropic');
     expect(session.apiKey).toBe('sk-key');
-    expect(session.isReady).toBe(true);
   });
 
-  it('initOrchestrator does nothing without API key', () => {
+  it('initOrchestrator does nothing without API key', async () => {
     const session = new ChatSession();
-    session.initOrchestrator(null);
+    await session.initOrchestrator(null);
     expect(session.isReady).toBe(false);
   });
 
-  it('setGraph forwards to orchestrator', () => {
+  it('setGraph forwards to orchestrator', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
     session.setGraph(null);
     expect(mockOrchestrator.setGraph).toHaveBeenCalledWith(null);
   });
@@ -71,25 +99,28 @@ describe('ChatSession', () => {
     expect(session.getChatMessages()).toEqual([]);
   });
 
-  it('getChatMessages delegates to orchestrator', () => {
+  it('getChatMessages delegates to orchestrator', async () => {
     const msgs = [{ role: 'user', content: 'hi' }];
     mockOrchestrator.getMessages.mockReturnValue(msgs);
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
     expect(session.getChatMessages()).toBe(msgs);
   });
 
-  it('setChatMessages delegates to orchestrator', () => {
+  it('setChatMessages delegates to orchestrator', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
     const msgs = [{ role: 'user' as const, content: 'test' }];
     session.setChatMessages(msgs);
     expect(mockOrchestrator.setMessages).toHaveBeenCalledWith(msgs);
   });
 
-  it('clear resets state and orchestrator', () => {
+  it('clear resets state and orchestrator', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
     session.displayMessages = [{ type: 'user' as const, content: 'hello' }];
     session.inputDraft = 'some text';
     session.isLoading = true;
@@ -105,6 +136,7 @@ describe('ChatSession', () => {
   it('processMessage updates displayMessages from orchestrator', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
 
     await session.processMessage('hello');
 
@@ -125,6 +157,7 @@ describe('ChatSession', () => {
   it('processMessage does nothing if already loading', async () => {
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
     session.isLoading = true;
 
     await session.processMessage('hello');
@@ -139,6 +172,7 @@ describe('ChatSession', () => {
 
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
 
     await session.processMessage('hello');
 
@@ -160,6 +194,7 @@ describe('ChatSession', () => {
 
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
     const callback = vi.fn();
     session.onGraphUpdate = callback;
 
@@ -183,6 +218,7 @@ describe('ChatSession', () => {
 
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
 
     await session.processMessage('add a task');
 
@@ -200,6 +236,7 @@ describe('ChatSession', () => {
 
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
 
     await session.processMessage('hi');
 
@@ -218,6 +255,7 @@ describe('ChatSession', () => {
 
     const session = new ChatSession();
     session.saveApiKey('sk-key', null);
+    await vi.waitFor(() => expect(session.isReady).toBe(true));
 
     await session.processMessage('do it');
 

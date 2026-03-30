@@ -14,6 +14,7 @@ export function createMockSession(overrides: Record<string, unknown> = {}) {
     onGraphUpdate: null as ((g: unknown) => void) | null,
     vineId: null as string | null,
     isReady: false,
+    provider: 'anthropic' as string,
     initOrchestrator: vi.fn(),
     setGraph: vi.fn(),
     saveApiKey: vi.fn(),
@@ -21,6 +22,7 @@ export function createMockSession(overrides: Record<string, unknown> = {}) {
     getChatMessages: vi.fn().mockReturnValue([]),
     setChatMessages: vi.fn(),
     clear: vi.fn(),
+    switchProvider: vi.fn(),
     ...overrides,
   };
 }

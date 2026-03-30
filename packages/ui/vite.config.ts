@@ -29,6 +29,12 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_ANTHROPIC_API_KEY': env.ANTHROPIC_API_KEY
         ? JSON.stringify(env.ANTHROPIC_API_KEY)
         : 'undefined',
+      'import.meta.env.VITE_OPENAI_API_KEY': env.OPENAI_API_KEY
+        ? JSON.stringify(env.OPENAI_API_KEY)
+        : 'undefined',
+      'import.meta.env.VITE_GEMINI_API_KEY': env.GEMINI_API_KEY
+        ? JSON.stringify(env.GEMINI_API_KEY)
+        : 'undefined',
       __APP_VERSION__: JSON.stringify(version),
       __APP_COMMIT__: JSON.stringify(gitSha),
     },

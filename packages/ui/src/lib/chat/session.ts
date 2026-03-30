@@ -2,8 +2,13 @@ import type { VineGraph } from '@bacchus/core';
 import type { ChatMessage, DisplayMessage } from './types.js';
 import { ChatOrchestrator } from './orchestrator.js';
 import type { OrchestratorEvent } from './orchestrator.js';
-import { AnthropicChatService } from './anthropic.js';
-import { getApiKey, setApiKey } from './apikey.js';
+import { getApiKey, setApiKey, clearApiKey } from './apikey.js';
+import {
+  type ProviderType,
+  getActiveProvider,
+  setActiveProvider,
+  createChatService,
+} from './providers.js';
 
 /**
  * Callback interface for graph updates emitted during a send.
@@ -32,6 +37,7 @@ export class ChatSession {
   private _displayMessages: DisplayMessage[] = [];
   private _isLoading = false;
   private _apiKey: string | null;
+  private _provider: ProviderType;
 
   /** Callback invoked after any reactive property changes. */
   onStateChange: (() => void) | null = null;
@@ -63,6 +69,14 @@ export class ChatSession {
     this.onStateChange?.();
   }
 
+  get provider(): ProviderType {
+    return this._provider;
+  }
+  set provider(value: ProviderType) {
+    this._provider = value;
+    this.onStateChange?.();
+  }
+
   // -----------------------------------------------------------------------
   // Plain properties (non-reactive)
   // -----------------------------------------------------------------------
@@ -77,7 +91,8 @@ export class ChatSession {
   private orchestrator: ChatOrchestrator | null = null;
 
   constructor() {
-    this._apiKey = getApiKey();
+    this._provider = getActiveProvider();
+    this._apiKey = getApiKey(this._provider);
   }
 
   /**
@@ -88,20 +103,54 @@ export class ChatSession {
   }
 
   /**
-   * Save the API key and create the orchestrator.
+   * Save the API key for the current provider and create the orchestrator.
    */
   saveApiKey(key: string, graph: VineGraph | null): void {
-    setApiKey(key);
+    setApiKey(key, this._provider);
     this.apiKey = key;
-    this.initOrchestrator(graph);
+    void this.initOrchestrator(graph);
+  }
+
+  /**
+   * Remove the stored API key for the current provider.
+   *
+   * Clears conversation history and tears down the orchestrator so the
+   * panel returns to the key-entry prompt.
+   */
+  removeApiKey(): void {
+    clearApiKey(this._provider);
+    this._apiKey = null;
+    this._displayMessages = [];
+    this.orchestrator = null;
+    this.onStateChange?.();
+  }
+
+  /**
+   * Switch to a different LLM provider.
+   *
+   * Persists the choice, loads the provider's API key (if any),
+   * clears conversation history, and re-initialises the orchestrator.
+   */
+  switchProvider(newProvider: ProviderType, graph: VineGraph | null): void {
+    setActiveProvider(newProvider);
+    this._provider = newProvider;
+    this._apiKey = getApiKey(newProvider);
+    this.orchestrator?.clearHistory();
+    this._displayMessages = [];
+    this.onStateChange?.();
+    if (this._apiKey) {
+      void this.initOrchestrator(graph);
+    } else {
+      this.orchestrator = null;
+    }
   }
 
   /**
    * Initialise (or re-initialise) the orchestrator with the current API key.
    */
-  initOrchestrator(graph: VineGraph | null): void {
+  async initOrchestrator(graph: VineGraph | null): Promise<void> {
     if (!this.apiKey) return;
-    const service = new AnthropicChatService({ apiKey: this.apiKey });
+    const service = await createChatService(this._provider, this.apiKey);
     this.orchestrator = new ChatOrchestrator(service, graph);
   }
 

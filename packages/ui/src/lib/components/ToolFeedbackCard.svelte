@@ -113,7 +113,11 @@
     {:else if detail.kind === 'replace_graph'}
       <div class="tool-row">
         <span class="tool-text">
-          Graph replaced — {detail.taskCount} tasks
+          {#if isError}
+            {result}
+          {:else}
+            Graph replaced — {detail.taskCount} tasks
+          {/if}
         </span>
       </div>
     {:else}

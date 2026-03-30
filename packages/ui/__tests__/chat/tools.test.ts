@@ -340,7 +340,7 @@ Just one task.
         call('replace_graph', { vineText: 'not valid vine' }),
       );
       expect(result.isError).toBe(true);
-      expect(result.result).toContain('Error');
+      expect(result.result).toContain('Failed to parse VINE text');
     });
   });
 
