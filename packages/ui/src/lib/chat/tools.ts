@@ -552,12 +552,25 @@ export function executeToolCall(
           };
         }
         const vineText = call.input.vineText;
-        const newGraph = parse(vineText);
-        return {
-          graph: newGraph,
-          result: `Graph replaced (${String(newGraph.order.length)} tasks)`,
-          isError: false,
-        };
+        try {
+          const newGraph = parse(vineText);
+          return {
+            graph: newGraph,
+            result: `Graph replaced (${String(newGraph.order.length)} tasks)`,
+            isError: false,
+          };
+        } catch (parseErr: unknown) {
+          const detail =
+            parseErr instanceof Error ? parseErr.message : String(parseErr);
+          return {
+            graph,
+            result:
+              `Failed to parse VINE text: ${detail}. ` +
+              'Ensure the text starts with "vine 1.0.0", has a preamble delimiter "---", ' +
+              'and all tasks are reachable from the root via dependencies.',
+            isError: true,
+          };
+        }
       }
 
       case 'add_attachment': {

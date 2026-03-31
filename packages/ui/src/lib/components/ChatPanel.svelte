@@ -4,6 +4,12 @@
   import type { DisplayMessage } from '../chat/types.js';
   import { ChatSession } from '../chat/session.js';
   import ToolFeedbackCard from './ToolFeedbackCard.svelte';
+  import {
+    PROVIDERS,
+    PROVIDER_IDS,
+    type ProviderType,
+  } from '../chat/providers.js';
+  import { getApiKey } from '../chat/apikey.js';
 
   let {
     graph,
@@ -22,6 +28,7 @@
   let messages: DisplayMessage[] = $state([...session.displayMessages]);
   let isLoading = $state(session.isLoading);
   let apiKey: string | null = $state(session.apiKey);
+  let activeProvider: ProviderType = $state(session.provider);
   let inputText = $state(session.inputDraft);
   let keyInput = $state('');
   let messagesEl: HTMLDivElement | undefined = $state(undefined);
@@ -32,6 +39,7 @@
       messages = [...session.displayMessages];
       isLoading = session.isLoading;
       apiKey = session.apiKey;
+      activeProvider = session.provider;
     };
     return () => {
       if (session.onStateChange) {
@@ -51,7 +59,7 @@
 
   $effect(() => {
     if (apiKey && !session.isReady) {
-      session.initOrchestrator(graph);
+      void session.initOrchestrator(graph);
     }
   });
 
@@ -93,6 +101,21 @@
     keyInput = '';
   }
 
+  function handleSwitchProvider(provider: ProviderType) {
+    if (provider === activeProvider) return;
+    session.switchProvider(provider, graph);
+    keyInput = '';
+  }
+
+  function handleRemoveKey() {
+    session.removeApiKey();
+  }
+
+  /** Check whether a provider has a saved key. */
+  function providerHasKey(provider: ProviderType): boolean {
+    return getApiKey(provider) !== null;
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -117,15 +140,47 @@
 </script>
 
 <div class="chat-body">
+  <!-- Provider selector tabs -->
+  <div class="provider-tabs">
+    {#each PROVIDER_IDS as pid (pid)}
+      <button
+        class="provider-tab"
+        class:active={pid === activeProvider}
+        onclick={() => handleSwitchProvider(pid)}
+        disabled={isLoading}
+      >
+        {PROVIDERS[pid].label}
+        {#if providerHasKey(pid)}
+          <span class="key-dot" title="API key saved"></span>
+        {/if}
+      </button>
+    {/each}
+  </div>
+
+  {#if apiKey}
+    <div class="key-actions">
+      <button
+        class="remove-key-btn"
+        onclick={handleRemoveKey}
+        disabled={isLoading}
+        title="Remove saved API key for {PROVIDERS[activeProvider].label}"
+      >
+        Remove {PROVIDERS[activeProvider].label} key
+      </button>
+    </div>
+  {/if}
+
   {#if !apiKey}
     <!-- API Key entry -->
     <div class="key-setup">
-      <p class="key-label">Enter your Anthropic API key to start planning.</p>
+      <p class="key-label">
+        Enter your {PROVIDERS[activeProvider].label} API key to start planning.
+      </p>
       <div class="key-input-row">
         <input
           type="password"
           class="key-input"
-          placeholder="sk-ant-..."
+          placeholder={PROVIDERS[activeProvider].placeholder}
           bind:value={keyInput}
           onkeydown={handleKeyInputKeyDown}
         />
@@ -216,7 +271,7 @@
     <div class="chat-input-row">
       <textarea
         class="chat-input"
-        placeholder="Describe your plan..."
+        placeholder="Describe your plan... ({PROVIDERS[activeProvider].label})"
         rows="2"
         bind:value={inputText}
         onkeydown={handleKeyDown}
@@ -256,6 +311,89 @@
     flex-direction: column;
     overflow: hidden;
     max-height: calc(100vh - 180px);
+  }
+
+  /* Provider selector tabs */
+  .provider-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  .provider-tab {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background 150ms,
+      border-color 150ms,
+      color 150ms;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .provider-tab:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    border-color: var(--text-dimmed);
+  }
+
+  .provider-tab.active {
+    background: var(--color-accent-active);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+
+  .provider-tab:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .key-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .key-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 2px 16px 0;
+  }
+
+  .remove-key-btn {
+    background: none;
+    border: 1px solid var(--text-dimmed);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: color 150ms, background 150ms, border-color 150ms;
+  }
+
+  .remove-key-btn:hover:not(:disabled) {
+    color: var(--color-error-text);
+    background: var(--color-error-bg);
+    border-color: var(--color-error-border);
+  }
+
+  .remove-key-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   /* API Key setup */

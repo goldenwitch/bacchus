@@ -18,16 +18,28 @@
     Use the -Key parameter to provide an Anthropic API key for
     running chat integration tests against the live Claude API.
 
+    Use -OpenAIKey to provide an OpenAI API key for GPT models.
+
+    Use -GeminiKey to provide a Google Gemini API key.
+
     Exit codes:
       0 — success
       1 — a prerequisite is missing or a step failed
 .PARAMETER Key
     Provide an Anthropic API key (must start with sk-ant-). The script will
     write it to a .env file and exit immediately — no other setup steps run.
+.PARAMETER OpenAIKey
+    Provide an OpenAI API key (must start with sk-). The script will
+    write it to a .env file and exit immediately — no other setup steps run.
+.PARAMETER GeminiKey
+    Provide a Google Gemini API key. The script will write it to a .env file
+    and exit immediately — no other setup steps run.
 #>
 
 param(
-    [string]$Key
+    [string]$Key,
+    [string]$OpenAIKey,
+    [string]$GeminiKey
 )
 
 Set-StrictMode -Version Latest
@@ -69,6 +81,69 @@ if ($Key) {
 
     $masked = $Key.Substring(0, [Math]::Min(12, $Key.Length)) + '...'
     Write-Ok "API key ($masked) saved to .env"
+    exit 0
+}
+
+# ---------------------------------------------------------------------------
+# Fast path: -OpenAIKey writes .env and exits
+# ---------------------------------------------------------------------------
+if ($OpenAIKey) {
+    if ($OpenAIKey -notmatch '^sk-') {
+        Write-Fail "Invalid OpenAI API key — must start with 'sk-'. Got: $($OpenAIKey.Substring(0, [Math]::Min(10, $OpenAIKey.Length)))..."
+        exit 1
+    }
+
+    $envFile = Join-Path $PSScriptRoot '.env'
+    if (Test-Path $envFile) {
+        $lines = Get-Content $envFile
+        $found = $false
+        $newLines = $lines | ForEach-Object {
+            if ($_ -match '^OPENAI_API_KEY=') {
+                $found = $true
+                "OPENAI_API_KEY=$OpenAIKey"
+            } else {
+                $_
+            }
+        }
+        if (-not $found) {
+            $newLines += "OPENAI_API_KEY=$OpenAIKey"
+        }
+        $newLines | Set-Content $envFile
+    } else {
+        "OPENAI_API_KEY=$OpenAIKey" | Set-Content $envFile
+    }
+
+    $masked = $OpenAIKey.Substring(0, [Math]::Min(10, $OpenAIKey.Length)) + '...'
+    Write-Ok "OpenAI API key ($masked) saved to .env"
+    exit 0
+}
+
+# ---------------------------------------------------------------------------
+# Fast path: -GeminiKey writes .env and exits
+# ---------------------------------------------------------------------------
+if ($GeminiKey) {
+    $envFile = Join-Path $PSScriptRoot '.env'
+    if (Test-Path $envFile) {
+        $lines = Get-Content $envFile
+        $found = $false
+        $newLines = $lines | ForEach-Object {
+            if ($_ -match '^GEMINI_API_KEY=') {
+                $found = $true
+                "GEMINI_API_KEY=$GeminiKey"
+            } else {
+                $_
+            }
+        }
+        if (-not $found) {
+            $newLines += "GEMINI_API_KEY=$GeminiKey"
+        }
+        $newLines | Set-Content $envFile
+    } else {
+        "GEMINI_API_KEY=$GeminiKey" | Set-Content $envFile
+    }
+
+    $masked = $GeminiKey.Substring(0, [Math]::Min(10, $GeminiKey.Length)) + '...'
+    Write-Ok "Gemini API key ($masked) saved to .env"
     exit 0
 }
 
@@ -255,6 +330,8 @@ Write-Host @"
 
 Write-Host @"
 
-  To configure an Anthropic API key for integration tests:
-    ./setup.ps1 -Key "sk-ant-your-key-here"
+  To configure API keys for chat integration:
+    ./setup.ps1 -Key "sk-ant-your-key-here"           (Anthropic)
+    ./setup.ps1 -OpenAIKey "sk-your-key-here"          (OpenAI)
+    ./setup.ps1 -GeminiKey "your-key-here"             (Gemini)
 "@
