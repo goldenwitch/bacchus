@@ -2,7 +2,7 @@
   import { STATUS_MAP } from '../status.js';
   import GlassAccordion from './GlassAccordion.svelte';
 
-  let expanded = $state(false);
+  let expanded = $state(true);
 
   const entries = Object.entries(STATUS_MAP);
 </script>
@@ -35,8 +35,8 @@
 <style>
   .legend-container {
     position: absolute;
-    bottom: 16px;
-    left: 16px;
+    bottom: 24px;
+    right: 16px;
     z-index: 130;
   }
 
