@@ -3,10 +3,12 @@
   import {
     getDependencies,
     getDependants,
+    getDescendants,
     getSpriteUri,
     setStatus,
     updateTask,
     addDependency,
+    applyBatch,
     removeDependency,
     VALID_STATUSES,
   } from '@bacchus/core';
@@ -49,6 +51,14 @@
   let newAttClass = $state<AttachmentClass>('artifact');
   let newAttMime = $state('');
   let newAttUri = $state('');
+  let addingNode = $state(false);
+  let addingDepChoice = $state(false);
+  let addingDepNode = $state(false);
+  let newNodeId = $state('');
+  let newNodeName = $state('');
+  let newNodeDescription = $state('');
+  let newNodeStatus = $state<Status>('notstarted');
+  let newNodeIdTouched = $state(false);
   let errorMessage = $state<string | null>(null);
   let errorTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -71,15 +81,24 @@
     newAttClass = 'artifact';
     newAttMime = '';
     newAttUri = '';
+    addingNode = false;
+    addingDepChoice = false;
+    addingDepNode = false;
+    newNodeId = '';
+    newNodeName = '';
+    newNodeDescription = '';
+    newNodeStatus = 'notstarted';
+    newNodeIdTouched = false;
     clearError();
   });
 
-  // Candidate deps for the autocomplete picker (all tasks not already depended on)
+  // Candidate deps for the autocomplete picker (exclude existing deps, self, and ancestors that would cause cycles)
   const depCandidates = $derived.by(() => {
     if (!task) return [];
-    const excludeIds = [...task.dependencies, task.id];
+    const descendants = getDescendants(graph, task.id);
+    const excludeIds = new Set([...task.dependencies, task.id, ...descendants.map((t) => t.id)]);
     return [...graph.tasks.values()]
-      .filter((t) => !excludeIds.includes(t.id))
+      .filter((t) => !excludeIds.has(t.id))
       .filter(
         (t) =>
           !depQuery ||
@@ -207,6 +226,74 @@
     newAttUri = '';
   }
 
+  // ── Slugify helper ────────────────────────────────────────────────────
+  function slugify(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  function resetNewNodeForm() {
+    newNodeId = '';
+    newNodeName = '';
+    newNodeDescription = '';
+    newNodeStatus = 'notstarted';
+    newNodeIdTouched = false;
+  }
+
+  // ── Add new node (standalone) ─────────────────────────────────────────
+  function handleAddNode() {
+    const id = newNodeId.trim();
+    const name = newNodeName.trim();
+    if (!id || !name) {
+      showError('Node ID and name are required.');
+      return;
+    }
+    if (graph.tasks.has(id)) {
+      showError(`A task with ID "${id}" already exists.`);
+      return;
+    }
+    tryMutate(() => {
+      const rootId = graph.order[0];
+      const ops = [
+        { op: 'add_task' as const, id, name, status: newNodeStatus, description: newNodeDescription.trim() },
+        ...(rootId && rootId !== id ? [{ op: 'add_dep' as const, taskId: rootId, depId: id }] : []),
+      ];
+      return applyBatch(graph, ops);
+    });
+    addingNode = false;
+    resetNewNodeForm();
+    onfocus?.(id);
+  }
+
+  // ── Add new node as dependency ────────────────────────────────────────
+  function handleAddDepNode() {
+    if (!task) return;
+    const parentId = task.id;
+    const id = newNodeId.trim();
+    const name = newNodeName.trim();
+    if (!id || !name) {
+      showError('Node ID and name are required.');
+      return;
+    }
+    if (graph.tasks.has(id)) {
+      showError(`A task with ID "${id}" already exists.`);
+      return;
+    }
+    tryMutate(() => {
+      return applyBatch(graph, [
+        { op: 'add_task', id, name, status: newNodeStatus, description: newNodeDescription.trim() },
+        { op: 'add_dep', taskId: parentId, depId: id },
+      ]);
+    });
+    addingDepNode = false;
+    addingDepChoice = false;
+    resetNewNodeForm();
+  }
+
   // Compute pill text color with proper contrast against status background
   const pillTextColor = $derived.by(() => {
     if (!statusInfo) return 'var(--color-node-text-dark)';
@@ -238,6 +325,73 @@
     }, 1500);
   }
 </script>
+
+{#snippet nodeForm(onsubmit: () => void, oncancel: () => void)}
+  <div class="add-node-form">
+    <div class="add-node-row">
+      <label class="add-node-label" for="new-node-name">Name</label>
+      <input
+        id="new-node-name"
+        class="add-node-input"
+        type="text"
+        placeholder="e.g. Setup Database"
+        autofocus
+        bind:value={newNodeName}
+        oninput={() => {
+          if (!newNodeIdTouched) {
+            newNodeId = slugify(newNodeName);
+          }
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Escape') oncancel();
+        }}
+      />
+    </div>
+    <div class="add-node-row">
+      <label class="add-node-label" for="new-node-id">ID</label>
+      <input
+        id="new-node-id"
+        class="add-node-input add-node-id-input"
+        type="text"
+        placeholder="e.g. setup-database"
+        bind:value={newNodeId}
+        oninput={() => { newNodeIdTouched = true; }}
+        onkeydown={(e) => {
+          if (e.key === 'Escape') oncancel();
+        }}
+      />
+    </div>
+    <div class="add-node-row">
+      <label class="add-node-label" for="new-node-desc">Desc</label>
+      <textarea
+        id="new-node-desc"
+        class="add-node-textarea"
+        rows="2"
+        placeholder="Optional description…"
+        bind:value={newNodeDescription}
+        onkeydown={(e) => {
+          if (e.key === 'Escape') oncancel();
+        }}
+      ></textarea>
+    </div>
+    <div class="add-node-row">
+      <label class="add-node-label" for="new-node-status">Status</label>
+      <select
+        id="new-node-status"
+        class="add-node-select"
+        bind:value={newNodeStatus}
+      >
+        {#each VALID_STATUSES as s (s)}
+          <option value={s}>{STATUS_MAP[s].emoji} {STATUS_MAP[s].label}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="add-node-actions">
+      <button class="add-node-confirm" onclick={onsubmit}>Create</button>
+      <button class="add-node-cancel" onclick={oncancel}>Cancel</button>
+    </div>
+  </div>
+{/snippet}
 
 {#if task}
   <aside
@@ -543,7 +697,7 @@
               autofocus
               bind:value={depQuery}
               onkeydown={(e) => {
-                if (e.key === 'Escape') { addingDep = false; depQuery = ''; }
+                if (e.key === 'Escape') { addingDep = false; depQuery = ''; addingDepChoice = false; }
               }}
             />
             <div class="dep-candidate-list">
@@ -561,10 +715,27 @@
                 <span class="dep-empty">No matching tasks</span>
               {/if}
             </div>
+            <button class="dep-choice-cancel" onclick={() => { addingDep = false; depQuery = ''; addingDepChoice = false; }}>
+              Cancel
+            </button>
+          </div>
+        {:else if addingDepNode}
+          {@render nodeForm(handleAddDepNode, () => { addingDepNode = false; addingDepChoice = false; resetNewNodeForm(); })}
+        {:else if addingDepChoice}
+          <div class="dep-choice-panel">
+            <button class="dep-choice-btn" onclick={() => { addingDep = true; addingDepChoice = false; }}>
+              🔗 Pick existing node
+            </button>
+            <button class="dep-choice-btn" onclick={() => { addingDepNode = true; addingDepChoice = false; }}>
+              ✨ Create new node
+            </button>
+            <button class="dep-choice-cancel" onclick={() => { addingDepChoice = false; }}>
+              Cancel
+            </button>
           </div>
         {:else}
-          <button class="add-btn" onclick={() => { addingDep = true; }}>
-            + Add dependency
+          <button class="add-btn" onclick={() => { addingDepChoice = true; }}>
+            + Add new dependency
           </button>
         {/if}
       {/if}
@@ -585,6 +756,20 @@
         {/each}
       {/if}
     </div>
+
+    <!-- Add new node (standalone) -->
+    {#if editable}
+      <div class="dep-section">
+        <h3 class="section-heading">Actions</h3>
+        {#if addingNode}
+          {@render nodeForm(handleAddNode, () => { addingNode = false; resetNewNodeForm(); })}
+        {:else}
+          <button class="add-btn" onclick={() => { addingNode = true; }}>
+            + Add new node
+          </button>
+        {/if}
+      </div>
+    {/if}
 
     <div class="watermark">
       <span class="watermark-id">{task.id}</span>
@@ -622,7 +807,7 @@
 
   .close-btn {
     position: absolute;
-    top: 12px;
+    top: -4px;
     right: 12px;
     background: none;
     border: none;
@@ -631,6 +816,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: 4px;
+    z-index: 1;
   }
 
   .close-btn:hover {
@@ -1289,5 +1475,180 @@
       right: auto;
       margin-top: auto;
     }
+  }
+
+  /* ── Add node form ────────────────────────────────────────────────── */
+  .add-node-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+  }
+
+  .add-node-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .add-node-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dimmed);
+    width: 40px;
+    flex-shrink: 0;
+  }
+
+  .add-node-input {
+    flex: 1;
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--hover-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 4px 6px;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .add-node-input:focus {
+    border-color: var(--color-accent, #60a5fa);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  }
+
+  .add-node-id-input {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .add-node-textarea {
+    flex: 1;
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--hover-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 4px 6px;
+    outline: none;
+    resize: vertical;
+    min-height: 40px;
+    box-sizing: border-box;
+  }
+
+  .add-node-textarea:focus {
+    border-color: var(--color-accent, #60a5fa);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  }
+
+  .add-node-select {
+    flex: 1;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .add-node-select:focus {
+    border-color: var(--color-accent, #60a5fa);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+  }
+
+  .add-node-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 2px;
+  }
+
+  .add-node-confirm {
+    background: var(--color-accent, #60a5fa);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+
+  .add-node-confirm:hover {
+    filter: brightness(1.1);
+  }
+
+  .add-node-cancel {
+    background: none;
+    border: none;
+    color: var(--text-dimmed);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .add-node-cancel:hover {
+    color: var(--text-tertiary);
+    background: var(--hover-bg);
+  }
+
+  /* ── Dependency choice panel ──────────────────────────────────────── */
+  .dep-choice-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .dep-choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    background: none;
+    border: 1px solid var(--border-subtle);
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+  }
+
+  .dep-choice-btn:hover {
+    border-color: var(--color-accent, #60a5fa);
+    color: var(--text-secondary);
+    background: var(--hover-bg);
+  }
+
+  .dep-choice-cancel {
+    background: none;
+    border: none;
+    color: var(--text-dimmed);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: inherit;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  .dep-choice-cancel:hover {
+    color: var(--text-tertiary);
+    background: var(--hover-bg);
   }
 </style>
