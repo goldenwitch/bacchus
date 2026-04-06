@@ -2,12 +2,14 @@
   import { STATUS_MAP } from '../status.js';
   import GlassAccordion from './GlassAccordion.svelte';
 
+  let { sidebarOpen = false }: { sidebarOpen?: boolean } = $props();
+
   let expanded = $state(true);
 
   const entries = Object.entries(STATUS_MAP);
 </script>
 
-<div class="legend-container">
+<div class="legend-container" class:sidebar-open={sidebarOpen}>
   <GlassAccordion
     icon="ℹ️"
     title="Legend"
@@ -38,6 +40,11 @@
     bottom: 24px;
     right: 16px;
     z-index: 130;
+    transition: right 0.3s ease;
+  }
+
+  .legend-container.sidebar-open {
+    right: min(376px, calc(100vw - 32px));
   }
 
   .legend-body {

@@ -820,7 +820,7 @@
     onspritechange={handleVisualsSpriteChange}
     onvisualsreset={handleVisualsReset}
   />
-  <Legend />
+  <Legend sidebarOpen={focusedTaskId !== null} />
 </div>
 
 <style>
