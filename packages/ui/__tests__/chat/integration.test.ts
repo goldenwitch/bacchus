@@ -128,7 +128,7 @@ Compile the source code.
   it('streams text content from the model', { timeout: 60_000 }, async () => {
     const service = new AnthropicChatService({
       apiKey: API_KEY,
-      model: 'claude-sonnet-4-20250514',
+      model: ANTHROPIC_MODEL,
       logger: testLogger,
     });
 
