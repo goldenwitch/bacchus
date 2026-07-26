@@ -7,6 +7,8 @@ import type {
   Attachment,
   AttachmentClass,
   ConcreteTask,
+  ConnectiveKind,
+  ConnectiveNode,
   RefTask,
   Status,
   Task,
@@ -16,6 +18,7 @@ import {
   ATTACHMENT_CLASSES,
   HEADER_RE,
   REF_HEADER_RE,
+  CONNECTIVE_HEADER_RE,
   ANNOTATION_RE,
 } from './constants.js';
 import { VineParseError } from '../errors.js';
@@ -116,7 +119,7 @@ function findHeaderIndex(block: RawBlock): number {
 }
 
 /** Discriminated result of parsing a block header line. */
-type ParsedHeader = ParsedTaskHeader | ParsedRefHeader;
+type ParsedHeader = ParsedTaskHeader | ParsedRefHeader | ParsedConnectiveHeader;
 
 interface ParsedTaskHeader {
   readonly kind: 'task';
@@ -132,6 +135,14 @@ interface ParsedRefHeader {
   readonly id: string;
   readonly shortName: string;
   readonly vine: string;
+  readonly headerIndex: number;
+  readonly annotations: ReadonlyMap<string, readonly string[]>;
+}
+
+interface ParsedConnectiveHeader {
+  readonly kind: ConnectiveKind;
+  readonly id: string;
+  readonly shortName: string;
   readonly headerIndex: number;
   readonly annotations: ReadonlyMap<string, readonly string[]>;
 }
@@ -198,6 +209,28 @@ function parseHeader(block: RawBlock): ParsedHeader {
     }
     const annotations = parseAnnotations(match[4] ?? '');
     return { kind: 'ref', id, shortName, vine, headerIndex, annotations };
+  }
+
+  // Connective headers (`anyof `/`allof `). Dispatch on the first token.
+  if (headerLine.startsWith('anyof ') || headerLine.startsWith('allof ')) {
+    const match = CONNECTIVE_HEADER_RE.exec(headerLine);
+    if (!match) {
+      throw new VineParseError(
+        `Invalid connective header: "${headerLine}"`,
+        lineNumber,
+      );
+    }
+    const kind = match[1] as ConnectiveKind | undefined;
+    const id = match[2];
+    const shortName = match[3];
+    if (kind === undefined || id === undefined || shortName === undefined) {
+      throw new VineParseError(
+        `Invalid connective header: "${headerLine}"`,
+        lineNumber,
+      );
+    }
+    const annotations = parseAnnotations(match[4] ?? '');
+    return { kind, id, shortName, headerIndex, annotations };
   }
 
   // Otherwise, try concrete task header.
@@ -273,9 +306,11 @@ export function parseBlock(block: RawBlock): Task {
       for (const cls of ATTACHMENT_CLASSES) {
         const prefix = `@${cls} `;
         if (line.startsWith(prefix)) {
-          if (header.kind === 'ref') {
+          if (header.kind !== 'task') {
+            const nodeKind =
+              header.kind === 'ref' ? 'reference' : 'connective';
             throw new VineParseError(
-              'Attachments are not allowed on reference nodes',
+              `Attachments are not allowed on ${nodeKind} nodes`,
               lineNumber,
             );
           }
@@ -313,16 +348,30 @@ export function parseBlock(block: RawBlock): Task {
     return ref;
   }
 
-  const task: ConcreteTask = {
-    kind: 'task',
+  if (header.kind === 'task') {
+    const task: ConcreteTask = {
+      kind: 'task',
+      id: header.id,
+      shortName: header.shortName,
+      description,
+      status: header.status,
+      dependencies,
+      decisions,
+      attachments,
+      annotations: header.annotations,
+    };
+    return task;
+  }
+
+  // Connective node (anyof / allof).
+  const connective: ConnectiveNode = {
+    kind: header.kind,
     id: header.id,
     shortName: header.shortName,
     description,
-    status: header.status,
     dependencies,
     decisions,
-    attachments,
     annotations: header.annotations,
   };
-  return task;
+  return connective;
 }

@@ -18,6 +18,17 @@ export const HEADER_RE =
 export const REF_HEADER_RE =
   /^ref\s+\[([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*)\]\s+(.+?)\s+\((\S+)\)((?:\s+@[a-zA-Z][a-zA-Z0-9]*\([^)]*\))*)$/;
 
+/**
+ * Matches a connective node header: `anyof [id] Short Name` / `allof [id] Short Name`.
+ *
+ * Unlike task and ref headers, a connective header has **no** trailing
+ * parenthesized field (no status, no URI) — the short name runs to the end of
+ * the line, minus any header annotations. The leading keyword is captured so a
+ * single regex serves both modes.
+ */
+export const CONNECTIVE_HEADER_RE =
+  /^(anyof|allof)\s+\[([a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*)\]\s+(.+?)((?:\s+@[a-zA-Z][a-zA-Z0-9]*\([^)]*\))*)$/;
+
 /** Matches a single annotation: @key(values) */
 export const ANNOTATION_RE = /@([a-zA-Z][a-zA-Z0-9]*)\(([^)]*)\)/g;
 

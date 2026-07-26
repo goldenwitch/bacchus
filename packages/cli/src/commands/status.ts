@@ -28,8 +28,8 @@ export const statusCommand = new Command('status')
     try {
       let graph = readGraph(file);
       const task = getTask(graph, id);
-      if (task.kind === 'ref') {
-        console.error(`Task "${id}" is a ref node and has no status.`);
+      if (task.kind !== 'task') {
+        console.error(`Task "${id}" is a ${task.kind} node and has no status.`);
         process.exitCode = 1;
         return;
       }

@@ -184,6 +184,44 @@ function checkRefUriRequired(graph: VineGraph): void {
 // Constraint 6 (no-ref-attachments) is now enforced at the type level:
 // RefTask has no `attachments` field, so no runtime check is needed.
 
+/**
+ * 6. Connective nodes (`anyof`/`allof`) must declare at least one dependency.
+ *
+ * A zero-dependency `anyof` can never be satisfied (a silent permanent block);
+ * a zero-dependency `allof` is vacuously satisfied (a silent no-op). Both are
+ * almost certainly authoring errors, so they are rejected rather than guessed.
+ */
+function checkConnectiveHasDeps(graph: VineGraph): void {
+  for (const [taskId, task] of graph.tasks) {
+    if (task.kind === 'anyof' || task.kind === 'allof') {
+      if (task.dependencies.length === 0) {
+        fail(
+          `Connective node "${taskId}" (${task.kind}) must declare at least one dependency.`,
+          { constraint: 'connective-has-deps', taskId },
+        );
+      }
+    }
+  }
+}
+
+/**
+ * 7. The root (first block) must not be a connective node.
+ *
+ * The root represents the graph's goal and carries a status; a connective has
+ * neither a status nor a lifecycle, so it may not occupy the root slot.
+ */
+function checkRootNotConnective(graph: VineGraph): void {
+  const rootId = graph.order[0];
+  if (rootId === undefined) return; // unreachable after constraint 1.
+  const root = graph.tasks.get(rootId);
+  if (root && (root.kind === 'anyof' || root.kind === 'allof')) {
+    fail(`Root node "${rootId}" must not be a connective (${root.kind}).`, {
+      constraint: 'root-not-connective',
+      taskId: rootId,
+    });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -200,6 +238,8 @@ function checkRefUriRequired(graph: VineGraph): void {
  *  3. no-cycles
  *  4. no-islands
  *  5. ref-uri-required
+ *  6. connective-has-deps
+ *  7. root-not-connective
  */
 export function validate(graph: VineGraph): void {
   checkAtLeastOneTask(graph);
@@ -207,4 +247,6 @@ export function validate(graph: VineGraph): void {
   checkNoCycles(graph);
   checkNoIslands(graph);
   checkRefUriRequired(graph);
+  checkConnectiveHasDeps(graph);
+  checkRootNotConnective(graph);
 }

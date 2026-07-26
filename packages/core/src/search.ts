@@ -5,8 +5,8 @@ import type {
   Task,
   VineGraph,
 } from './types.js';
-import { isVineRef, isConcreteTask } from './types.js';
-import { getTask, getDependencies, getDependants } from './graph.js';
+import { isVineRef, isConcreteTask, isConnective } from './types.js';
+import { getTask, getDependants } from './graph.js';
 import { VineError } from './errors.js';
 
 /**
@@ -135,7 +135,12 @@ export function getSummary(graph: VineGraph): GraphSummary {
     reviewing: 0,
   };
 
+  // Connectives are routing infrastructure, not deliverable work — they are
+  // excluded from `total`, consistent with `ExecutionProgress.total`.
+  let total = 0;
   for (const task of graph.tasks.values()) {
+    if (isConnective(task)) continue;
+    total += 1;
     if (task.kind === 'task') {
       byStatus[task.status] += 1;
     }
@@ -148,7 +153,7 @@ export function getSummary(graph: VineGraph): GraphSummary {
   const root = getTask(graph, rootId);
 
   return {
-    total: graph.tasks.size,
+    total,
     byStatus,
     rootId: root.id,
     rootName: root.shortName,
@@ -220,6 +225,94 @@ const CONSUMING_STATUSES: ReadonlySet<Status> = new Set<Status>([
 ]);
 
 /**
+ * Build a memoized satisfaction predicate for a graph.
+ *
+ * A node is *satisfied* when it can count as a completed prerequisite for its
+ * dependants:
+ *
+ * - concrete task → status is `complete` or `reviewing` (the base rule).
+ * - ref           → never (an unexpanded ref must be expanded first).
+ * - `anyof`       → **any** direct dependency is satisfied.
+ * - `allof`       → **every** direct dependency is satisfied.
+ *
+ * Connectives resolve recursively; termination is guaranteed by the DAG
+ * constraint. Results are memoized per call so each node is evaluated once.
+ */
+export function buildSatisfaction(graph: VineGraph): (id: string) => boolean {
+  const memo = new Map<string, boolean>();
+  const inProgress = new Set<string>();
+
+  function satisfied(id: string): boolean {
+    const cached = memo.get(id);
+    if (cached !== undefined) return cached;
+    // Defensive cycle guard — a validated graph is acyclic, but never recurse
+    // forever if an unvalidated graph slips through.
+    if (inProgress.has(id)) return false;
+
+    const task = graph.tasks.get(id);
+    if (!task) return false;
+
+    inProgress.add(id);
+    let result: boolean;
+    switch (task.kind) {
+      case 'task':
+        result = SATISFIED_STATUSES.has(task.status);
+        break;
+      case 'ref':
+        result = false;
+        break;
+      case 'anyof':
+        result = task.dependencies.some((d) => satisfied(d));
+        break;
+      case 'allof':
+        result = task.dependencies.every((d) => satisfied(d));
+        break;
+    }
+    inProgress.delete(id);
+    memo.set(id, result);
+    return result;
+  }
+
+  return satisfied;
+}
+
+/**
+ * Returns true when some concrete task has started consuming `id`'s output,
+ * looking **through** connective nodes transparently.
+ *
+ * A `reviewing` task is safe to complete once a downstream consumer has picked
+ * up its output. With a connective interposed between the reviewing task and
+ * its real consumers, the connective is transparent: we forward reverse-edge
+ * traversal through connective dependants but stop at concrete/ref dependants.
+ */
+function hasConsumingDependant(graph: VineGraph, id: string): boolean {
+  const visited = new Set<string>([id]);
+  const queue: string[] = getDependants(graph, id).map((d) => d.id);
+
+  while (queue.length > 0) {
+    const depId = queue.shift();
+    if (depId === undefined) break;
+    if (visited.has(depId)) continue;
+    visited.add(depId);
+
+    const dep = graph.tasks.get(depId);
+    if (!dep) continue;
+
+    if (isConcreteTask(dep)) {
+      if (CONSUMING_STATUSES.has(dep.status)) return true;
+      // A non-consuming concrete task does not forward consumption.
+      continue;
+    }
+    if (isConnective(dep)) {
+      // Transparent: look through to the connective's own dependants.
+      for (const d of getDependants(graph, depId)) queue.push(d.id);
+    }
+    // Ref dependants are not consumers and are not traversed.
+  }
+  return false;
+}
+
+/**
  * Analyse the current state of a VineGraph and return the execution frontier:
  * tasks that are ready to start, reviewing tasks that can be completed, and
  * ref nodes that need expansion.
@@ -235,7 +328,12 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
   const blocked: ConcreteTask[] = [];
   const expandable: RefTask[] = [];
 
+  const satisfied = buildSatisfaction(graph);
+
   let completeCount = 0;
+  // Connective nodes are routing infrastructure, not deliverable work — they
+  // are excluded from the progress denominator.
+  let workTotal = 0;
   const byStatus: Record<Status, number> = {
     complete: 0,
     notstarted: 0,
@@ -248,19 +346,23 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
   for (const id of graph.order) {
     const task = getTask(graph, id);
 
+    // Connectives are pure routing — never counted as work, never in the
+    // frontier. Their effect is felt only through the satisfaction predicate.
+    if (isConnective(task)) continue;
+
+    workTotal += 1;
+
     // Count statuses for progress (only concrete tasks have a status).
     if (isConcreteTask(task)) {
       byStatus[task.status] += 1;
       if (task.status === 'complete') completeCount += 1;
     }
 
-    // Check whether all dependencies are satisfied.
-    const deps = getDependencies(graph, id);
-    const allDepsSatisfied = deps.every((dep) => {
-      if (isConcreteTask(dep)) return SATISFIED_STATUSES.has(dep.status);
-      // Ref nodes are never "satisfied" — they must be expanded first.
-      return false;
-    });
+    // Check whether all dependencies are satisfied (connectives resolve
+    // recursively inside `satisfied`).
+    const allDepsSatisfied = task.dependencies.every((depId) =>
+      satisfied(depId),
+    );
 
     if (!allDepsSatisfied) continue;
 
@@ -282,14 +384,10 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
       continue;
     }
 
-    // Reviewing tasks: completable when at least one dependant is consuming.
+    // Reviewing tasks: completable when a consumer (seen through connectives)
+    // has started consuming the output.
     if (task.status === 'reviewing') {
-      const dependants = getDependants(graph, id);
-      const anyConsuming = dependants.some((d) => {
-        if (isConcreteTask(d)) return CONSUMING_STATUSES.has(d.status);
-        return false;
-      });
-      if (anyConsuming) {
+      if (hasConsumingDependant(graph, id)) {
         completable.push(task);
       }
     }
@@ -313,6 +411,8 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
   ) {
     const allOthersFinished = [...graph.tasks.values()].every((t) => {
       if (t.id === root.id) return true;
+      // Connectives are routing infrastructure, not work — ignore them here.
+      if (isConnective(t)) return true;
       if (isConcreteTask(t)) return SATISFIED_STATUSES.has(t.status);
       // Unexpanded ref nodes block root completion.
       return false;
@@ -322,7 +422,7 @@ export function getActionableTasks(graph: VineGraph): ActionableTasks {
     }
   }
 
-  const total = graph.tasks.size;
+  const total = workTotal;
   const percentage = total > 0 ? Math.round((completeCount / total) * 100) : 0;
 
   return {

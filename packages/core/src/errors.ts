@@ -29,7 +29,9 @@ export type ValidationConstraint =
   | 'no-cycles'
   | 'no-islands'
   | 'ref-uri-required'
-  | 'no-ref-attachments';
+  | 'no-ref-attachments'
+  | 'connective-has-deps'
+  | 'root-not-connective';
 
 /**
  * Discriminated union carrying details about which constraint was violated.
@@ -40,7 +42,9 @@ export type ValidationDetails =
   | { constraint: 'no-cycles'; cycle: string[] }
   | { constraint: 'no-islands'; islandTaskIds: string[] }
   | { constraint: 'ref-uri-required'; taskId: string }
-  | { constraint: 'no-ref-attachments'; taskId: string };
+  | { constraint: 'no-ref-attachments'; taskId: string }
+  | { constraint: 'connective-has-deps'; taskId: string }
+  | { constraint: 'root-not-connective'; taskId: string };
 
 /**
  * Thrown when a structural constraint is violated.

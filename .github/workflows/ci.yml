@@ -105,6 +105,9 @@ jobs:
       - name: Run integration tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Must be a currently served model ID — retired IDs 404. Bump here
+          # without a code change; the test defaults to this same value.
+          ANTHROPIC_MODEL: claude-sonnet-5
         run: yarn vitest run packages/ui/__tests__/chat/integration.test.ts
 
   vscode:

@@ -3,6 +3,8 @@ export type {
   Attachment,
   AttachmentClass,
   ConcreteTask,
+  ConnectiveKind,
+  ConnectiveNode,
   Operation,
   RefTask,
   Status,
@@ -15,6 +17,7 @@ export {
   isValidStatus,
   isVineRef,
   isConcreteTask,
+  isConnective,
   getSpriteUri,
 } from './types.js';
 
@@ -39,6 +42,7 @@ export {
 // Mutations
 export {
   addRef,
+  addConnective,
   addTask,
   applyBatch,
   removeTask,
@@ -61,6 +65,7 @@ export type {
 export {
   filterByStatus,
   getActionableTasks,
+  buildSatisfaction,
   searchTasks,
   getLeaves,
   getRefs,

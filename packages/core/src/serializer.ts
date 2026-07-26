@@ -83,7 +83,7 @@ export function serialize(graph: VineGraph): string {
       for (const decision of task.decisions) {
         lines.push(`> ${decision}`);
       }
-    } else {
+    } else if (task.kind === 'task') {
       // ── Concrete task node ──────────────────────────────────────
       // Header — status is guaranteed defined for concrete tasks
       lines.push(
@@ -112,6 +112,29 @@ export function serialize(graph: VineGraph): string {
         for (const att of task.attachments.filter((a) => a.class === cls)) {
           lines.push(`@${att.class} ${att.mime} ${att.uri}`);
         }
+      }
+    } else {
+      // ── Connective node (anyof / allof) ─────────────────────────
+      // No status, no URI, no attachments — just an id + short name.
+      lines.push(
+        `${task.kind} [${task.id}] ${task.shortName}${serializeAnnotations(task.annotations)}`,
+      );
+
+      // Description
+      if (task.description !== '') {
+        for (const descLine of task.description.split('\n')) {
+          lines.push(descLine);
+        }
+      }
+
+      // Dependencies — sorted alphabetically
+      for (const dep of [...task.dependencies].sort()) {
+        lines.push(`-> ${dep}`);
+      }
+
+      // Decisions — original order
+      for (const decision of task.decisions) {
+        lines.push(`> ${decision}`);
       }
     }
 

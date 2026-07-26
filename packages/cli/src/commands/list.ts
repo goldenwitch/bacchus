@@ -11,7 +11,9 @@ import {
 import type { Task } from '@bacchus/core';
 
 function statusLabel(task: Task): string {
-  return task.kind === 'task' ? task.status : 'ref';
+  // Concrete tasks show their status; structural nodes show their kind
+  // (`ref`, `anyof`, `allof`).
+  return task.kind === 'task' ? task.status : task.kind;
 }
 
 function printTaskTable(tasks: Task[]): void {
