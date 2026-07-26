@@ -20,6 +20,13 @@ import type { ChatLogger } from '../../src/lib/chat/types.js';
 
 const API_KEY = process.env.ANTHROPIC_API_KEY ?? '';
 
+/**
+ * Model used for live integration tests. Overridable via env so CI can bump
+ * the model without a code change. The default must be a currently served
+ * model ID — retired IDs 404 with `not_found_error`, failing both tests.
+ */
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5';
+
 /** Structured logger that writes to stderr so vitest captures it. */
 const testLogger: ChatLogger = {
   log(level, message, data) {
@@ -73,7 +80,7 @@ Compile the source code.
     async () => {
       const service = new AnthropicChatService({
         apiKey: API_KEY,
-        model: 'claude-sonnet-4-20250514',
+        model: ANTHROPIC_MODEL,
         logger: testLogger,
       });
 
