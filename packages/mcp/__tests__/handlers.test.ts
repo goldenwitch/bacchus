@@ -274,6 +274,51 @@ describe('vine_write handler', () => {
     expect(data.progress.total).toBe(2);
   });
 
+  it('add_connective creates an anyof routing node callable via MCP', async () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'connective.vine');
+    const result = await callTool(tc.client, 'vine_write', {
+      file,
+      operations: [
+        { op: 'create', version: '1.3.0' },
+        { op: 'add_task', id: 'root', name: 'Root' },
+        { op: 'add_task', id: 'a', name: 'A', status: 'complete' },
+        { op: 'add_task', id: 'b', name: 'B', status: 'notstarted' },
+        { op: 'add_connective', id: 'gate', name: 'Any input', kind: 'anyof', dependsOn: ['a', 'b'] },
+        { op: 'add_dep', taskId: 'root', depId: 'gate' },
+      ],
+    });
+    expect(result.isError).toBeUndefined();
+    const data = resultJSON(result) as { summary: string; progress: { total: number } };
+    expect(data.summary).toContain('added anyof "gate"');
+    // Connectives are routing infrastructure — excluded from the work total.
+    expect(data.progress.total).toBe(3);
+
+    // Read it back: the node persisted as a connective, no status.
+    const read = await callTool(tc.client, 'vine_read', { file, action: 'task', id: 'gate' });
+    const task = resultJSON(read) as { kind: string; dependencies: string[]; status?: string };
+    expect(task.kind).toBe('anyof');
+    expect([...task.dependencies].sort()).toEqual(['a', 'b']);
+    expect(task.status).toBeUndefined();
+  });
+
+  it('add_connective rejects an invalid kind', async () => {
+    const dir = makeTempDir();
+    const file = join(dir, 'bad-connective.vine');
+    const result = await callTool(tc.client, 'vine_write', {
+      file,
+      operations: [
+        { op: 'create', version: '1.3.0' },
+        { op: 'add_task', id: 'root', name: 'Root' },
+        { op: 'add_task', id: 'a', name: 'A', status: 'complete' },
+        { op: 'add_connective', id: 'gate', name: 'Bad', kind: 'someof', dependsOn: ['a'] },
+        { op: 'add_dep', taskId: 'root', depId: 'gate' },
+      ],
+    });
+    expect(result.isError).toBe(true);
+    expect(resultText(result)).toContain('anyof');
+  });
+
   it('create without add_task fails', async () => {
     const dir = makeTempDir();
     const file = join(dir, 'fail-create.vine');

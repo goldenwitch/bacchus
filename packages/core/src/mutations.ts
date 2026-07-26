@@ -1,5 +1,6 @@
 import type {
   ConcreteTask,
+  ConnectiveNode,
   Operation,
   RefTask,
   Status,
@@ -30,6 +31,14 @@ function buildGraph(
     tasks,
     order,
   };
+}
+
+/**
+ * Human-readable label for a node kind, used in error messages.
+ * `ref` reads as "reference"; connectives read as their keyword.
+ */
+function nodeKindLabel(kind: Task['kind']): string {
+  return kind === 'ref' ? 'reference' : kind;
 }
 
 /**
@@ -95,6 +104,32 @@ export function addRef(graph: VineGraph, ref: RefTask): VineGraph {
 }
 
 /**
+ * Add a connective node (`anyof`/`allof`) to the graph.
+ *
+ * The connective is appended **after** all existing nodes in order so that the
+ * root remains first. A connective must declare at least one dependency
+ * (enforced by validation).
+ *
+ * @throws {VineError} if a node with the same id already exists.
+ * @throws {VineValidationError} if the resulting graph is invalid.
+ */
+export function addConnective(
+  graph: VineGraph,
+  connective: ConnectiveNode,
+): VineGraph {
+  if (graph.tasks.has(connective.id)) {
+    throw new VineError(`Task "${connective.id}" already exists.`);
+  }
+
+  const newTasks = replaceTask(graph.tasks, connective);
+  const newOrder = [...graph.order, connective.id];
+
+  const next = buildGraph(newTasks, newOrder, graph);
+  validate(next);
+  return next;
+}
+
+/**
  * Remove a task from the graph.
  *
  * Also strips the removed id from every other task's `dependencies` array.
@@ -147,8 +182,10 @@ export function setStatus(
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
-  if (task.kind === 'ref') {
-    throw new VineError(`Cannot set status on reference node "${id}".`);
+  if (task.kind !== 'task') {
+    throw new VineError(
+      `Cannot set status on ${nodeKindLabel(task.kind)} node "${id}".`,
+    );
   }
 
   const updated: ConcreteTask = { ...task, status };
@@ -179,8 +216,10 @@ export function updateTask(
   if (!task) {
     throw new VineError(`Task not found: ${id}`);
   }
-  if (task.kind === 'ref' && fields.attachments !== undefined) {
-    throw new VineError(`Cannot set attachments on reference node "${id}".`);
+  if (task.kind !== 'task' && fields.attachments !== undefined) {
+    throw new VineError(
+      `Cannot set attachments on ${nodeKindLabel(task.kind)} node "${id}".`,
+    );
   }
 
   const updated: Task = { ...task, ...fields } as Task;
@@ -361,6 +400,24 @@ export function applyBatch(
         break;
       }
 
+      case 'add_connective': {
+        if (tasks.has(op.id)) {
+          throw new VineError(`Task "${op.id}" already exists.`);
+        }
+        const newConnective: ConnectiveNode = {
+          kind: op.kind,
+          id: op.id,
+          shortName: op.name,
+          description: op.description ?? '',
+          dependencies: op.dependsOn ?? [],
+          decisions: op.decisions ?? [],
+          annotations: EMPTY_ANNOTATIONS,
+        };
+        tasks.set(op.id, newConnective);
+        order.push(op.id);
+        break;
+      }
+
       case 'remove_task': {
         if (!tasks.has(op.id)) {
           throw new VineError(`Task not found: ${op.id}`);
@@ -386,9 +443,9 @@ export function applyBatch(
         if (!task) {
           throw new VineError(`Task not found: ${op.id}`);
         }
-        if (task.kind === 'ref') {
+        if (task.kind !== 'task') {
           throw new VineError(
-            `Cannot set status on reference node "${op.id}".`,
+            `Cannot set status on ${nodeKindLabel(task.kind)} node "${op.id}".`,
           );
         }
         tasks.set(op.id, { ...task, status: op.status });
@@ -400,8 +457,10 @@ export function applyBatch(
         if (!task) {
           throw new VineError(`Task not found: ${op.id}`);
         }
-        if (task.kind === 'ref') {
-          throw new VineError(`Cannot claim reference node "${op.id}".`);
+        if (task.kind !== 'task') {
+          throw new VineError(
+            `Cannot claim ${nodeKindLabel(task.kind)} node "${op.id}".`,
+          );
         }
         tasks.set(op.id, { ...task, status: 'started' as Status });
         break;
@@ -417,8 +476,8 @@ export function applyBatch(
         if (op.description !== undefined) patch.description = op.description;
         if (op.decisions !== undefined) patch.decisions = op.decisions;
         if (op.attachments !== undefined) {
-          if (task.kind === 'ref') {
-            throw new VineError(`Cannot set attachments on reference node "${op.id}".`);
+          if (task.kind !== 'task') {
+            throw new VineError(`Cannot set attachments on ${nodeKindLabel(task.kind)} node "${op.id}".`);
           }
           patch.attachments = op.attachments;
         }

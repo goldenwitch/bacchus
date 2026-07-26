@@ -1,4 +1,10 @@
-import type { ConcreteTask, RefTask, Task, VineGraph } from './types.js';
+import type {
+  ConcreteTask,
+  ConnectiveNode,
+  RefTask,
+  Task,
+  VineGraph,
+} from './types.js';
 import { VineError } from './errors.js';
 import { validate } from './validator.js';
 
@@ -136,7 +142,7 @@ export function expandVineRef(
         vine: childTask.vine,
         annotations: childTask.annotations,
       } satisfies RefTask);
-    } else {
+    } else if (childTask.kind === 'task') {
       remappedChildTasks.push({
         kind: 'task',
         id: remappedId,
@@ -148,6 +154,17 @@ export function expandVineRef(
         attachments: childTask.attachments,
         annotations: childTask.annotations,
       } satisfies ConcreteTask);
+    } else {
+      // Connective node (anyof / allof).
+      remappedChildTasks.push({
+        kind: childTask.kind,
+        id: remappedId,
+        shortName: childTask.shortName,
+        description: childTask.description,
+        dependencies: remappedDeps,
+        decisions: childTask.decisions,
+        annotations: childTask.annotations,
+      } satisfies ConnectiveNode);
     }
   }
 

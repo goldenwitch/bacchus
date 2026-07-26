@@ -63,7 +63,11 @@ function formatTask(task: Task): Record<string, unknown> {
       })),
     };
   }
-  return { ...base, vine: task.vine };
+  if (task.kind === 'ref') {
+    return { ...base, vine: task.vine };
+  }
+  // Connective node (anyof/allof): no status, no vine, no attachments.
+  return base;
 }
 
 function formatError(error: unknown, file: string): string {
@@ -237,7 +241,7 @@ export function createServer(): McpServer {
                 id: d.id,
                 shortName: d.shortName,
                 kind: d.kind,
-                ...(d.kind === 'task' ? { status: d.status, decisions: [...d.decisions], attachments: d.attachments.map((a) => ({ class: a.class, mime: a.mime, uri: a.uri })) } : { vine: d.vine, decisions: [...d.decisions] }),
+                ...(d.kind === 'task' ? { status: d.status, decisions: [...d.decisions], attachments: d.attachments.map((a) => ({ class: a.class, mime: a.mime, uri: a.uri })) } : d.kind === 'ref' ? { vine: d.vine, decisions: [...d.decisions] } : { decisions: [...d.decisions] }),
               })),
               dependant_tasks: dependants.map((d) => ({
                 id: d.id,
@@ -338,6 +342,7 @@ export function createServer(): McpServer {
         '• add_dep — { op, taskId, depId }\n' +
         '• remove_dep — { op, taskId, depId }\n' +
         '• add_ref — { op, id, name, vine, description?, dependsOn?: string[], decisions?: string[] }\n' +
+        '• add_connective — { op, id, name, kind: "anyof"|"allof", description?, dependsOn?: string[], decisions?: string[] } A routing node satisfied when ANY (anyof) or ALL (allof) of its dependsOn are satisfied. Carries no status, cannot be claimed/completed, and never appears in the frontier — a dependant treats a satisfied connective as a met prerequisite. Use anyof for "wait-any" / disjunctive triggers. Must have ≥1 dependsOn.\n' +
         '• extract_to_ref — { op, id, vine, refName? } Extract a task into a new child .vine file and replace it with a ref node. Preserves dependency edges.\n' +
         '• update_ref_uri — { op, id, uri }\n\n' +
         'Batch semantics: validation runs only after all operations. Returns structured JSON with operation summary, progress snapshot, and execution frontier (ready_to_start, ready_to_complete, blocked, needs_expansion).',
@@ -476,6 +481,21 @@ export function createServer(): McpServer {
               if (Array.isArray(o.decisions)) ref.decisions = assertStringArray(o.decisions as unknown[], 'add_ref "decisions"', i);
               return ref;
             }
+            case 'add_connective': {
+              if (typeof o.id !== 'string') throw new VineError(`Operation ${String(i)}: add_connective requires "id".`);
+              if (typeof o.name !== 'string') throw new VineError(`Operation ${String(i)}: add_connective requires "name".`);
+              if (o.kind !== 'anyof' && o.kind !== 'allof') throw new VineError(`Operation ${String(i)}: add_connective requires "kind" to be "anyof" or "allof".`);
+              const conn: { op: 'add_connective'; id: string; name: string; kind: 'anyof' | 'allof'; description?: string; dependsOn?: string[]; decisions?: string[] } = {
+                op: 'add_connective',
+                id: o.id,
+                name: o.name,
+                kind: o.kind,
+              };
+              if (typeof o.description === 'string') conn.description = o.description;
+              if (Array.isArray(o.dependsOn)) conn.dependsOn = assertStringArray(o.dependsOn as unknown[], 'add_connective "dependsOn"', i);
+              if (Array.isArray(o.decisions)) conn.decisions = assertStringArray(o.decisions as unknown[], 'add_connective "decisions"', i);
+              return conn;
+            }
             case 'update_ref_uri': {
               if (typeof o.id !== 'string') throw new VineError(`Operation ${String(i)}: update_ref_uri requires "id".`);
               if (typeof o.uri !== 'string') throw new VineError(`Operation ${String(i)}: update_ref_uri requires "uri".`);
@@ -547,7 +567,8 @@ export function createServer(): McpServer {
               case 'update': return `updated "${o.id}"`;
               case 'add_dep': return `added dep ${o.taskId} → ${o.depId}`;
               case 'remove_dep': return `removed dep ${o.taskId} → ${o.depId}`;
-              case 'add_ref': return `added ref "${o.id}"`;
+              case 'add_ref': return `added ref ""`;
+              case 'add_connective': return `added ${o.kind} "${o.id}"`;
               case 'update_ref_uri': return `updated ref URI for "${o.id}"`;
               case 'create': return 'created graph';
               case 'extract_to_ref': return `extracted "${o.id}" to ref (${o.vine})`;
@@ -592,6 +613,9 @@ export function createServer(): McpServer {
           }
           if (task.kind === 'ref') {
             throw new VineError(`Task "${extractOp.id}" is already a reference node.`);
+          }
+          if (task.kind !== 'task') {
+            throw new VineError(`Cannot extract a ${task.kind} node to a ref.`);
           }
 
           // Build child graph with the extracted task as root
@@ -648,7 +672,8 @@ export function createServer(): McpServer {
               case 'update': return `updated "${o.id}"`;
               case 'add_dep': return `added dep ${o.taskId} → ${o.depId}`;
               case 'remove_dep': return `removed dep ${o.taskId} → ${o.depId}`;
-              case 'add_ref': return `added ref "${o.id}"`;
+              case 'add_ref': return `added ref ""`;
+              case 'add_connective': return `added ${o.kind} "${o.id}"`;
               case 'update_ref_uri': return `updated ref URI for "${o.id}"`;
               case 'create': return 'created graph';
             }
@@ -686,7 +711,8 @@ export function createServer(): McpServer {
             case 'update': return `updated "${o.id}"`;
             case 'add_dep': return `added dep ${o.taskId} → ${o.depId}`;
             case 'remove_dep': return `removed dep ${o.taskId} → ${o.depId}`;
-            case 'add_ref': return `added ref "${o.id}"`;
+            case 'add_ref': return `added ref ""`;
+            case 'add_connective': return `added ${o.kind} "${o.id}"`;
             case 'update_ref_uri': return `updated ref URI for "${o.id}"`;
             case 'create': return 'created graph';
             case 'extract_to_ref': return `extracted "${o.id}" to ref (${o.vine})`;
@@ -708,7 +734,7 @@ export function createServer(): McpServer {
                 id: d.id,
                 shortName: d.shortName,
                 kind: d.kind,
-                ...(d.kind === 'task' ? { status: d.status, decisions: [...d.decisions], attachments: d.attachments.map((a) => ({ class: a.class, mime: a.mime, uri: a.uri })) } : { vine: d.vine, decisions: [...d.decisions] }),
+                ...(d.kind === 'task' ? { status: d.status, decisions: [...d.decisions], attachments: d.attachments.map((a) => ({ class: a.class, mime: a.mime, uri: a.uri })) } : d.kind === 'ref' ? { vine: d.vine, decisions: [...d.decisions] } : { decisions: [...d.decisions] }),
               })),
             });
           }

@@ -58,10 +58,29 @@ export interface RefTask extends BaseNode {
 }
 
 /**
- * A single node in the vine graph — either a concrete task or a reference.
- * Discriminate on `kind` (`'task'` or `'ref'`) for full type narrowing.
+ * The two connective modes.
+ *
+ * - `anyof` — satisfied when **any** direct dependency is satisfied (∨).
+ * - `allof` — satisfied when **every** direct dependency is satisfied (∧).
  */
-export type Task = ConcreteTask | RefTask;
+export type ConnectiveKind = 'anyof' | 'allof';
+
+/**
+ * A first-class connective (routing) node. It names a derived readiness
+ * condition over its direct dependencies. Connective nodes carry no writable
+ * status and no attachments; they cannot be claimed or completed and never
+ * enter the execution frontier. A dependant treats a satisfied connective as a
+ * satisfied prerequisite. `ref` is the structural-node precedent this extends.
+ */
+export interface ConnectiveNode extends BaseNode {
+  readonly kind: ConnectiveKind;
+}
+
+/**
+ * A single node in the vine graph — a concrete task, a reference, or a
+ * connective (`anyof`/`allof`). Discriminate on `kind` for full type narrowing.
+ */
+export type Task = ConcreteTask | RefTask | ConnectiveNode;
 
 /**
  * An immutable task graph parsed from a .vine file.
@@ -122,6 +141,13 @@ export function isConcreteTask(task: Task): task is ConcreteTask {
 }
 
 /**
+ * Type guard: returns true when `task` is a connective node (`anyof`/`allof`).
+ */
+export function isConnective(task: Task): task is ConnectiveNode {
+  return task.kind === 'anyof' || task.kind === 'allof';
+}
+
+/**
  * Returns the first `@sprite` annotation URI from a task, or `undefined`
  * if the task has no sprite annotation.
  */
@@ -149,5 +175,6 @@ export type Operation =
   | { op: 'add_dep'; taskId: string; depId: string }
   | { op: 'remove_dep'; taskId: string; depId: string }
   | { op: 'add_ref'; id: string; name: string; vine: string; description?: string; dependsOn?: string[]; decisions?: string[] }
+  | { op: 'add_connective'; id: string; name: string; kind: ConnectiveKind; description?: string; dependsOn?: string[]; decisions?: string[] }
   | { op: 'update_ref_uri'; id: string; uri: string }
   | { op: 'extract_to_ref'; id: string; vine: string; refName?: string };
