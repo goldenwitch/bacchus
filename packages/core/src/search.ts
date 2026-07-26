@@ -135,7 +135,12 @@ export function getSummary(graph: VineGraph): GraphSummary {
     reviewing: 0,
   };
 
+  // Connectives are routing infrastructure, not deliverable work — they are
+  // excluded from `total`, consistent with `ExecutionProgress.total`.
+  let total = 0;
   for (const task of graph.tasks.values()) {
+    if (isConnective(task)) continue;
+    total += 1;
     if (task.kind === 'task') {
       byStatus[task.status] += 1;
     }
@@ -148,7 +153,7 @@ export function getSummary(graph: VineGraph): GraphSummary {
   const root = getTask(graph, rootId);
 
   return {
-    total: graph.tasks.size,
+    total,
     byStatus,
     rootId: root.id,
     rootName: root.shortName,

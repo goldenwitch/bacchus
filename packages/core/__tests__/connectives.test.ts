@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { parse } from '../src/parser.js';
 import { serialize } from '../src/serializer.js';
 import { setStatus, applyBatch } from '../src/mutations.js';
-import { getActionableTasks, buildSatisfaction } from '../src/search.js';
+import {
+  getActionableTasks,
+  buildSatisfaction,
+  getSummary,
+} from '../src/search.js';
 import { isConnective } from '../src/types.js';
 import type { ConnectiveNode } from '../src/types.js';
 import { VineParseError, VineValidationError } from '../src/errors.js';
@@ -210,6 +214,15 @@ describe('execution frontier with connectives', () => {
     // 5 nodes total, but memory-trigger (connective) is not work.
     expect(graph.tasks.size).toBe(5);
     expect(progress.total).toBe(4);
+  });
+
+  it('getSummary.total excludes connectives, matching vine_next', () => {
+    const graph = parse(DEFERRAL);
+    const summary = getSummary(graph);
+    const { progress } = getActionableTasks(graph);
+    // Both surfaces must agree — connectives are not deliverable work.
+    expect(summary.total).toBe(4);
+    expect(summary.total).toBe(progress.total);
   });
 });
 
